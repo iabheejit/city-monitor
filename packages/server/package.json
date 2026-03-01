@@ -19,6 +19,7 @@
     "cors": "^2.8.5",
     "drizzle-orm": "^0.39",
     "express": "^5",
+    "fast-xml-parser": "^5.4.1",
     "node-cron": "^3.0.3",
     "postgres": "^3.4"
   },

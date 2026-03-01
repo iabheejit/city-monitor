@@ -8,6 +8,8 @@ import cors from 'cors';
 import { createCache } from './lib/cache.js';
 import { createScheduler, type ScheduledJob } from './lib/scheduler.js';
 import { createHealthRouter } from './routes/health.js';
+import { createNewsRouter } from './routes/news.js';
+import { createFeedIngestion } from './cron/ingest-feeds.js';
 
 export function createApp(options?: { skipScheduler?: boolean }) {
   const app = express();
@@ -15,10 +17,10 @@ export function createApp(options?: { skipScheduler?: boolean }) {
   app.use(express.json());
 
   const cache = createCache();
+  const ingestFeeds = createFeedIngestion(cache);
 
-  // Cron jobs — handlers are stubs for now, implemented in later milestones
   const jobs: ScheduledJob[] = [
-    { name: 'ingest-feeds', schedule: '*/10 * * * *', handler: async () => {}, runOnStart: true },
+    { name: 'ingest-feeds', schedule: '*/10 * * * *', handler: ingestFeeds, runOnStart: true },
     { name: 'summarize-news', schedule: '5,20,35,50 * * * *', handler: async () => {} },
     { name: 'ingest-weather', schedule: '*/30 * * * *', handler: async () => {}, runOnStart: true },
     { name: 'ingest-transit', schedule: '*/5 * * * *', handler: async () => {}, runOnStart: true },
@@ -30,6 +32,7 @@ export function createApp(options?: { skipScheduler?: boolean }) {
     : createScheduler(jobs);
 
   app.use('/api', createHealthRouter(cache, scheduler as any));
+  app.use('/api', createNewsRouter(cache));
 
   return { app, cache, scheduler };
 }
