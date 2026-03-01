@@ -22,9 +22,30 @@ For each active city with events config:
   1. Fetch events from configured sources
   2. Normalize to CityEvent[]
   3. Filter: only future events (next 7 days)
-  4. Deduplicate by title + date
-  5. Optionally: GPT-5 generates one-line description for events without one
-  6. Cache: `{cityId}:events:upcoming` (TTL 21600s / 6h)
+  4. Deduplicate by title + date hash
+  5. Write to Postgres (events table, upsert by hash)
+  6. Optionally: GPT-5 generates one-line description for events without one
+  7. Update memory cache: `{cityId}:events:upcoming` (TTL 21600s / 6h)
+```
+
+#### Schema addition (`packages/server/src/db/schema.ts`)
+
+```typescript
+export const events = pgTable('events', {
+  id: serial('id').primaryKey(),
+  cityId: text('city_id').notNull(),
+  title: text('title').notNull(),
+  venue: text('venue'),
+  date: timestamp('date').notNull(),
+  endDate: timestamp('end_date'),
+  category: text('category'),
+  url: text('url'),
+  description: text('description'),
+  imageUrl: text('image_url'),
+  free: boolean('free'),
+  hash: text('hash').notNull(),
+  fetchedAt: timestamp('fetched_at').defaultNow().notNull(),
+});
 ```
 
 ### 2. Safety/police reports (`packages/server/src/cron/ingest-safety.ts`)
@@ -38,8 +59,25 @@ Berlin source:
 For each active city with police config:
   1. Fetch RSS feed
   2. Parse to SafetyReport[]
-  3. Keep last 48 hours of reports
-  4. Cache: `{cityId}:safety:recent` (TTL 900s)
+  3. Write to Postgres (safety_reports table, upsert by URL hash)
+  4. Query last 48 hours from DB
+  5. Update memory cache: `{cityId}:safety:recent` (TTL 900s)
+```
+
+#### Schema addition (`packages/server/src/db/schema.ts`)
+
+```typescript
+export const safetyReports = pgTable('safety_reports', {
+  id: serial('id').primaryKey(),
+  cityId: text('city_id').notNull(),
+  title: text('title').notNull(),
+  description: text('description'),
+  publishedAt: timestamp('published_at'),
+  url: text('url'),
+  district: text('district'),
+  hash: text('hash').notNull(),
+  fetchedAt: timestamp('fetched_at').defaultNow().notNull(),
+});
 ```
 
 ### 3. API endpoints
@@ -93,8 +131,8 @@ Displays recent police reports:
 
 ## Done when
 
-- [ ] Events cron fetches Berlin events every 6 hours
-- [ ] Safety cron fetches police reports every 10 min
+- [ ] Events cron fetches Berlin events every 6 hours and persists to Postgres
+- [ ] Safety cron fetches police reports every 10 min and persists to Postgres
 - [ ] `GET /api/berlin/events` returns upcoming events
 - [ ] `GET /api/berlin/safety` returns recent police reports
 - [ ] EventsPanel shows events grouped by day

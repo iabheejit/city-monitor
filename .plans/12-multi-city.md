@@ -67,13 +67,15 @@ If the user visits `/`, show a simple city picker:
 - Hamburg card
 - Each links to `/{cityId}`
 
-### 5. Verify cron isolation
+### 5. Verify data isolation
 
 Confirm that:
 - Feed ingestion runs for both cities independently
 - Summarization uses city-specific prompts
-- Redis keys are properly prefixed (`berlin:news:digest` vs `hamburg:news:digest`)
+- All Postgres queries filter by `city_id`
+- Cache keys are properly prefixed (`berlin:news:digest` vs `hamburg:news:digest`)
 - A failure in one city's ingestion doesn't affect the other
+- No cross-city data leaks in bootstrap or digest endpoints
 
 ### 6. Subdomain support (optional)
 

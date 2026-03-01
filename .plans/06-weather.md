@@ -28,7 +28,21 @@ https://api.open-meteo.com/v1/forecast
   &forecast_days=5
 ```
 
-Cache: `{cityId}:weather` with 1800s (30 min) TTL.
+Write to Postgres (`weather_snapshots` table), then update memory cache: `{cityId}:weather` (TTL 1800s / 30 min).
+
+#### Schema addition (`packages/server/src/db/schema.ts`)
+
+```typescript
+export const weatherSnapshots = pgTable('weather_snapshots', {
+  id: serial('id').primaryKey(),
+  cityId: text('city_id').notNull(),
+  fetchedAt: timestamp('fetched_at').defaultNow().notNull(),
+  current: jsonb('current').notNull(),
+  hourly: jsonb('hourly').notNull(),
+  daily: jsonb('daily').notNull(),
+  alerts: jsonb('alerts'),
+});
+```
 
 ### 2. DWD severe weather alerts (Germany-specific)
 
@@ -78,7 +92,7 @@ Show current temp + weather icon in the TopBar next to the city name. This gives
 
 ## Done when
 
-- [ ] Weather cron fetches Open-Meteo data every 30 min
+- [ ] Weather cron fetches Open-Meteo data every 30 min and persists to Postgres
 - [ ] `GET /api/berlin/weather` returns current + hourly + daily forecast
 - [ ] WeatherPanel shows current conditions + 5-day forecast
 - [ ] WMO weather codes are mapped to icons/labels

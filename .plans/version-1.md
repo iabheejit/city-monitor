@@ -18,7 +18,8 @@ Migration plan: extract proven patterns from the worldmonitor repo into a focuse
 | Charts | Recharts | React-native, declarative |
 | Maps | MapLibre GL JS | Free, open-source, works for any city |
 | Backend | Node + Express | Familiarity, wide ecosystem |
-| Cache | In-memory (Map with TTL) + optional Upstash Redis | Zero-dep dev; Redis for production persistence |
+| Database | PostgreSQL (Render) + Drizzle ORM | Persistent storage, survives deploys, enables queries |
+| Cache | In-memory Map with TTL | Fast reads; Postgres is the source of truth |
 | Scheduling | `node-cron` in-process | Simpler than Render cron jobs, no extra cost |
 | AI | OpenAI GPT-5 (~$6/month/city) | Quality summarization, trivial cost |
 | Deployment | Render.com (1 web service + 1 static site) | Simple, affordable |
@@ -50,31 +51,57 @@ Express API server (Render Web Service, $7/mo)
   │   ├── transit   — every 5 min
   │   └── events    — every 6 hours
   │
-  └── Cache layer:
-      ├── Primary: in-memory Map<string, {data, expiresAt}>
-      └── Optional: Upstash Redis (for persistence across deploys)
+  ├── PostgreSQL (Render, $7/mo):
+  │   ├── Source of truth for all ingested data
+  │   ├── Survives deploys and restarts
+  │   └── Enables queries (e.g. "news by category in last 24h")
+  │
+  └── In-memory cache:
+      └── Map<string, {data, expiresAt}> — hot cache for API responses
 ```
 
 **No separate cron processes.** The Express server runs `node-cron` jobs in-process. Simpler, cheaper, shared memory cache.
 
-**No mandatory Redis.** In-memory cache works for a single-process server. Redis is optional — add it when you want data to survive deploys, or when you run multiple server instances.
+**Two-layer storage.** Postgres is the source of truth. Cron jobs fetch external data → write to Postgres → update in-memory cache. API reads hit the memory cache first; on miss, query Postgres and cache the result. Data survives deploys without needing Redis.
 
 ---
 
-## Cache Strategy
+## Storage Strategy
 
-The cache layer abstracts over in-memory and Redis:
+### PostgreSQL (source of truth)
+
+All ingested data is persisted to Postgres via Drizzle ORM (schema-as-code). Tables:
+
+| Table | Written by | Milestone |
+|---|---|---|
+| `news_articles` | feed ingestion cron | 04 |
+| `weather_snapshots` | weather ingestion cron | 06 |
+| `ai_summaries` | summarization cron | 07 |
+| `transit_disruptions` | transit ingestion cron | 09 |
+| `events` | events ingestion cron | 10 |
+| `safety_reports` | safety ingestion cron | 10 |
+
+All tables include a `city_id` column for multi-city support from day one.
+
+### In-memory cache (hot reads)
+
+Fast read layer for API responses. The cache stores pre-built JSON payloads keyed by `{cityId}:{dataType}`.
 
 ```typescript
-// Try memory first → try Redis → run fetcher → write back to both
-cache.get(key) → memoryCache.get(key) ?? redis?.get(key) ?? null
-cache.set(key, data, ttl) → memoryCache.set(key, data, ttl); redis?.set(key, data, ttl)
+// Write path (cron jobs):
+//   fetch external data → write to Postgres → update memory cache
+
+// Read path (API endpoints):
+//   memory cache hit? → return cached JSON
+//   memory cache miss? → query Postgres → cache result → return
 ```
 
 From worldmonitor, we keep:
 - **In-flight coalescing** — concurrent requests for the same key share one upstream fetch
 - **Negative caching** — store `null` results with short TTL to prevent stampedes
 - **TTL tiers** — different TTLs per data type (transit: 5min, news: 15min, events: 6h)
+
+On server start, the cache warms from Postgres so the dashboard is immediately populated.
 
 Reference: `.worldmonitor/server/_shared/redis.ts`
 
@@ -119,12 +146,12 @@ Maps use the same global tile source (CARTO/OSM) for every city — only `center
 | Item | Monthly cost |
 |---|---|
 | Render web service (Starter) | $7 |
+| Render PostgreSQL (Starter) | $7 |
 | OpenAI GPT-5 (summarization) | ~$6 |
-| Upstash Redis (free tier, optional) | $0 |
 | Sentry (free tier) | $0 |
-| **Total** | **~$13/city** |
+| **Total** | **~$20/city** |
 
-Adding a second city on the same server: +$6/month (only the AI cost scales per city).
+Adding a second city on the same server and database: +$6/month (only the AI cost scales per city).
 
 ---
 
@@ -157,7 +184,8 @@ After all milestones: delete `.worldmonitor/` — the new codebase is fully stan
 
 | Decision | Choice | Rationale |
 |---|---|---|
-| No mandatory Redis | In-memory cache primary | Simpler. One process = shared memory. Add Redis later for persistence. |
+| Postgres + memory cache | Two-layer storage | Postgres = source of truth (survives deploys). Memory cache = fast reads. No Redis needed for single-instance. |
+| Drizzle ORM over Prisma | Schema-as-code | No code generation, no build step, TypeScript-native. Simpler dev loop. |
 | No Render cron jobs | `node-cron` in Express process | Saves ~$4/month, simpler deployment, shared cache. |
 | No proto/sebuf | Shared TypeScript types | ~8 endpoints don't need RPC codegen overhead. |
 | No SSR/Next.js | Vite SPA | Dashboard is client-rendered; no SEO on dynamic content. Static shell is enough. |

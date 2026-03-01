@@ -54,6 +54,10 @@ city-dashboard/              # repo root
 │   │   └── tailwind.config.ts
 │   └── server/              # Express API
 │       ├── src/
+│       │   └── db/
+│       │       ├── index.ts         # DB connection (Drizzle + postgres driver)
+│       │       └── schema.ts        # Drizzle table definitions
+│       ├── drizzle.config.ts        # Drizzle Kit config
 │       ├── package.json
 │       └── tsconfig.json
 ├── shared/                  # Shared types
@@ -180,7 +184,10 @@ Dependencies:
 - `express`
 - `cors`
 - `node-cron`
+- `drizzle-orm`
+- `postgres` (driver — the `postgres` npm package, not `pg`)
 - `tsx` (dev runner)
+- `drizzle-kit` (dev — migration generation)
 
 Minimal `src/index.ts`:
 ```typescript
@@ -190,7 +197,34 @@ app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 app.listen(3001);
 ```
 
-### 7. Turbo config
+### 7. Drizzle config (`packages/server/drizzle.config.ts`)
+
+```typescript
+import { defineConfig } from 'drizzle-kit';
+
+export default defineConfig({
+  schema: './src/db/schema.ts',
+  out: './drizzle',            // migration output directory
+  dialect: 'postgresql',
+  dbCredentials: {
+    url: process.env.DATABASE_URL!,
+  },
+});
+```
+
+Add scripts to `packages/server/package.json`:
+```json
+{
+  "scripts": {
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio"
+  }
+}
+```
+
+### 8. Turbo config
 
 ```json
 {
@@ -214,3 +248,4 @@ app.listen(3001);
 - [ ] `curl localhost:3001/api/health` returns `{ "status": "ok" }`
 - [ ] Vite proxy forwards `/api/*` to Express
 - [ ] TypeScript compiles with no errors across all packages
+- [ ] Drizzle config is in place; `npm run db:generate` works (schema can be empty initially)

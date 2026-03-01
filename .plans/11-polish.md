@@ -50,6 +50,13 @@ Even though it's an SPA, basic SEO matters for discovery:
 - Add `Cache-Control` headers on API responses (per route tier)
 - Check bundle size with `vite-bundle-visualizer`
 
+### 5a. Database optimization
+
+- Add indices on frequently queried columns: `news_articles(city_id, created_at)`, `events(city_id, date)`, `transit_disruptions(city_id, resolved)`
+- Connection pooling: verify `postgres` driver pool settings (default is fine for single-instance)
+- Add data retention: prune old `news_articles` (>7 days), `weather_snapshots` (>30 days), resolved `transit_disruptions` (>48h) via a nightly cron job
+- Monitor query performance via `EXPLAIN ANALYZE` on common queries
+
 ### 6. Favicon and PWA manifest
 
 Per-city favicon with the city's accent color. Basic PWA manifest so it's installable on mobile:

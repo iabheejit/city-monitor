@@ -50,14 +50,16 @@ Adapt the pattern:
 For each active city:
   1. Load feeds from city config
   2. Fetch feeds in parallel (batch of 10, 8s per-feed timeout, 25s deadline)
-     — use cache.fetchJson() per feed URL (600s TTL) for dedup across runs
   3. Parse each feed → FeedItem[]
   4. Classify each item → category + tier (step 3 below)
-  5. Deduplicate by title similarity (Jaccard on word trigrams, >0.7 = duplicate)
-  6. Sort by tier (1 first), then recency
-  7. Write to cache: `{cityId}:news:digest` (TTL 900s)
-  8. Write per-category: `{cityId}:news:{category}` (TTL 900s)
+  5. Deduplicate by FNV-1a hash of URL + title
+  6. Write new articles to Postgres (news_articles table, upsert by hash)
+  7. Query Postgres for latest articles → sort by tier then recency
+  8. Build digest JSON → write to memory cache: `{cityId}:news:digest` (TTL 900s)
+  9. Build per-category JSONs → write to cache: `{cityId}:news:{category}` (TTL 900s)
 ```
+
+The key difference from the cache-only approach: articles persist in Postgres, so data survives server restarts. The cache is rebuilt from Postgres on startup (via cache warmup from milestone 02).
 
 ### 3. Keyword classifier (`packages/server/src/lib/classifier.ts`)
 
@@ -131,10 +133,10 @@ GET /api/:city/bootstrap → {
 ```
 
 **Reference:** `.worldmonitor/api/bootstrap.js`
-- Single Upstash pipeline batch-GET for ~15 keys
+- Single batch-GET for all data types
 - Client calls on page load to hydrate everything at once
 
-The bootstrap endpoint reads all cached data for a city in one call via `cache.getBatch()`.
+The bootstrap endpoint reads from the memory cache via `cache.getBatch()`. On cache miss, it queries Postgres directly.
 
 ### 5. Wire up the scheduler
 
@@ -145,9 +147,9 @@ Connect `ingest-feeds` cron job (from milestone 02's stub) to the actual feed in
 ## Done when
 
 - [ ] Feed ingestion cron runs every 10 min and fetches Berlin RSS feeds
-- [ ] Feeds are parsed, classified by category, and cached
+- [ ] Feeds are parsed, classified by category, written to Postgres, and cached
 - [ ] `GET /api/berlin/news/digest` returns classified news items
 - [ ] `GET /api/berlin/bootstrap` returns the news digest (other fields null)
-- [ ] Duplicate headlines are filtered out
+- [ ] Duplicate articles are filtered by hash (no duplicate URLs/titles in DB)
 - [ ] Failed feeds don't crash the ingestion (graceful error handling per feed)
 - [ ] Feed fetch respects timeouts (8s per feed, 25s overall)

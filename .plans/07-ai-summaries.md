@@ -55,16 +55,28 @@ Parameters (from worldmonitor, proven effective):
 - `max_tokens`: 150
 - `top_p`: 0.9
 
-### 3. Cache strategy
+### 3. Storage strategy
 
 **Reference:** `.worldmonitor/server/worldmonitor/news/v1/summarize-article.ts`
 - Cache key = FNV-1a hash of sorted top-5 headlines + mode + context
 - TTL = 86400s (24h)
 
-Adapt:
-- Cache key: `{cityId}:summary:{fnv1a(sorted top-5 headlines)}`
-- TTL: 86400s (24h) — headlines rarely change meaning
-- The cache key uses only the top 5 headlines, so minor feed changes don't bust the cache
+#### Schema addition (`packages/server/src/db/schema.ts`)
+
+```typescript
+export const aiSummaries = pgTable('ai_summaries', {
+  id: serial('id').primaryKey(),
+  cityId: text('city_id').notNull(),
+  headlineHash: text('headline_hash').notNull(),  // FNV-1a of sorted top-5 headlines
+  summary: text('summary').notNull(),
+  model: text('model').notNull(),
+  inputTokens: integer('input_tokens'),
+  outputTokens: integer('output_tokens'),
+  generatedAt: timestamp('generated_at').defaultNow().notNull(),
+});
+```
+
+Write to Postgres, then update memory cache: `{cityId}:news:summary` (TTL 86400s / 24h). On cache miss, the latest summary is loaded from Postgres. The `headline_hash` enables skipping regeneration when headlines haven't changed.
 
 ### 4. Summarization cron (`packages/server/src/cron/summarize.ts`)
 
@@ -75,10 +87,11 @@ For each active city:
   1. Read news digest from cache
   2. Take top 10 headlines (tier 1+2, most recent)
   3. Build cache key from sorted top-5 headlines
-  4. If cached summary exists and headlines haven't changed → skip
+  4. Check Postgres for existing summary with same headline_hash → skip if found
   5. Call GPT-5 → get summary
-  6. Write to cache: `{cityId}:news:summary` (TTL 24h)
-  7. Log token usage
+  6. Write to Postgres (ai_summaries table)
+  7. Update memory cache: `{cityId}:news:summary` (TTL 24h)
+  8. Log token usage
 ```
 
 ### 5. Summary API endpoint
@@ -126,7 +139,7 @@ GET /api/health → {
 
 - [ ] Summarization cron generates briefings every 15 min
 - [ ] `GET /api/berlin/news/summary` returns a 2-3 sentence briefing
-- [ ] Summaries are cached for 24h (same headlines = same cache key)
+- [ ] Summaries are persisted in Postgres and cached for 24h (same headlines = same hash)
 - [ ] Token usage is tracked and visible in the health endpoint
 - [ ] NewsBriefingPanel shows the AI summary above the headline list
 - [ ] Works without `OPENAI_API_KEY` (summary section just doesn't appear)

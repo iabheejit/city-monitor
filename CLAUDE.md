@@ -6,7 +6,8 @@ Real-time city dashboard, starting with Berlin. Extracts proven patterns from th
 
 - **Frontend:** React 19 + TypeScript + Vite 6 + Tailwind v4 + Zustand + React Query
 - **Backend:** Node + Express, single process with `node-cron` for scheduled data ingestion
-- **Cache:** In-memory Map with TTL (primary), optional Upstash Redis for persistence
+- **Database:** PostgreSQL (Render) + Drizzle ORM (schema-as-code, no code generation)
+- **Cache:** In-memory Map with TTL — hot read layer in front of Postgres
 - **AI:** OpenAI GPT-5 for news summarization
 - **Maps:** MapLibre GL JS with CARTO tiles (free, no API key)
 - **Deployment:** Render.com (1 web service + 1 static site)
@@ -26,7 +27,7 @@ shared/         — Shared TypeScript types
 
 ## Architecture
 
-The server runs cron jobs that fetch external data, classify/process it, and write to an in-memory cache. The React SPA reads pre-built JSON via REST endpoints. A bootstrap endpoint (`GET /api/:city/bootstrap`) returns all city data in one response for fast initial load.
+The server runs cron jobs that fetch external data, classify/process it, write to PostgreSQL (source of truth), and update the in-memory cache. The React SPA reads pre-built JSON via REST endpoints. API reads hit the memory cache first; on miss, query Postgres. A bootstrap endpoint (`GET /api/:city/bootstrap`) returns all city data in one response for fast initial load. On server start, the cache warms from Postgres.
 
 Adding a city = adding a config file + setting `ACTIVE_CITIES` env var.
 
@@ -40,7 +41,7 @@ Plans live in `.plans/` and are version-tracked. MVP = milestones 01-05 (scaffol
 
 ## Key Conventions
 
-- **No mandatory Redis** — in-memory cache is primary; Redis is optional for production persistence
+- **Postgres + memory cache** — Postgres is the source of truth; in-memory Map is the hot read layer
 - **No SSR** — Vite SPA; dashboard content is client-rendered
 - **No WebSocket/SSE** — React Query polling; cron-driven data doesn't change fast enough
 - **No auth** — public dashboards with public data
@@ -49,10 +50,16 @@ Plans live in `.plans/` and are version-tracked. MVP = milestones 01-05 (scaffol
 ## Dev Commands
 
 ```bash
-npm run dev        # Start both web and server via Turborepo
-npm run build      # Production build
-npm run typecheck  # Type-check all packages
-npm run lint       # Lint all packages
+npm run dev            # Start both web and server via Turborepo
+npm run build          # Production build
+npm run typecheck      # Type-check all packages
+npm run lint           # Lint all packages
+
+# Database (run from packages/server)
+npm run db:generate    # Generate migrations from schema changes
+npm run db:migrate     # Apply migrations
+npm run db:push        # Push schema directly (dev only)
+npm run db:studio      # Open Drizzle Studio (DB browser)
 ```
 
 ## Repository

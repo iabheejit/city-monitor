@@ -8,13 +8,57 @@
 
 ## Steps
 
-### 1. Cache layer (`packages/server/src/lib/cache.ts`)
+### 1. Database connection (`packages/server/src/db/index.ts`)
 
-Port the `cachedFetchJson` pattern from worldmonitor with these changes:
+Set up the Drizzle ORM connection using the `postgres` driver:
+
+```typescript
+import { drizzle } from 'drizzle-orm/postgres-js';
+import postgres from 'postgres';
+import * as schema from './schema';
+
+const connectionString = process.env.DATABASE_URL!;
+const client = postgres(connectionString);
+export const db = drizzle(client, { schema });
+```
+
+For development, use a local Postgres instance or a Docker container. `DATABASE_URL` format: `postgresql://user:pass@localhost:5432/city_monitor`.
+
+### 2. Initial schema (`packages/server/src/db/schema.ts`)
+
+Define the `news_articles` table as the first table (used in milestone 04). Other tables are added in their respective milestones. Start with a minimal schema so the DB connection and migrations can be validated:
+
+```typescript
+import { pgTable, serial, text, timestamp, integer, real, jsonb, boolean } from 'drizzle-orm/pg-core';
+
+// Added in milestone 04
+export const newsArticles = pgTable('news_articles', {
+  id: serial('id').primaryKey(),
+  cityId: text('city_id').notNull(),
+  title: text('title').notNull(),
+  url: text('url').notNull(),
+  publishedAt: timestamp('published_at'),
+  sourceName: text('source_name').notNull(),
+  sourceUrl: text('source_url').notNull(),
+  description: text('description'),
+  category: text('category'),
+  tier: integer('tier'),
+  lang: text('lang'),
+  hash: text('hash').notNull(),          // FNV-1a hash for dedup
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+```
+
+Run `npm run db:generate` and `npm run db:push` to apply.
+
+### 3. Cache layer (`packages/server/src/lib/cache.ts`)
+
+In-memory cache for fast API reads. Postgres is the source of truth; the cache is a hot read layer.
+
+Port the coalescing pattern from worldmonitor:
 - Primary store: in-memory `Map<string, { data: unknown; expiresAt: number }>`
-- Optional secondary: Upstash Redis (only if `UPSTASH_REDIS_REST_URL` is set)
 - Keep: in-flight coalescing, negative caching with sentinel, TTL support
-- Drop: Vercel-specific env prefixing, preview deployment key scoping
+- Drop: Redis integration, Vercel-specific env prefixing
 
 **Reference:** `.worldmonitor/server/_shared/redis.ts`
 - `cachedFetchJson()` at line ~104 — the main cache-aside function
@@ -25,15 +69,26 @@ Port the `cachedFetchJson` pattern from worldmonitor with these changes:
 API surface:
 ```typescript
 // Core
-cache.get<T>(key: string): Promise<T | null>
-cache.set(key: string, data: unknown, ttlSeconds: number): Promise<void>
-cache.delete(key: string): Promise<void>
+cache.get<T>(key: string): T | null
+cache.set(key: string, data: unknown, ttlSeconds: number): void
+cache.delete(key: string): void
 
-// Cache-aside with coalescing (main pattern from worldmonitor)
-cache.fetchJson<T>(key: string, ttlSeconds: number, fetcher: () => Promise<T | null>, negativeTtlSeconds?: number): Promise<T | null>
+// Cache-aside with coalescing (fetcher can query Postgres on miss)
+cache.fetch<T>(key: string, ttlSeconds: number, fetcher: () => Promise<T | null>, negativeTtlSeconds?: number): Promise<T | null>
 
 // Batch GET for bootstrap endpoint
-cache.getBatch(keys: string[]): Promise<Record<string, unknown>>
+cache.getBatch(keys: string[]): Record<string, unknown>
+```
+
+The `fetcher` in `cache.fetch()` typically queries Postgres. Cron jobs also call `cache.set()` directly after writing to Postgres.
+
+### 3a. Cache warmup (`packages/server/src/lib/cache-warmup.ts`)
+
+On server start, query Postgres for current data and populate the memory cache so the dashboard is immediately available (no cold start with empty panels):
+
+```typescript
+export async function warmCache(db: Database, cities: CityConfig[]): Promise<void>
+// For each city: load latest news digest, weather, transit, etc. from Postgres → cache.set()
 ```
 
 ### 2. Rate-gate factory (`packages/server/src/lib/rate-gate.ts`)
@@ -123,18 +178,23 @@ GET /api/health → {
   status: 'ok',
   uptime: process.uptime(),
   activeCities: ['berlin'],
-  cache: { type: 'memory' | 'redis', connected: boolean },
+  database: { connected: boolean, latencyMs: number },
+  cache: { entries: number, hitRate: number },
   scheduler: { jobs: [{ name, lastRun, nextRun }] }
 }
 ```
+
+The health check runs a simple `SELECT 1` to verify DB connectivity.
 
 ---
 
 ## Done when
 
-- [ ] `cache.fetchJson()` works with in-memory store and coalescing
-- [ ] `cache.fetchJson()` also writes to Redis when `UPSTASH_REDIS_REST_URL` is set
+- [ ] Drizzle connects to Postgres; migrations run successfully
+- [ ] `cache.fetch()` works with in-memory store and coalescing
+- [ ] `cache.fetch()` calls Postgres-backed fetchers on cache miss
 - [ ] `createRateGate(600)` enforces 600ms minimum gap between calls
 - [ ] `node-cron` jobs are registered and fire on schedule (stubs log to console)
-- [ ] `GET /api/health` returns status with cache type and scheduler info
+- [ ] `GET /api/health` returns status with database connectivity and scheduler info
 - [ ] Berlin city config loads with feeds and data source URLs
+- [ ] Cache warmup populates memory cache from Postgres on server start
