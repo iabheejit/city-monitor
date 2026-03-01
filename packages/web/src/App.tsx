@@ -5,8 +5,9 @@
 
 import { useEffect } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { CityProvider } from './hooks/useCityConfig.js';
+import { CityProvider, useCityConfig } from './hooks/useCityConfig.js';
 import { useTheme } from './hooks/useTheme.js';
+import { useBootstrap } from './hooks/useBootstrap.js';
 import { Shell } from './components/layout/Shell.js';
 import { PanelGrid } from './components/layout/PanelGrid.js';
 import { NewsBriefingPanel } from './components/panels/NewsBriefingPanel.js';
@@ -27,6 +28,13 @@ const queryClient = new QueryClient({
 });
 
 function Dashboard() {
+  const { id: cityId } = useCityConfig();
+  useBootstrap(cityId);
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-city', cityId);
+  }, [cityId]);
+
   return (
     <Shell>
       <PanelGrid>
@@ -45,7 +53,6 @@ export function App() {
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark');
-    document.documentElement.setAttribute('data-city', 'berlin');
   }, [theme]);
 
   return (
