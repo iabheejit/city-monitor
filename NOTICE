@@ -1,0 +1,35 @@
+City Monitor
+============
+
+This project is derived from World Monitor by Elie Habib,
+licensed under the GNU Affero General Public License v3.0.
+
+Original project: https://github.com/ellie-xyb/worldmonitor
+Original license: AGPL-3.0-only
+
+The following components were adapted from the original project:
+
+- Cache layer with in-flight coalescing (server/_shared/redis.ts)
+  -> packages/server/src/lib/cache.ts
+
+- FNV-1a hash function (server/_shared/hash.ts)
+  -> packages/server/src/lib/hash.ts
+
+- Rate-gate serial queue pattern (server/_shared/constants.ts)
+  -> packages/server/src/lib/rate-gate.ts
+
+- Keyword news classifier (server/worldmonitor/news/v1/_classifier.ts)
+  -> packages/server/src/lib/classifier.ts
+
+- RSS feed tier/type metadata structure (src/config/feeds.ts)
+  -> packages/server/src/config/ and packages/web/src/config/
+
+- Summarization prompt patterns (server/worldmonitor/news/v1/summarize-article.ts)
+  -> packages/server/src/lib/openai.ts
+
+- Feed ingestion patterns (server/worldmonitor/news/v1/list-feed-digest.ts)
+  -> packages/server/src/cron/ingest-feeds.ts
+
+All adapted code has been modified for a city-level dashboard context.
+
+All other code is original work by Odin Mühlenbein.

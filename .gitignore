@@ -1,0 +1,31 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+.turbo/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Worldmonitor reference (local only, never committed)
+.worldmonitor/
+
+# Plans — tracked, not gitignored
+# .plans/
+
+# Logs
+*.log
+npm-debug.log*
