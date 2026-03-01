@@ -1,0 +1,20 @@
+{
+  "name": "city-monitor",
+  "private": true,
+  "license": "AGPL-3.0-or-later",
+  "workspaces": ["packages/*", "shared"],
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "typecheck": "turbo typecheck",
+    "lint": "turbo lint",
+    "test": "turbo test"
+  },
+  "devDependencies": {
+    "turbo": "^2",
+    "typescript": "^5.7"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

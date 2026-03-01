@@ -6,7 +6,7 @@ _None yet._
 
 ## DB Migrations
 
-_N/A — no database in this project (in-memory cache only)._
+_None yet._
 
 ## Files to Be Deleted
 
