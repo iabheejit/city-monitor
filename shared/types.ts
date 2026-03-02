@@ -98,6 +98,19 @@ export interface WeatherData {
   alerts: WeatherAlert[];
 }
 
+// Emergency pharmacies
+export interface EmergencyPharmacy {
+  id: string;
+  name: string;
+  address: string;
+  district?: string;
+  phone?: string;
+  location: { lat: number; lon: number };
+  validFrom: string;
+  validUntil: string;
+  distance?: number;
+}
+
 // NINA civil protection warnings
 export interface NinaWarning {
   id: string;

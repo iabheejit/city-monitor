@@ -109,6 +109,18 @@ export interface AirQuality {
   }>;
 }
 
+export interface EmergencyPharmacy {
+  id: string;
+  name: string;
+  address: string;
+  district?: string;
+  phone?: string;
+  location: { lat: number; lon: number };
+  validFrom: string;
+  validUntil: string;
+  distance?: number;
+}
+
 export const api = {
   getBootstrap: (city: string) => fetchJson<BootstrapData>(`${BASE}/${city}/bootstrap`),
   getNewsDigest: (city: string) => fetchJson<NewsDigest>(`${BASE}/${city}/news/digest`),
@@ -119,4 +131,5 @@ export const api = {
   getSafety: (city: string) => fetchJson<SafetyReport[]>(`${BASE}/${city}/safety`),
   getNina: (city: string) => fetchJson<NinaWarning[]>(`${BASE}/${city}/nina`),
   getAirQuality: (city: string) => fetchJson<AirQuality | null>(`${BASE}/${city}/air-quality`),
+  getPharmacies: (city: string) => fetchJson<EmergencyPharmacy[]>(`${BASE}/${city}/pharmacies`),
 };

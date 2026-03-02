@@ -18,9 +18,10 @@ import { useNewsDigest } from '../../hooks/useNewsDigest.js';
 import { useSafety } from '../../hooks/useSafety.js';
 import { useNina } from '../../hooks/useNina.js';
 import { useAirQuality } from '../../hooks/useAirQuality.js';
+import { usePharmacies } from '../../hooks/usePharmacies.js';
 import { useCommandCenter } from '../../hooks/useCommandCenter.js';
 import { getAqiLevel } from '../strips/AirQualityStrip.js';
-import type { TransitAlert, NewsItem, SafetyReport, NinaWarning } from '../../lib/api.js';
+import type { TransitAlert, NewsItem, SafetyReport, NinaWarning, EmergencyPharmacy } from '../../lib/api.js';
 
 const DARK_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-nolabels-gl-style/style.json';
 const LIGHT_STYLE = 'https://basemaps.cartocdn.com/gl/positron-nolabels-gl-style/style.json';
@@ -64,7 +65,8 @@ function simplifyMap(map: maplibregl.Map) {
       !layer.id.startsWith('transit-') &&
       !layer.id.startsWith('news-') &&
       !layer.id.startsWith('safety-') &&
-      !layer.id.startsWith('warning-')
+      !layer.id.startsWith('warning-') &&
+      !layer.id.startsWith('pharmacy-')
     ) {
       map.setLayoutProperty(layer.id, 'visibility', 'none');
     }
@@ -472,6 +474,81 @@ function updateWarningPolygons(map: maplibregl.Map, warnings: NinaWarning[], _is
   });
 }
 
+function pharmaciesToGeoJSON(pharmacies: EmergencyPharmacy[]): GeoJSON.FeatureCollection {
+  const features: GeoJSON.Feature[] = [];
+  for (const p of pharmacies) {
+    features.push({
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [p.location.lon, p.location.lat] },
+      properties: {
+        name: p.name,
+        address: p.address,
+        phone: p.phone ?? '',
+        validFrom: p.validFrom,
+        validUntil: p.validUntil,
+      },
+    });
+  }
+  return { type: 'FeatureCollection', features };
+}
+
+function updatePharmacyMarkers(map: maplibregl.Map, pharmacies: EmergencyPharmacy[], isDark: boolean) {
+  const geojson = pharmaciesToGeoJSON(pharmacies);
+
+  for (const id of ['pharmacy-marker-label', 'pharmacy-marker-circle']) {
+    if (map.getLayer(id)) map.removeLayer(id);
+  }
+  if (map.getSource('pharmacy-markers')) map.removeSource('pharmacy-markers');
+
+  if (geojson.features.length === 0) return;
+
+  map.addSource('pharmacy-markers', { type: 'geojson', data: geojson });
+
+  map.addLayer({
+    id: 'pharmacy-marker-circle',
+    type: 'circle',
+    source: 'pharmacy-markers',
+    paint: {
+      'circle-radius': 7,
+      'circle-color': '#22c55e',
+      'circle-stroke-width': 2,
+      'circle-stroke-color': isDark ? '#1f2937' : '#ffffff',
+    },
+  });
+
+  map.addLayer({
+    id: 'pharmacy-marker-label',
+    type: 'symbol',
+    source: 'pharmacy-markers',
+    layout: {
+      'text-field': '+',
+      'text-size': 11,
+      'text-font': ['Open Sans Regular', 'Arial Unicode MS Regular'],
+      'text-anchor': 'center',
+      'text-allow-overlap': true,
+    },
+    paint: {
+      'text-color': '#ffffff',
+    },
+  });
+
+  map.on('click', 'pharmacy-marker-circle', (e) => {
+    if (!e.features?.length) return;
+    const props = e.features[0].properties!;
+    const coords = (e.features[0].geometry as GeoJSON.Point).coordinates.slice() as [number, number];
+    const html = `<div style="font-size:13px;max-width:280px">
+      <div style="font-weight:600;margin-bottom:4px">${props.name}</div>
+      <div style="font-size:12px">${props.address}</div>
+      ${props.phone ? `<div style="font-size:12px;margin-top:2px">Tel: ${props.phone}</div>` : ''}
+      <div style="font-size:11px;opacity:0.6;margin-top:4px">${props.validFrom} – ${props.validUntil}</div>
+    </div>`;
+    new maplibregl.Popup({ offset: 10, maxWidth: '300px' }).setLngLat(coords).setHTML(html).addTo(map);
+  });
+
+  map.on('mouseenter', 'pharmacy-marker-circle', () => { map.getCanvas().style.cursor = 'pointer'; });
+  map.on('mouseleave', 'pharmacy-marker-circle', () => { map.getCanvas().style.cursor = ''; });
+}
+
 function updateTransitMarkers(map: maplibregl.Map, alerts: TransitAlert[], isDark: boolean) {
   const geojson = alertsToGeoJSON(alerts);
 
@@ -554,6 +631,7 @@ export function CityMap() {
   const { data: safetyReports } = useSafety(city.id);
   const { data: ninaWarnings } = useNina(city.id);
   const { data: airQuality } = useAirQuality(city.id);
+  const { data: pharmacyList } = usePharmacies(city.id);
   const activeLayers = useCommandCenter((s) => s.activeLayers);
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
@@ -564,6 +642,7 @@ export function CityMap() {
   const newsItems = activeLayers.has('news') ? (newsDigest?.items ?? []) : [];
   const safetyItems = activeLayers.has('safety') ? (safetyReports ?? []) : [];
   const warningItems = activeLayers.has('warnings') ? (ninaWarnings ?? []) : [];
+  const pharmacyItems = activeLayers.has('pharmacies') ? (pharmacyList ?? []) : [];
 
   // Keep current values in refs so the style.load handler always reads fresh values
   const isDarkRef = useRef(isDark);
@@ -578,6 +657,8 @@ export function CityMap() {
   safetyItemsRef.current = safetyItems;
   const warningItemsRef = useRef(warningItems);
   warningItemsRef.current = warningItems;
+  const pharmacyItemsRef = useRef(pharmacyItems);
+  pharmacyItemsRef.current = pharmacyItems;
 
   // Create map once
   useEffect(() => {
@@ -610,6 +691,7 @@ export function CityMap() {
       updateNewsMarkers(map, newsItemsRef.current, isDarkRef.current);
       updateSafetyMarkers(map, safetyItemsRef.current, isDarkRef.current);
       updateWarningPolygons(map, warningItemsRef.current, isDarkRef.current);
+      updatePharmacyMarkers(map, pharmacyItemsRef.current, isDarkRef.current);
 
       // Collapse the attribution control (MapLibre opens it by default)
       containerRef.current
@@ -644,6 +726,7 @@ export function CityMap() {
       updateNewsMarkers(map, newsItemsRef.current, isDark);
       updateSafetyMarkers(map, safetyItemsRef.current, isDark);
       updateWarningPolygons(map, warningItemsRef.current, isDark);
+      updatePharmacyMarkers(map, pharmacyItemsRef.current, isDark);
     });
   }, [isDark, city.id]);
 
@@ -678,6 +761,14 @@ export function CityMap() {
     updateWarningPolygons(map, warningItems, isDarkRef.current);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [warningItems]);
+
+  // Update pharmacy markers
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !map.isStyleLoaded()) return;
+    updatePharmacyMarkers(map, pharmacyItems, isDarkRef.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pharmacyItems]);
 
   const showAqi = activeLayers.has('air-quality') && airQuality?.current;
   const aqiLevel = showAqi ? getAqiLevel(airQuality!.current.europeanAqi) : null;

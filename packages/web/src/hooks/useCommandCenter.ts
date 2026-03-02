@@ -6,7 +6,7 @@
 import { create } from 'zustand';
 
 export type TimeRange = '1h' | '6h' | '24h' | '48h' | '7d' | 'all';
-export type DataLayer = 'transit' | 'events' | 'weather' | 'news' | 'safety' | 'warnings' | 'air-quality';
+export type DataLayer = 'transit' | 'events' | 'weather' | 'news' | 'safety' | 'warnings' | 'air-quality' | 'pharmacies';
 
 interface CommandCenterState {
   timeRange: TimeRange;
