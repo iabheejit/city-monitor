@@ -34,5 +34,6 @@ export const hamburg: CityConfig = {
     weather: { provider: 'open-meteo', lat: 53.5511, lon: 9.9937 },
     // HVV transport.rest API is deprecated and offline (March 2026) — no free alternative
     police: { provider: 'rss', url: 'https://www.presseportal.de/rss/dienststelle_6013.rss2' },
+    nina: { ars: '020000000000' },
   },
 };

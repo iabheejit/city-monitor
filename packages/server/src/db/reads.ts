@@ -11,7 +11,9 @@ import {
   events,
   safetyReports,
   aiSummaries,
+  ninaWarnings,
 } from './schema.js';
+import type { NinaWarning } from '@city-monitor/shared';
 import type { WeatherData } from '../cron/ingest-weather.js';
 import type { TransitAlert } from '../cron/ingest-transit.js';
 import type { CityEvent } from '../cron/ingest-events.js';
@@ -119,4 +121,29 @@ export async function loadSummary(db: Db, cityId: string): Promise<(NewsSummary 
     cached: true,
     headlineHash: row.headlineHash,
   };
+}
+
+export async function loadNinaWarnings(db: Db, cityId: string): Promise<NinaWarning[] | null> {
+  const rows = await db
+    .select()
+    .from(ninaWarnings)
+    .where(eq(ninaWarnings.cityId, cityId))
+    .orderBy(desc(ninaWarnings.startDate));
+
+  if (rows.length === 0) return null;
+
+  return rows.map((row) => ({
+    id: row.warningId,
+    version: row.version,
+    startDate: row.startDate.toISOString(),
+    expiresAt: row.expiresAt?.toISOString(),
+    severity: row.severity as NinaWarning['severity'],
+    urgency: undefined,
+    type: 'unknown',
+    source: row.source as NinaWarning['source'],
+    headline: row.headline,
+    description: row.description ?? undefined,
+    instruction: row.instruction ?? undefined,
+    area: (row.area as NinaWarning['area']) ?? undefined,
+  }));
 }

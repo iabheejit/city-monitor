@@ -16,8 +16,9 @@ import { useTheme } from '../../hooks/useTheme.js';
 import { useTransit } from '../../hooks/useTransit.js';
 import { useNewsDigest } from '../../hooks/useNewsDigest.js';
 import { useSafety } from '../../hooks/useSafety.js';
+import { useNina } from '../../hooks/useNina.js';
 import { useCommandCenter } from '../../hooks/useCommandCenter.js';
-import type { TransitAlert, NewsItem, SafetyReport } from '../../lib/api.js';
+import type { TransitAlert, NewsItem, SafetyReport, NinaWarning } from '../../lib/api.js';
 
 const DARK_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-nolabels-gl-style/style.json';
 const LIGHT_STYLE = 'https://basemaps.cartocdn.com/gl/positron-nolabels-gl-style/style.json';
@@ -60,7 +61,8 @@ function simplifyMap(map: maplibregl.Map) {
       !layer.id.startsWith('district-') &&
       !layer.id.startsWith('transit-') &&
       !layer.id.startsWith('news-') &&
-      !layer.id.startsWith('safety-')
+      !layer.id.startsWith('safety-') &&
+      !layer.id.startsWith('warning-')
     ) {
       map.setLayoutProperty(layer.id, 'visibility', 'none');
     }
@@ -383,6 +385,91 @@ function updateSafetyMarkers(map: maplibregl.Map, reports: SafetyReport[], isDar
   map.on('mouseleave', 'safety-marker-circle', () => { map.getCanvas().style.cursor = ''; });
 }
 
+const NINA_SEVERITY_COLORS: Record<string, string> = {
+  extreme: 'rgba(220, 38, 38, 0.3)',
+  severe: 'rgba(239, 68, 68, 0.25)',
+  moderate: 'rgba(245, 158, 11, 0.2)',
+  minor: 'rgba(234, 179, 8, 0.15)',
+};
+
+function warningsToGeoJSON(warnings: NinaWarning[]): GeoJSON.FeatureCollection {
+  const features: GeoJSON.Feature[] = [];
+  for (const w of warnings) {
+    if (!w.area) continue;
+    const area = w.area as GeoJSON.Feature | GeoJSON.FeatureCollection;
+    if (area.type === 'FeatureCollection') {
+      for (const f of (area as GeoJSON.FeatureCollection).features) {
+        features.push({
+          ...f,
+          properties: {
+            ...f.properties,
+            warningId: w.id,
+            headline: w.headline,
+            severity: w.severity,
+            fillColor: NINA_SEVERITY_COLORS[w.severity] ?? NINA_SEVERITY_COLORS.minor,
+          },
+        });
+      }
+    } else if (area.type === 'Feature') {
+      features.push({
+        ...(area as GeoJSON.Feature),
+        properties: {
+          ...(area as GeoJSON.Feature).properties,
+          warningId: w.id,
+          headline: w.headline,
+          severity: w.severity,
+          fillColor: NINA_SEVERITY_COLORS[w.severity] ?? NINA_SEVERITY_COLORS.minor,
+        },
+      });
+    }
+  }
+  return { type: 'FeatureCollection', features };
+}
+
+function updateWarningPolygons(map: maplibregl.Map, warnings: NinaWarning[], _isDark: boolean) {
+  const geojson = warningsToGeoJSON(warnings);
+
+  for (const id of ['warning-fill', 'warning-line']) {
+    if (map.getLayer(id)) map.removeLayer(id);
+  }
+  if (map.getSource('warning-areas')) map.removeSource('warning-areas');
+
+  if (geojson.features.length === 0) return;
+
+  map.addSource('warning-areas', { type: 'geojson', data: geojson });
+
+  map.addLayer({
+    id: 'warning-fill',
+    type: 'fill',
+    source: 'warning-areas',
+    paint: {
+      'fill-color': ['get', 'fillColor'],
+      'fill-opacity': 1,
+    },
+  });
+
+  map.addLayer({
+    id: 'warning-line',
+    type: 'line',
+    source: 'warning-areas',
+    paint: {
+      'line-color': '#ef4444',
+      'line-width': 1.5,
+      'line-opacity': 0.6,
+    },
+  });
+
+  map.on('click', 'warning-fill', (e) => {
+    if (!e.features?.length) return;
+    const props = e.features[0].properties!;
+    const html = `<div style="font-size:13px;max-width:280px">
+      <div style="font-weight:600;margin-bottom:4px">${props.headline}</div>
+      <div style="opacity:0.6;font-size:11px">${props.severity}</div>
+    </div>`;
+    new maplibregl.Popup({ offset: 10, maxWidth: '300px' }).setLngLat(e.lngLat).setHTML(html).addTo(map);
+  });
+}
+
 function updateTransitMarkers(map: maplibregl.Map, alerts: TransitAlert[], isDark: boolean) {
   const geojson = alertsToGeoJSON(alerts);
 
@@ -463,6 +550,7 @@ export function CityMap() {
   const { data: transitAlerts } = useTransit(city.id);
   const { data: newsDigest } = useNewsDigest(city.id);
   const { data: safetyReports } = useSafety(city.id);
+  const { data: ninaWarnings } = useNina(city.id);
   const activeLayers = useCommandCenter((s) => s.activeLayers);
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
@@ -472,6 +560,7 @@ export function CityMap() {
 
   const newsItems = activeLayers.has('news') ? (newsDigest?.items ?? []) : [];
   const safetyItems = activeLayers.has('safety') ? (safetyReports ?? []) : [];
+  const warningItems = activeLayers.has('warnings') ? (ninaWarnings ?? []) : [];
 
   // Keep current values in refs so the style.load handler always reads fresh values
   const isDarkRef = useRef(isDark);
@@ -484,6 +573,8 @@ export function CityMap() {
   newsItemsRef.current = newsItems;
   const safetyItemsRef = useRef(safetyItems);
   safetyItemsRef.current = safetyItems;
+  const warningItemsRef = useRef(warningItems);
+  warningItemsRef.current = warningItems;
 
   // Create map once
   useEffect(() => {
@@ -515,6 +606,7 @@ export function CityMap() {
       updateTransitMarkers(map, transitAlertsRef.current ?? [], isDarkRef.current);
       updateNewsMarkers(map, newsItemsRef.current, isDarkRef.current);
       updateSafetyMarkers(map, safetyItemsRef.current, isDarkRef.current);
+      updateWarningPolygons(map, warningItemsRef.current, isDarkRef.current);
 
       // Collapse the attribution control (MapLibre opens it by default)
       containerRef.current
@@ -548,6 +640,7 @@ export function CityMap() {
       updateTransitMarkers(map, transitAlertsRef.current ?? [], isDark);
       updateNewsMarkers(map, newsItemsRef.current, isDark);
       updateSafetyMarkers(map, safetyItemsRef.current, isDark);
+      updateWarningPolygons(map, warningItemsRef.current, isDark);
     });
   }, [isDark, city.id]);
 
@@ -574,6 +667,14 @@ export function CityMap() {
     updateSafetyMarkers(map, safetyItems, isDarkRef.current);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [safetyItems]);
+
+  // Update NINA warning polygons
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !map.isStyleLoaded()) return;
+    updateWarningPolygons(map, warningItems, isDarkRef.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [warningItems]);
 
   return (
     <div

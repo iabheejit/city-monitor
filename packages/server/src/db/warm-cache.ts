@@ -6,7 +6,7 @@
 import type { Db } from './index.js';
 import type { Cache } from '../lib/cache.js';
 import { getActiveCities } from '../config/index.js';
-import { loadWeather, loadTransitAlerts, loadEvents, loadSafetyReports, loadSummary } from './reads.js';
+import { loadWeather, loadTransitAlerts, loadEvents, loadSafetyReports, loadSummary, loadNinaWarnings } from './reads.js';
 import { createLogger } from '../lib/logger.js';
 
 const log = createLogger('warm-cache');
@@ -49,6 +49,13 @@ export async function warmCache(db: Db, cache: Cache): Promise<void> {
       if (summary) cache.set(`${city.id}:news:summary`, summary, 86400);
     } catch (err) {
       log.error(`${city.id} summary failed`, err);
+    }
+
+    try {
+      const warnings = await loadNinaWarnings(db, city.id);
+      if (warnings) cache.set(`${city.id}:nina:warnings`, warnings, 600);
+    } catch (err) {
+      log.error(`${city.id} nina failed`, err);
     }
   }
 

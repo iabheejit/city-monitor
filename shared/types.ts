@@ -51,6 +51,7 @@ export interface CityDataSources {
   };
   events?: { provider: 'rss' | 'api'; url: string };
   police?: { provider: 'rss'; url: string };
+  nina?: { ars: string }; // Amtlicher Regionalschlüssel for NINA warnings
   openData?: { provider: 'ckan'; baseUrl: string };
 }
 
@@ -95,4 +96,20 @@ export interface WeatherData {
   hourly: HourlyForecast[];
   daily: DailyForecast[];
   alerts: WeatherAlert[];
+}
+
+// NINA civil protection warnings
+export interface NinaWarning {
+  id: string;
+  version: number;
+  startDate: string;
+  expiresAt?: string;
+  severity: 'minor' | 'moderate' | 'severe' | 'extreme';
+  urgency?: string;
+  type: string;
+  source: 'mowas' | 'biwapp' | 'katwarn' | 'dwd' | 'lhp' | 'police';
+  headline: string;
+  description?: string;
+  instruction?: string;
+  area?: { type: string; geometry: unknown; properties?: unknown };
 }

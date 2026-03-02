@@ -15,12 +15,14 @@ import { createWeatherRouter } from './routes/weather.js';
 import { createTransitRouter } from './routes/transit.js';
 import { createEventsRouter } from './routes/events.js';
 import { createSafetyRouter } from './routes/safety.js';
+import { createNinaRouter } from './routes/nina.js';
 import { createFeedIngestion } from './cron/ingest-feeds.js';
 import { createWeatherIngestion } from './cron/ingest-weather.js';
 import { createSummarization } from './cron/summarize.js';
 import { createTransitIngestion } from './cron/ingest-transit.js';
 import { createEventsIngestion } from './cron/ingest-events.js';
 import { createSafetyIngestion } from './cron/ingest-safety.js';
+import { createNinaIngestion } from './cron/ingest-nina.js';
 import { createDataRetention } from './cron/data-retention.js';
 
 export async function createApp(options?: { skipScheduler?: boolean }) {
@@ -41,6 +43,7 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
   const ingestTransit = createTransitIngestion(cache, db);
   const ingestEvents = createEventsIngestion(cache, db);
   const ingestSafety = createSafetyIngestion(cache, db);
+  const ingestNina = createNinaIngestion(cache, db);
 
   const retainData = db ? createDataRetention(db) : async () => {};
 
@@ -51,6 +54,7 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
     { name: 'ingest-transit', schedule: '*/15 * * * *', handler: ingestTransit, runOnStart: true },
     { name: 'ingest-events', schedule: '0 */6 * * *', handler: ingestEvents, runOnStart: true },
     { name: 'ingest-safety', schedule: '*/10 * * * *', handler: ingestSafety, runOnStart: true },
+    { name: 'ingest-nina', schedule: '*/5 * * * *', handler: ingestNina, runOnStart: true },
     { name: 'data-retention', schedule: '0 3 * * *', handler: retainData },
   ];
 
@@ -68,6 +72,7 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
   app.use('/api', cacheFor(120), createTransitRouter(cache, db));
   app.use('/api', cacheFor(1800), createEventsRouter(cache, db));
   app.use('/api', cacheFor(300), createSafetyRouter(cache, db));
+  app.use('/api', cacheFor(120), createNinaRouter(cache, db));
 
   return { app, cache, db, scheduler };
 }

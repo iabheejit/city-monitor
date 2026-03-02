@@ -94,8 +94,18 @@
       "events": "Etkinlikler",
       "weather": "Hava",
       "news": "Haberler",
-      "safety": "Güvenlik"
+      "safety": "Güvenlik",
+      "warnings": "Uyarılar"
     }
+  },
+  "nina": {
+    "severity": {
+      "extreme": "Aşırı",
+      "severe": "Şiddetli",
+      "moderate": "Orta",
+      "minor": "Hafif"
+    },
+    "dismiss": "Kapat"
   },
   "footer": {
     "sourceCode": "Kaynak Kodu",

@@ -5,6 +5,7 @@
 
 import { lazy, Suspense } from 'react';
 import { Sidebar } from '../sidebar/Sidebar.js';
+import { NinaBanner } from '../alerts/NinaBanner.js';
 import { BriefingStrip } from '../strips/BriefingStrip.js';
 import { NewsStrip } from '../strips/NewsStrip.js';
 import { EventsStrip } from '../strips/EventsStrip.js';
@@ -30,6 +31,9 @@ export function CommandLayout() {
 
       {/* Lower zone: content strips */}
       <div className="bg-white dark:bg-gray-900">
+        <div className="px-4 pt-4">
+          <NinaBanner />
+        </div>
         <BriefingStrip />
         <NewsStrip />
         <EventsStrip />

@@ -59,5 +59,6 @@ export const berlin: CityConfig = {
     },
     events: { provider: 'api', url: 'https://api-v2.kulturdaten.berlin/api/events' },
     police: { provider: 'rss', url: 'https://www.berlin.de/polizei/polizeimeldungen/index.php/rss' },
+    nina: { ars: '110000000000' },
   },
 };

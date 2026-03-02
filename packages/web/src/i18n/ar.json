@@ -94,8 +94,18 @@
       "events": "الفعاليات",
       "weather": "الطقس",
       "news": "الأخبار",
-      "safety": "السلامة"
+      "safety": "السلامة",
+      "warnings": "تحذيرات"
     }
+  },
+  "nina": {
+    "severity": {
+      "extreme": "شديد للغاية",
+      "severe": "شديد",
+      "moderate": "متوسط",
+      "minor": "طفيف"
+    },
+    "dismiss": "إخفاء"
   },
   "footer": {
     "sourceCode": "الكود المصدري",

@@ -22,6 +22,7 @@ export interface BootstrapData {
   transit: unknown | null;
   events: unknown | null;
   safety: unknown | null;
+  nina: unknown | null;
 }
 
 export interface NewsDigest {
@@ -76,6 +77,21 @@ export interface SafetyReport {
   location?: { lat: number; lon: number; label?: string };
 }
 
+export interface NinaWarning {
+  id: string;
+  version: number;
+  startDate: string;
+  expiresAt?: string;
+  severity: 'minor' | 'moderate' | 'severe' | 'extreme';
+  urgency?: string;
+  type: string;
+  source: string;
+  headline: string;
+  description?: string;
+  instruction?: string;
+  area?: { type: string; geometry: unknown; properties?: unknown };
+}
+
 export const api = {
   getBootstrap: (city: string) => fetchJson<BootstrapData>(`${BASE}/${city}/bootstrap`),
   getNewsDigest: (city: string) => fetchJson<NewsDigest>(`${BASE}/${city}/news/digest`),
@@ -84,4 +100,5 @@ export const api = {
   getTransit: (city: string) => fetchJson<TransitAlert[]>(`${BASE}/${city}/transit`),
   getEvents: (city: string) => fetchJson<CityEvent[]>(`${BASE}/${city}/events`),
   getSafety: (city: string) => fetchJson<SafetyReport[]>(`${BASE}/${city}/safety`),
+  getNina: (city: string) => fetchJson<NinaWarning[]>(`${BASE}/${city}/nina`),
 };

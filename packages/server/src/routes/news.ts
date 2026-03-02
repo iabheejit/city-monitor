@@ -74,6 +74,7 @@ export function createNewsRouter(cache: Cache, db: Db | null = null) {
       `${city.id}:transit:alerts`,
       `${city.id}:events:upcoming`,
       `${city.id}:safety:recent`,
+      `${city.id}:nina:warnings`,
     ]);
 
     res.json({
@@ -82,6 +83,7 @@ export function createNewsRouter(cache: Cache, db: Db | null = null) {
       transit: data[`${city.id}:transit:alerts`] ?? null,
       events: data[`${city.id}:events:upcoming`] ?? null,
       safety: data[`${city.id}:safety:recent`] ?? null,
+      nina: data[`${city.id}:nina:warnings`] ?? null,
     });
   });
 

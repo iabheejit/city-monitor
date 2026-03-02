@@ -1,0 +1,20 @@
+/**
+ * Copyright (C) 2026 Odin Mühlenbein
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
+import { api, type NinaWarning } from '../lib/api.js';
+
+export function useNina(cityId: string) {
+  return useQuery<NinaWarning[]>({
+    queryKey: ['nina', cityId],
+    queryFn: () => api.getNina(cityId),
+    refetchInterval: 5 * 60 * 1000,
+    refetchIntervalInBackground: false,
+    staleTime: 2 * 60 * 1000,
+    gcTime: 60 * 60 * 1000,
+    retry: 2,
+    placeholderData: keepPreviousData,
+  });
+}

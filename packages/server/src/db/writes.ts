@@ -11,7 +11,9 @@ import {
   events,
   safetyReports,
   aiSummaries,
+  ninaWarnings,
 } from './schema.js';
+import type { NinaWarning } from '@city-monitor/shared';
 import type { WeatherData } from '../cron/ingest-weather.js';
 import type { TransitAlert } from '../cron/ingest-transit.js';
 import type { CityEvent } from '../cron/ingest-events.js';
@@ -111,5 +113,27 @@ export async function saveSummary(
       inputTokens: tokens.input,
       outputTokens: tokens.output,
     });
+  });
+}
+
+export async function saveNinaWarnings(db: Db, cityId: string, warnings: NinaWarning[]): Promise<void> {
+  await db.transaction(async (tx) => {
+    await tx.delete(ninaWarnings).where(eq(ninaWarnings.cityId, cityId));
+    if (warnings.length === 0) return;
+    await tx.insert(ninaWarnings).values(
+      warnings.map((w) => ({
+        cityId,
+        warningId: w.id,
+        version: w.version,
+        source: w.source,
+        severity: w.severity,
+        headline: w.headline,
+        description: w.description ?? null,
+        instruction: w.instruction ?? null,
+        startDate: new Date(w.startDate),
+        expiresAt: w.expiresAt ? new Date(w.expiresAt) : null,
+        area: w.area ?? null,
+      })),
+    );
   });
 }

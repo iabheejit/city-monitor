@@ -94,8 +94,18 @@
       "events": "Events",
       "weather": "Weather",
       "news": "News",
-      "safety": "Safety"
+      "safety": "Safety",
+      "warnings": "Warnings"
     }
+  },
+  "nina": {
+    "severity": {
+      "extreme": "Extreme",
+      "severe": "Severe",
+      "moderate": "Moderate",
+      "minor": "Minor"
+    },
+    "dismiss": "Dismiss"
   },
   "footer": {
     "sourceCode": "Source Code",

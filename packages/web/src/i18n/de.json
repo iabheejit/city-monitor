@@ -94,8 +94,18 @@
       "events": "Veranstaltungen",
       "weather": "Wetter",
       "news": "Nachrichten",
-      "safety": "Sicherheit"
+      "safety": "Sicherheit",
+      "warnings": "Warnungen"
     }
+  },
+  "nina": {
+    "severity": {
+      "extreme": "Extrem",
+      "severe": "Schwer",
+      "moderate": "Mittel",
+      "minor": "Gering"
+    },
+    "dismiss": "Ausblenden"
   },
   "footer": {
     "sourceCode": "Quellcode",

@@ -79,6 +79,25 @@ export const safetyReports = pgTable('safety_reports', {
   index('safety_city_published_idx').on(table.cityId, table.publishedAt),
 ]);
 
+// NINA civil protection warnings
+export const ninaWarnings = pgTable('nina_warnings', {
+  id: serial('id').primaryKey(),
+  cityId: text('city_id').notNull(),
+  warningId: text('warning_id').notNull(),
+  version: integer('version').notNull(),
+  source: text('source').notNull(),
+  severity: text('severity').notNull(),
+  headline: text('headline').notNull(),
+  description: text('description'),
+  instruction: text('instruction'),
+  startDate: timestamp('start_date').notNull(),
+  expiresAt: timestamp('expires_at'),
+  area: jsonb('area'),
+  fetchedAt: timestamp('fetched_at').defaultNow().notNull(),
+}, (table) => [
+  index('nina_city_idx').on(table.cityId, table.startDate),
+]);
+
 // Milestone 07 — AI Summaries
 export const aiSummaries = pgTable('ai_summaries', {
   id: serial('id').primaryKey(),

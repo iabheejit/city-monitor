@@ -7,6 +7,7 @@
 ## DB Migrations
 
 1. **Plan 1 — safetyReports table**: Added `lat real`, `lon real`, `location_label text` columns to `safety_reports` table. Run: `npm run db:generate` then `npm run db:migrate` from `packages/server`.
+2. **Plan 3 — ninaWarnings table**: New `nina_warnings` table with city_id, warning_id, version, source, severity, headline, description, instruction, start_date, expires_at, area (jsonb). Run: `npm run db:generate` then `npm run db:migrate` from `packages/server`.
 
 ## Files to Delete
 
