@@ -1,0 +1,54 @@
+databases:
+  - name: city-monitor-db
+    plan: starter
+    region: frankfurt
+    databaseName: city_monitor
+    user: city_monitor
+
+services:
+  # --- API Server ---
+  - type: web
+    name: city-monitor-api
+    runtime: node
+    plan: starter
+    region: frankfurt
+    buildCommand: npm ci && npm run build --workspace=packages/server
+    startCommand: npm run db:migrate --workspace=packages/server && node packages/server/dist/index.js
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "3001"
+      - key: ACTIVE_CITIES
+        value: berlin
+      - key: DATABASE_URL
+        fromDatabase:
+          name: city-monitor-db
+          property: connectionString
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: SENTRY_DSN
+        sync: false
+
+  # --- Static Frontend ---
+  - type: web
+    name: city-monitor-web
+    runtime: static
+    buildCommand: npm ci && npm run build --workspace=packages/web
+    staticPublishPath: packages/web/dist
+    headers:
+      - path: /assets/*
+        name: Cache-Control
+        value: public, max-age=31536000, immutable
+      - path: /*
+        name: Cache-Control
+        value: public, max-age=300
+    routes:
+      - type: rewrite
+        source: /api/*
+        destination: https://city-monitor-api.onrender.com/api/*
+      - type: rewrite
+        source: /*
+        destination: /index.html
