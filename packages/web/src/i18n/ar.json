@@ -40,11 +40,11 @@
     },
     "events": {
       "title": "الفعاليات",
-      "empty": "لا توجد فعاليات هذا الأسبوع",
+      "empty": "لا توجد فعاليات",
       "free": "مجاني",
       "today": "اليوم",
       "tomorrow": "غداً",
-      "week": "هذا الأسبوع"
+      "all": "الكل"
     },
     "safety": {
       "title": "السلامة",
@@ -64,6 +64,13 @@
     },
     "map": {
       "title": "الخريطة"
+    },
+    "political": {
+      "empty": "لا توجد بيانات",
+      "districts": "دوائر انتخابية",
+      "representatives": "ممثلين",
+      "districtMayors": "رؤساء الأحياء",
+      "seats": "مقاعد"
     }
   },
   "category": {
@@ -110,12 +117,8 @@
       "warnings": "تحذيرات",
       "air-quality": "جودة الهواء",
       "pharmacies": "صيدليات",
-      "traffic": "حركة المرور"
-    },
-    "mapMode": {
-      "label": "وضع الخريطة",
-      "default": "افتراضي",
-      "political": "سياسي"
+      "traffic": "حركة المرور",
+      "political": "تمثيل"
     },
     "political": {
       "bezirke": "الأحياء",

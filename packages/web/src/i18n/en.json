@@ -40,11 +40,11 @@
     },
     "events": {
       "title": "Events",
-      "empty": "No events this week",
+      "empty": "No events",
       "free": "Free",
       "today": "Today",
       "tomorrow": "Tomorrow",
-      "week": "This Week"
+      "all": "All"
     },
     "safety": {
       "title": "Safety",
@@ -64,6 +64,13 @@
     },
     "map": {
       "title": "Map"
+    },
+    "political": {
+      "empty": "No data available",
+      "districts": "districts",
+      "representatives": "representatives",
+      "districtMayors": "district mayors",
+      "seats": "seats"
     }
   },
   "category": {
@@ -110,12 +117,8 @@
       "warnings": "Warnings",
       "air-quality": "Air Quality",
       "pharmacies": "Pharmacies",
-      "traffic": "Traffic"
-    },
-    "mapMode": {
-      "label": "Map Mode",
-      "default": "Default",
-      "political": "Political"
+      "traffic": "Traffic",
+      "political": "Representation"
     },
     "political": {
       "bezirke": "Districts",

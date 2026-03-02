@@ -40,11 +40,11 @@
     },
     "events": {
       "title": "Veranstaltungen",
-      "empty": "Keine Veranstaltungen diese Woche",
+      "empty": "Keine Veranstaltungen",
       "free": "Kostenlos",
       "today": "Heute",
       "tomorrow": "Morgen",
-      "week": "Diese Woche"
+      "all": "Alle"
     },
     "safety": {
       "title": "Sicherheit",
@@ -64,6 +64,13 @@
     },
     "map": {
       "title": "Karte"
+    },
+    "political": {
+      "empty": "Keine Daten verfügbar",
+      "districts": "Wahlkreise",
+      "representatives": "Abgeordnete",
+      "districtMayors": "Bezirksbürgermeister",
+      "seats": "Sitze"
     }
   },
   "category": {
@@ -110,17 +117,13 @@
       "warnings": "Warnungen",
       "air-quality": "Luftqualit\u00e4t",
       "pharmacies": "Apotheken",
-      "traffic": "Verkehr"
-    },
-    "mapMode": {
-      "label": "Kartenmodus",
-      "default": "Standard",
-      "political": "Politik"
+      "traffic": "Verkehr",
+      "political": "Vertretung"
     },
     "political": {
       "bezirke": "Bezirke",
       "bundestag": "Bundestag",
-      "landesparlament": "Landesparlament"
+      "landesparlament": "Abgeordnetenhaus"
     }
   },
   "nina": {

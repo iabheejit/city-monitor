@@ -1,0 +1,68 @@
+/**
+ * Copyright (C) 2026 Odin Mühlenbein
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
+import { type ReactNode, useState } from 'react';
+
+type TileSpan = 1 | 2 | 'full';
+type TileHeight = 'auto' | 'sm' | 'md' | 'lg';
+
+interface TileProps {
+  title: string;
+  span?: TileSpan;
+  height?: TileHeight;
+  expandable?: boolean;
+  children: ReactNode | ((expanded: boolean, setExpanded: (v: boolean) => void) => ReactNode);
+  className?: string;
+}
+
+const HEIGHT_CLASSES: Record<TileHeight, string> = {
+  auto: '',
+  sm: 'max-h-64 overflow-y-auto',
+  md: 'max-h-96 overflow-y-auto',
+  lg: 'max-h-[32rem] overflow-y-auto',
+};
+
+const SPAN_CLASSES: Record<TileSpan, string> = {
+  1: 'sm:col-span-1',
+  2: 'sm:col-span-2',
+  full: 'col-span-full',
+};
+
+export function Tile({ title, span = 1, height = 'auto', expandable, children, className }: TileProps) {
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <div
+      className={`col-span-1 ${SPAN_CLASSES[span]} rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm overflow-hidden ${className ?? ''}`}
+    >
+      <div
+        className={`px-4 py-3 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between ${expandable ? 'cursor-pointer select-none' : ''}`}
+        onClick={expandable ? () => setExpanded((v) => !v) : undefined}
+      >
+        <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+          {title}
+        </h2>
+        {expandable && (
+          <svg
+            width={20}
+            height={20}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className={`text-gray-400 dark:text-gray-500 transition-transform ${expanded ? 'rotate-180' : ''}`}
+          >
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        )}
+      </div>
+      <div className={`@container p-4 ${HEIGHT_CLASSES[height]}`}>
+        {typeof children === 'function' ? children(expanded, setExpanded) : children}
+      </div>
+    </div>
+  );
+}

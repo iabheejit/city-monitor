@@ -40,11 +40,11 @@
     },
     "events": {
       "title": "Etkinlikler",
-      "empty": "Bu hafta etkinlik yok",
+      "empty": "Etkinlik yok",
       "free": "Ücretsiz",
       "today": "Bugün",
       "tomorrow": "Yarın",
-      "week": "Bu Hafta"
+      "all": "Tümü"
     },
     "safety": {
       "title": "Güvenlik",
@@ -64,6 +64,13 @@
     },
     "map": {
       "title": "Harita"
+    },
+    "political": {
+      "empty": "Veri bulunamadı",
+      "districts": "seçim bölgesi",
+      "representatives": "temsilci",
+      "districtMayors": "ilçe başkanları",
+      "seats": "sandalye"
     }
   },
   "category": {
@@ -110,15 +117,11 @@
       "warnings": "Uyarılar",
       "air-quality": "Hava Kalitesi",
       "pharmacies": "Eczaneler",
-      "traffic": "Trafik"
-    },
-    "mapMode": {
-      "label": "Harita Modu",
-      "default": "Varsay\u0131lan",
-      "political": "Siyasi"
+      "traffic": "Trafik",
+      "political": "Temsil"
     },
     "political": {
-      "bezirke": "\u0130l\u00e7eler",
+      "bezirke": "Bezirke",
       "bundestag": "Bundestag",
       "landesparlament": "Eyalet Parlamentosu"
     }

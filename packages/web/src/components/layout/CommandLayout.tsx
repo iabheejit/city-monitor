@@ -4,13 +4,18 @@
  */
 
 import { lazy, Suspense } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Sidebar } from '../sidebar/Sidebar.js';
 import { NinaBanner } from '../alerts/NinaBanner.js';
+import { DashboardGrid } from './DashboardGrid.js';
+import { Tile } from './Tile.js';
 import { BriefingStrip } from '../strips/BriefingStrip.js';
 import { NewsStrip } from '../strips/NewsStrip.js';
 import { EventsStrip } from '../strips/EventsStrip.js';
 import { TransitStrip } from '../strips/TransitStrip.js';
 import { AirQualityStrip } from '../strips/AirQualityStrip.js';
+import { WeatherStrip } from '../strips/WeatherStrip.js';
+import { PoliticalStrip } from '../strips/PoliticalStrip.js';
 import { Skeleton } from './Skeleton.js';
 
 const CityMap = lazy(() =>
@@ -18,6 +23,8 @@ const CityMap = lazy(() =>
 );
 
 export function CommandLayout() {
+  const { t } = useTranslation();
+
   return (
     <>
       {/* Upper zone: sidebar + map filling viewport height */}
@@ -30,16 +37,34 @@ export function CommandLayout() {
         </div>
       </div>
 
-      {/* Lower zone: content strips */}
-      <div className="bg-white dark:bg-gray-900">
+      {/* Lower zone: dashboard tiles */}
+      <div className="bg-gray-50 dark:bg-gray-950">
         <div className="px-4 pt-4">
           <NinaBanner />
         </div>
-        <BriefingStrip />
-        <AirQualityStrip />
-        <NewsStrip />
-        <EventsStrip />
-        <TransitStrip />
+        <DashboardGrid>
+          <Tile title={t('panel.weather.title')} span={1} expandable>
+            {(expanded) => <WeatherStrip expanded={expanded} />}
+          </Tile>
+          <Tile title={t('panel.airQuality.title')} span={1} expandable>
+            {(expanded) => <AirQualityStrip expanded={expanded} />}
+          </Tile>
+          <Tile title={t('panel.news.briefing')} span={2}>
+            <BriefingStrip />
+          </Tile>
+          <Tile title={t('panel.news.title')} span={2}>
+            <NewsStrip />
+          </Tile>
+          <Tile title={t('panel.events.title')} span={2}>
+            <EventsStrip />
+          </Tile>
+          <Tile title={t('panel.transit.title')} span={2}>
+            <TransitStrip />
+          </Tile>
+          <Tile title={t('sidebar.layers.political')} span={2} expandable>
+            {(expanded, setExpanded) => <PoliticalStrip expanded={expanded} onExpand={() => setExpanded(true)} />}
+          </Tile>
+        </DashboardGrid>
       </div>
     </>
   );
