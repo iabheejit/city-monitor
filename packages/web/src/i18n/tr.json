@@ -50,6 +50,18 @@
       "title": "Güvenlik",
       "empty": "Güncel rapor yok"
     },
+    "airQuality": {
+      "title": "Hava Kalitesi",
+      "trend": "24s e\u011filim",
+      "level": {
+        "good": "\u0130yi",
+        "fair": "Orta",
+        "moderate": "Vasat",
+        "poor": "K\u00f6t\u00fc",
+        "veryPoor": "\u00c7ok K\u00f6t\u00fc",
+        "extremelyPoor": "Tehlikeli"
+      }
+    },
     "map": {
       "title": "Harita"
     }
@@ -95,7 +107,8 @@
       "weather": "Hava",
       "news": "Haberler",
       "safety": "Güvenlik",
-      "warnings": "Uyarılar"
+      "warnings": "Uyarılar",
+      "air-quality": "Hava Kalitesi"
     }
   },
   "nina": {

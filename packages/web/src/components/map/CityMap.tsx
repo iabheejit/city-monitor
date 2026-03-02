@@ -17,7 +17,9 @@ import { useTransit } from '../../hooks/useTransit.js';
 import { useNewsDigest } from '../../hooks/useNewsDigest.js';
 import { useSafety } from '../../hooks/useSafety.js';
 import { useNina } from '../../hooks/useNina.js';
+import { useAirQuality } from '../../hooks/useAirQuality.js';
 import { useCommandCenter } from '../../hooks/useCommandCenter.js';
+import { getAqiLevel } from '../strips/AirQualityStrip.js';
 import type { TransitAlert, NewsItem, SafetyReport, NinaWarning } from '../../lib/api.js';
 
 const DARK_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-nolabels-gl-style/style.json';
@@ -551,6 +553,7 @@ export function CityMap() {
   const { data: newsDigest } = useNewsDigest(city.id);
   const { data: safetyReports } = useSafety(city.id);
   const { data: ninaWarnings } = useNina(city.id);
+  const { data: airQuality } = useAirQuality(city.id);
   const activeLayers = useCommandCenter((s) => s.activeLayers);
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
@@ -676,11 +679,32 @@ export function CityMap() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [warningItems]);
 
+  const showAqi = activeLayers.has('air-quality') && airQuality?.current;
+  const aqiLevel = showAqi ? getAqiLevel(airQuality!.current.europeanAqi) : null;
+
   return (
-    <div
-      ref={containerRef}
-      data-testid="map-container"
-      className="w-full h-full min-h-[300px]"
-    />
+    <div className="relative w-full h-full min-h-[300px]">
+      <div
+        ref={containerRef}
+        data-testid="map-container"
+        className="w-full h-full"
+      />
+      {showAqi && aqiLevel && (
+        <div
+          className="absolute top-2 left-2 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/90 dark:bg-gray-900/90 shadow-md backdrop-blur-sm pointer-events-auto"
+          title={`AQI: ${Math.round(airQuality!.current.europeanAqi)}`}
+        >
+          <span
+            className="text-lg font-bold leading-none"
+            style={{ color: aqiLevel.color }}
+          >
+            {Math.round(airQuality!.current.europeanAqi)}
+          </span>
+          <span className="text-[10px] font-medium text-gray-500 dark:text-gray-400 leading-tight">
+            AQI
+          </span>
+        </div>
+      )}
+    </div>
   );
 }

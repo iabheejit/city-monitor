@@ -16,6 +16,7 @@ import { createTransitRouter } from './routes/transit.js';
 import { createEventsRouter } from './routes/events.js';
 import { createSafetyRouter } from './routes/safety.js';
 import { createNinaRouter } from './routes/nina.js';
+import { createAirQualityRouter } from './routes/air-quality.js';
 import { createFeedIngestion } from './cron/ingest-feeds.js';
 import { createWeatherIngestion } from './cron/ingest-weather.js';
 import { createSummarization } from './cron/summarize.js';
@@ -73,6 +74,7 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
   app.use('/api', cacheFor(1800), createEventsRouter(cache, db));
   app.use('/api', cacheFor(300), createSafetyRouter(cache, db));
   app.use('/api', cacheFor(120), createNinaRouter(cache, db));
+  app.use('/api', cacheFor(600), createAirQualityRouter(cache));
 
   return { app, cache, db, scheduler };
 }

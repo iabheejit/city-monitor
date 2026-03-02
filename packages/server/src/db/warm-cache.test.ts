@@ -13,6 +13,7 @@ vi.mock('./reads.js', () => ({
   loadEvents: vi.fn().mockResolvedValue([{ id: '1', title: 'Event', date: '2026-03-03', category: 'other', url: '' }]),
   loadSafetyReports: vi.fn().mockResolvedValue([{ id: '1', title: 'Report', description: '', publishedAt: '', url: '' }]),
   loadSummary: vi.fn().mockResolvedValue({ briefing: 'Test', generatedAt: '2026-03-02', headlineCount: 5, cached: true, headlineHash: 'abc' }),
+  loadNinaWarnings: vi.fn().mockResolvedValue([]),
 }));
 
 describe('warmCache', () => {
@@ -40,6 +41,7 @@ describe('warmCache', () => {
     vi.mocked(reads.loadEvents).mockResolvedValueOnce(null);
     vi.mocked(reads.loadSafetyReports).mockResolvedValueOnce(null);
     vi.mocked(reads.loadSummary).mockResolvedValueOnce(null);
+    vi.mocked(reads.loadNinaWarnings).mockResolvedValueOnce(null);
 
     const db = {} as any;
     await warmCache(db, cache);

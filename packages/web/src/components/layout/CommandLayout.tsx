@@ -10,6 +10,7 @@ import { BriefingStrip } from '../strips/BriefingStrip.js';
 import { NewsStrip } from '../strips/NewsStrip.js';
 import { EventsStrip } from '../strips/EventsStrip.js';
 import { TransitStrip } from '../strips/TransitStrip.js';
+import { AirQualityStrip } from '../strips/AirQualityStrip.js';
 import { Skeleton } from './Skeleton.js';
 
 const CityMap = lazy(() =>
@@ -35,6 +36,7 @@ export function CommandLayout() {
           <NinaBanner />
         </div>
         <BriefingStrip />
+        <AirQualityStrip />
         <NewsStrip />
         <EventsStrip />
         <TransitStrip />

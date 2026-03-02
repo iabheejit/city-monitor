@@ -98,6 +98,86 @@ async function ingestCityWeather(city: CityConfig, cache: Cache, db: Db | null):
   }
 
   log.info(`${city.id}: weather updated`);
+
+  // Fetch air quality alongside weather
+  try {
+    await ingestCityAirQuality(city, cache);
+  } catch (err) {
+    log.warn(`${city.id}: air quality failed`);
+  }
+}
+
+export interface AirQuality {
+  current: {
+    europeanAqi: number;
+    pm25: number;
+    pm10: number;
+    no2: number;
+    o3: number;
+    updatedAt: string;
+  };
+  hourly: Array<{
+    time: string;
+    europeanAqi: number;
+    pm25: number;
+    pm10: number;
+  }>;
+}
+
+interface AirQualityResponse {
+  current: {
+    european_aqi: number;
+    pm10: number;
+    pm2_5: number;
+    nitrogen_dioxide: number;
+    ozone: number;
+  };
+  hourly: {
+    time: string[];
+    european_aqi: number[];
+    pm2_5: number[];
+    pm10: number[];
+  };
+}
+
+async function ingestCityAirQuality(city: CityConfig, cache: Cache): Promise<void> {
+  const { lat, lon } = city.dataSources.weather;
+
+  const url = `https://air-quality-api.open-meteo.com/v1/air-quality`
+    + `?latitude=${lat}&longitude=${lon}`
+    + `&current=european_aqi,pm10,pm2_5,nitrogen_dioxide,ozone`
+    + `&hourly=european_aqi,pm2_5,pm10`
+    + `&timezone=${encodeURIComponent(city.timezone)}`
+    + `&forecast_days=2`;
+
+  const response = await log.fetch(url, {
+    signal: AbortSignal.timeout(WEATHER_TIMEOUT_MS),
+    headers: { 'User-Agent': 'CityMonitor/1.0' },
+  });
+
+  if (!response.ok) return;
+
+  const raw: AirQualityResponse = await response.json();
+
+  const airQuality: AirQuality = {
+    current: {
+      europeanAqi: raw.current.european_aqi ?? 0,
+      pm25: raw.current.pm2_5 ?? 0,
+      pm10: raw.current.pm10 ?? 0,
+      no2: raw.current.nitrogen_dioxide ?? 0,
+      o3: raw.current.ozone ?? 0,
+      updatedAt: new Date().toISOString(),
+    },
+    hourly: (raw.hourly.time ?? []).map((time, i) => ({
+      time,
+      europeanAqi: raw.hourly.european_aqi?.[i] ?? 0,
+      pm25: raw.hourly.pm2_5?.[i] ?? 0,
+      pm10: raw.hourly.pm10?.[i] ?? 0,
+    })),
+  };
+
+  cache.set(`${city.id}:air-quality`, airQuality, 1800);
+  log.info(`${city.id}: air quality updated (AQI: ${airQuality.current.europeanAqi})`);
 }
 
 function transformWeatherData(raw: OpenMeteoResponse): WeatherData {

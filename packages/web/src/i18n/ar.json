@@ -50,6 +50,18 @@
       "title": "السلامة",
       "empty": "لا توجد تقارير حديثة"
     },
+    "airQuality": {
+      "title": "جودة الهواء",
+      "trend": "اتجاه ٢٤ ساعة",
+      "level": {
+        "good": "جيد",
+        "fair": "مقبول",
+        "moderate": "متوسط",
+        "poor": "سيئ",
+        "veryPoor": "سيئ جداً",
+        "extremelyPoor": "خطير"
+      }
+    },
     "map": {
       "title": "الخريطة"
     }
@@ -95,7 +107,8 @@
       "weather": "الطقس",
       "news": "الأخبار",
       "safety": "السلامة",
-      "warnings": "تحذيرات"
+      "warnings": "تحذيرات",
+      "air-quality": "جودة الهواء"
     }
   },
   "nina": {

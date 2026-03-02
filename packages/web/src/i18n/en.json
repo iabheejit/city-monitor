@@ -50,6 +50,18 @@
       "title": "Safety",
       "empty": "No recent reports"
     },
+    "airQuality": {
+      "title": "Air Quality",
+      "trend": "24h trend",
+      "level": {
+        "good": "Good",
+        "fair": "Fair",
+        "moderate": "Moderate",
+        "poor": "Poor",
+        "veryPoor": "Very Poor",
+        "extremelyPoor": "Hazardous"
+      }
+    },
     "map": {
       "title": "Map"
     }
@@ -95,7 +107,8 @@
       "weather": "Weather",
       "news": "News",
       "safety": "Safety",
-      "warnings": "Warnings"
+      "warnings": "Warnings",
+      "air-quality": "Air Quality"
     }
   },
   "nina": {

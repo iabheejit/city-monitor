@@ -92,6 +92,23 @@ export interface NinaWarning {
   area?: { type: string; geometry: unknown; properties?: unknown };
 }
 
+export interface AirQuality {
+  current: {
+    europeanAqi: number;
+    pm25: number;
+    pm10: number;
+    no2: number;
+    o3: number;
+    updatedAt: string;
+  };
+  hourly: Array<{
+    time: string;
+    europeanAqi: number;
+    pm25: number;
+    pm10: number;
+  }>;
+}
+
 export const api = {
   getBootstrap: (city: string) => fetchJson<BootstrapData>(`${BASE}/${city}/bootstrap`),
   getNewsDigest: (city: string) => fetchJson<NewsDigest>(`${BASE}/${city}/news/digest`),
@@ -101,4 +118,5 @@ export const api = {
   getEvents: (city: string) => fetchJson<CityEvent[]>(`${BASE}/${city}/events`),
   getSafety: (city: string) => fetchJson<SafetyReport[]>(`${BASE}/${city}/safety`),
   getNina: (city: string) => fetchJson<NinaWarning[]>(`${BASE}/${city}/nina`),
+  getAirQuality: (city: string) => fetchJson<AirQuality | null>(`${BASE}/${city}/air-quality`),
 };

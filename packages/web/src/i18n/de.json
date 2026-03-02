@@ -50,6 +50,18 @@
       "title": "Sicherheit",
       "empty": "Keine aktuellen Meldungen"
     },
+    "airQuality": {
+      "title": "Luftqualit\u00e4t",
+      "trend": "24h Verlauf",
+      "level": {
+        "good": "Gut",
+        "fair": "M\u00e4\u00dfig",
+        "moderate": "Mittel",
+        "poor": "Schlecht",
+        "veryPoor": "Sehr schlecht",
+        "extremelyPoor": "Gef\u00e4hrlich"
+      }
+    },
     "map": {
       "title": "Karte"
     }
@@ -95,7 +107,8 @@
       "weather": "Wetter",
       "news": "Nachrichten",
       "safety": "Sicherheit",
-      "warnings": "Warnungen"
+      "warnings": "Warnungen",
+      "air-quality": "Luftqualit\u00e4t"
     }
   },
   "nina": {
