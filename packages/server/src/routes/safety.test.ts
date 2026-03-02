@@ -11,10 +11,10 @@ import type { SafetyReport } from '../cron/ingest-safety.js';
 describe('Safety API', () => {
   let server: Server;
   let baseUrl: string;
-  let appContext: ReturnType<typeof createApp>;
+  let appContext: Awaited<ReturnType<typeof createApp>>;
 
   beforeAll(async () => {
-    appContext = createApp({ skipScheduler: true });
+    appContext = await createApp({ skipScheduler: true });
     await new Promise<void>((resolve) => {
       server = appContext.app.listen(0, () => {
         const addr = server.address();

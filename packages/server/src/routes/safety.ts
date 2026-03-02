@@ -5,13 +5,18 @@
 
 import { Router } from 'express';
 import type { Cache } from '../lib/cache.js';
+import type { Db } from '../db/index.js';
+import { loadSafetyReports } from '../db/reads.js';
 import { getCityConfig } from '../config/index.js';
+import { createLogger } from '../lib/logger.js';
 import type { SafetyReport } from '../cron/ingest-safety.js';
 
-export function createSafetyRouter(cache: Cache) {
+const log = createLogger('route:safety');
+
+export function createSafetyRouter(cache: Cache, db: Db | null = null) {
   const router = Router();
 
-  router.get('/:city/safety', (req, res) => {
+  router.get('/:city/safety', async (req, res) => {
     const city = getCityConfig(req.params.city);
     if (!city) {
       res.status(404).json({ error: 'City not found' });
@@ -19,12 +24,24 @@ export function createSafetyRouter(cache: Cache) {
     }
 
     const reports = cache.get<SafetyReport[]>(`${city.id}:safety:recent`);
-    if (!reports) {
-      res.json([]);
+    if (reports) {
+      res.json(reports);
       return;
     }
 
-    res.json(reports);
+    if (db) {
+      try {
+        const dbReports = await loadSafetyReports(db, city.id);
+        if (dbReports) {
+          res.json(dbReports);
+          return;
+        }
+      } catch (err) {
+        log.error(`${city.id} DB read failed`, err);
+      }
+    }
+
+    res.json([]);
   });
 
   return router;

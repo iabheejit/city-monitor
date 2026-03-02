@@ -4,8 +4,13 @@
  */
 
 import type { Cache } from '../lib/cache.js';
+import type { Db } from '../db/index.js';
+import { saveTransitAlerts } from '../db/writes.js';
 import { getActiveCities } from '../config/index.js';
 import { hashString } from '../lib/hash.js';
+import { createLogger } from '../lib/logger.js';
+
+const log = createLogger('ingest-transit');
 
 export interface TransitAlert {
   id: string;
@@ -34,21 +39,21 @@ interface VbbResponse {
   departures?: VbbDeparture[];
 }
 
-export function createTransitIngestion(cache: Cache) {
+export function createTransitIngestion(cache: Cache, db: Db | null = null) {
   return async function ingestTransit(): Promise<void> {
     const cities = getActiveCities();
     for (const city of cities) {
       if (!city.dataSources.transit) continue;
       try {
-        await ingestCityTransit(city.id, cache);
+        await ingestCityTransit(city.id, cache, db);
       } catch (err) {
-        console.error(`[ingest-transit] ${city.id} failed:`, err);
+        log.error(`${city.id} failed`, err);
       }
     }
   };
 }
 
-async function ingestCityTransit(cityId: string, cache: Cache): Promise<void> {
+async function ingestCityTransit(cityId: string, cache: Cache, db: Db | null): Promise<void> {
   const allAlerts: TransitAlert[] = [];
   const seen = new Set<string>();
   let anySuccess = false;
@@ -56,7 +61,7 @@ async function ingestCityTransit(cityId: string, cache: Cache): Promise<void> {
   for (const stationId of BERLIN_STATIONS) {
     try {
       const url = `https://v6.vbb.transport.rest/stops/${stationId}/departures?duration=30&remarks=true&results=50`;
-      const response = await fetch(url, {
+      const response = await log.fetch(url, {
         signal: AbortSignal.timeout(TRANSIT_TIMEOUT_MS),
         headers: { 'User-Agent': 'CityMonitor/1.0' },
       });
@@ -88,17 +93,26 @@ async function ingestCityTransit(cityId: string, cache: Cache): Promise<void> {
         }
       }
     } catch (err) {
-      console.warn(`[ingest-transit] station ${stationId} failed:`, err);
+      log.warn(`station ${stationId} failed`);
     }
   }
 
   if (!anySuccess) {
-    console.warn(`[ingest-transit] ${cityId}: all stations failed, skipping cache update`);
+    log.warn(`${cityId}: all stations failed, skipping cache update`);
     return;
   }
 
   cache.set(`${cityId}:transit:alerts`, allAlerts, 300);
-  console.log(`[ingest-transit] ${cityId}: ${allAlerts.length} alerts`);
+
+  if (db) {
+    try {
+      await saveTransitAlerts(db, cityId, allAlerts);
+    } catch (err) {
+      log.error(`${cityId} DB write failed`, err);
+    }
+  }
+
+  log.info(`${cityId}: ${allAlerts.length} alerts`);
 }
 
 function classifyDisruption(summary: string): TransitAlert['type'] {

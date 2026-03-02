@@ -5,13 +5,18 @@
 
 import { Router } from 'express';
 import type { Cache } from '../lib/cache.js';
+import type { Db } from '../db/index.js';
+import { loadEvents } from '../db/reads.js';
 import { getCityConfig } from '../config/index.js';
+import { createLogger } from '../lib/logger.js';
 import type { CityEvent } from '../cron/ingest-events.js';
 
-export function createEventsRouter(cache: Cache) {
+const log = createLogger('route:events');
+
+export function createEventsRouter(cache: Cache, db: Db | null = null) {
   const router = Router();
 
-  router.get('/:city/events', (req, res) => {
+  router.get('/:city/events', async (req, res) => {
     const city = getCityConfig(req.params.city);
     if (!city) {
       res.status(404).json({ error: 'City not found' });
@@ -19,12 +24,24 @@ export function createEventsRouter(cache: Cache) {
     }
 
     const events = cache.get<CityEvent[]>(`${city.id}:events:upcoming`);
-    if (!events) {
-      res.json([]);
+    if (events) {
+      res.json(events);
       return;
     }
 
-    res.json(events);
+    if (db) {
+      try {
+        const dbEvents = await loadEvents(db, city.id);
+        if (dbEvents) {
+          res.json(dbEvents);
+          return;
+        }
+      } catch (err) {
+        log.error(`${city.id} DB read failed`, err);
+      }
+    }
+
+    res.json([]);
   });
 
   return router;

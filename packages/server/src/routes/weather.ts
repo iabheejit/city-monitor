@@ -5,13 +5,18 @@
 
 import { Router } from 'express';
 import type { Cache } from '../lib/cache.js';
+import type { Db } from '../db/index.js';
+import { loadWeather } from '../db/reads.js';
 import { getCityConfig } from '../config/index.js';
+import { createLogger } from '../lib/logger.js';
 import type { WeatherData } from '../cron/ingest-weather.js';
 
-export function createWeatherRouter(cache: Cache) {
+const log = createLogger('route:weather');
+
+export function createWeatherRouter(cache: Cache, db: Db | null = null) {
   const router = Router();
 
-  router.get('/:city/weather', (req, res) => {
+  router.get('/:city/weather', async (req, res) => {
     const city = getCityConfig(req.params.city);
     if (!city) {
       res.status(404).json({ error: 'City not found' });
@@ -19,12 +24,24 @@ export function createWeatherRouter(cache: Cache) {
     }
 
     const data = cache.get<WeatherData>(`${city.id}:weather`);
-    if (!data) {
-      res.json({ current: null, hourly: [], daily: [], alerts: [] });
+    if (data) {
+      res.json(data);
       return;
     }
 
-    res.json(data);
+    if (db) {
+      try {
+        const dbData = await loadWeather(db, city.id);
+        if (dbData) {
+          res.json(dbData);
+          return;
+        }
+      } catch (err) {
+        log.error(`${city.id} DB read failed`, err);
+      }
+    }
+
+    res.json({ current: null, hourly: [], daily: [], alerts: [] });
   });
 
   return router;

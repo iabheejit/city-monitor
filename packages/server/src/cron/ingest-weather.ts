@@ -5,7 +5,12 @@
 
 import type { CityConfig, WeatherData, CurrentWeather, HourlyForecast, DailyForecast, WeatherAlert } from '@city-monitor/shared';
 import type { Cache } from '../lib/cache.js';
+import type { Db } from '../db/index.js';
+import { saveWeather } from '../db/writes.js';
 import { getActiveCities } from '../config/index.js';
+import { createLogger } from '../lib/logger.js';
+
+const log = createLogger('ingest-weather');
 
 export type { WeatherData };
 
@@ -38,20 +43,20 @@ interface OpenMeteoResponse {
   };
 }
 
-export function createWeatherIngestion(cache: Cache) {
+export function createWeatherIngestion(cache: Cache, db: Db | null = null) {
   return async function ingestWeather(): Promise<void> {
     const cities = getActiveCities();
     for (const city of cities) {
       try {
-        await ingestCityWeather(city, cache);
+        await ingestCityWeather(city, cache, db);
       } catch (err) {
-        console.error(`[ingest-weather] ${city.id} failed:`, err);
+        log.error(`${city.id} failed`, err);
       }
     }
   };
 }
 
-async function ingestCityWeather(city: CityConfig, cache: Cache): Promise<void> {
+async function ingestCityWeather(city: CityConfig, cache: Cache, db: Db | null): Promise<void> {
   const { lat, lon } = city.dataSources.weather;
 
   const url = `https://api.open-meteo.com/v1/forecast`
@@ -62,15 +67,12 @@ async function ingestCityWeather(city: CityConfig, cache: Cache): Promise<void> 
     + `&timezone=${encodeURIComponent(city.timezone)}`
     + `&forecast_days=5`;
 
-  const response = await fetch(url, {
+  const response = await log.fetch(url, {
     signal: AbortSignal.timeout(WEATHER_TIMEOUT_MS),
     headers: { 'User-Agent': 'CityMonitor/1.0' },
   });
 
-  if (!response.ok) {
-    console.warn(`[ingest-weather] ${city.id}: Open-Meteo returned ${response.status}`);
-    return;
-  }
+  if (!response.ok) return;
 
   const raw: OpenMeteoResponse = await response.json();
   const data = transformWeatherData(raw);
@@ -81,12 +83,21 @@ async function ingestCityWeather(city: CityConfig, cache: Cache): Promise<void> 
       const alerts = await fetchDwdAlerts(city);
       data.alerts = alerts;
     } catch (err) {
-      console.warn(`[ingest-weather] ${city.id}: DWD alerts failed:`, err);
+      log.warn(`${city.id}: DWD alerts failed`);
     }
   }
 
   cache.set(`${city.id}:weather`, data, 1800);
-  console.log(`[ingest-weather] ${city.id}: weather updated`);
+
+  if (db) {
+    try {
+      await saveWeather(db, city.id, data);
+    } catch (err) {
+      log.error(`${city.id} DB write failed`, err);
+    }
+  }
+
+  log.info(`${city.id}: weather updated`);
 }
 
 function transformWeatherData(raw: OpenMeteoResponse): WeatherData {
@@ -121,7 +132,7 @@ function transformWeatherData(raw: OpenMeteoResponse): WeatherData {
 }
 
 async function fetchDwdAlerts(city: CityConfig): Promise<WeatherAlert[]> {
-  const response = await fetch('https://www.dwd.de/DWD/warnungen/warnapp/json/warnings.json', {
+  const response = await log.fetch('https://www.dwd.de/DWD/warnungen/warnapp/json/warnings.json', {
     signal: AbortSignal.timeout(WEATHER_TIMEOUT_MS),
     headers: { 'User-Agent': 'CityMonitor/1.0' },
   });

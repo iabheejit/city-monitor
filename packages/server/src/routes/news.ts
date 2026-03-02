@@ -5,11 +5,16 @@
 
 import { Router } from 'express';
 import type { Cache } from '../lib/cache.js';
+import type { Db } from '../db/index.js';
+import { loadSummary } from '../db/reads.js';
 import { getCityConfig } from '../config/index.js';
+import { createLogger } from '../lib/logger.js';
 import type { NewsDigest } from '../cron/ingest-feeds.js';
 import type { NewsSummary } from '../cron/summarize.js';
 
-export function createNewsRouter(cache: Cache) {
+const log = createLogger('route:news');
+
+export function createNewsRouter(cache: Cache, db: Db | null = null) {
   const router = Router();
 
   router.get('/:city/news/digest', (req, res) => {
@@ -28,7 +33,7 @@ export function createNewsRouter(cache: Cache) {
     res.json(digest);
   });
 
-  router.get('/:city/news/summary', (req, res) => {
+  router.get('/:city/news/summary', async (req, res) => {
     const city = getCityConfig(req.params.city);
     if (!city) {
       res.status(404).json({ error: 'City not found' });
@@ -36,12 +41,24 @@ export function createNewsRouter(cache: Cache) {
     }
 
     const summary = cache.get<NewsSummary>(`${city.id}:news:summary`);
-    if (!summary) {
-      res.json({ briefing: null, generatedAt: null, headlineCount: 0, cached: false });
+    if (summary) {
+      res.json(summary);
       return;
     }
 
-    res.json(summary);
+    if (db) {
+      try {
+        const dbSummary = await loadSummary(db, city.id);
+        if (dbSummary) {
+          res.json(dbSummary);
+          return;
+        }
+      } catch (err) {
+        log.error(`${city.id} DB read failed`, err);
+      }
+    }
+
+    res.json({ briefing: null, generatedAt: null, headlineCount: 0, cached: false });
   });
 
   router.get('/:city/bootstrap', (req, res) => {

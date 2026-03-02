@@ -18,6 +18,9 @@ import { parseFeed, type FeedItem } from '../lib/rss-parser.js';
 import { classifyHeadline } from '../lib/classifier.js';
 import { hashString } from '../lib/hash.js';
 import { getActiveCities } from '../config/index.js';
+import { createLogger } from '../lib/logger.js';
+
+const log = createLogger('ingest-feeds');
 
 const FEED_TIMEOUT_MS = 8_000;
 const OVERALL_DEADLINE_MS = 25_000;
@@ -49,7 +52,7 @@ export function createFeedIngestion(cache: Cache) {
       try {
         await ingestCityFeeds(city, cache);
       } catch (err) {
-        console.error(`[ingest-feeds] ${city.id} failed:`, err);
+        log.error(`${city.id} failed`, err);
       }
     }
   };
@@ -110,7 +113,7 @@ async function ingestCityFeeds(city: CityConfig, cache: Cache): Promise<void> {
     cache.set(`${city.id}:news:${cat}`, items, 900);
   }
 
-  console.log(`[ingest-feeds] ${city.id}: ${deduped.length} articles from ${city.feeds.length} feeds`);
+  log.info(`${city.id}: ${deduped.length} articles from ${city.feeds.length} feeds`);
 }
 
 async function fetchAndParseFeed(
@@ -125,7 +128,7 @@ async function fetchAndParseFeed(
   try {
     // Use cache for raw feed XML (avoid re-fetching within 10 min)
     const items = await cache.fetch<NewsItem[]>(cacheKey, 600, async () => {
-      const response = await fetch(feed.url, {
+      const response = await log.fetch(feed.url, {
         signal: AbortSignal.timeout(timeout),
         headers: { 'User-Agent': 'CityMonitor/1.0' },
       });
@@ -152,7 +155,7 @@ async function fetchAndParseFeed(
 
     return items;
   } catch (err) {
-    console.warn(`[ingest-feeds] Failed to fetch ${feed.name}:`, err);
+    log.warn(`failed to fetch ${feed.name}`);
     return null;
   }
 }

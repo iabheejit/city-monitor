@@ -15,10 +15,15 @@
  */
 
 import type { Cache } from '../lib/cache.js';
+import type { Db } from '../db/index.js';
+import { saveSummary } from '../db/writes.js';
 import { summarizeHeadlines, isConfigured } from '../lib/openai.js';
 import { hashString } from '../lib/hash.js';
 import { getActiveCities } from '../config/index.js';
+import { createLogger } from '../lib/logger.js';
 import type { NewsDigest } from './ingest-feeds.js';
+
+const log = createLogger('summarize');
 
 export interface NewsSummary {
   briefing: string;
@@ -30,16 +35,19 @@ export interface NewsSummary {
 const SUMMARY_TTL = 86400; // 24 hours
 const TOP_HEADLINES = 10;
 
-export function createSummarization(cache: Cache) {
+export function createSummarization(cache: Cache, db: Db | null = null) {
   return async function summarizeNews(): Promise<void> {
-    if (!isConfigured()) return;
+    if (!isConfigured()) {
+      log.info('skipped — OPENAI_API_KEY not set');
+      return;
+    }
 
     const cities = getActiveCities();
     for (const city of cities) {
       try {
-        await summarizeCityNews(city.id, city.name, city.languages[0] ?? 'en', cache);
+        await summarizeCityNews(city.id, city.name, city.languages[0] ?? 'en', cache, db);
       } catch (err) {
-        console.error(`[summarize] ${city.id} failed:`, err);
+        log.error(`${city.id} failed`, err);
       }
     }
   };
@@ -50,6 +58,7 @@ async function summarizeCityNews(
   cityName: string,
   lang: string,
   cache: Cache,
+  db: Db | null,
 ): Promise<void> {
   const digest = cache.get<NewsDigest>(`${cityId}:news:digest`);
   if (!digest || digest.items.length === 0) return;
@@ -86,5 +95,15 @@ async function summarizeCityNews(
   };
 
   cache.set(`${cityId}:news:summary`, summary, SUMMARY_TTL);
-  console.log(`[summarize] ${cityId}: summary generated (${headlines.length} headlines)`);
+
+  if (db) {
+    try {
+      const model = process.env.OPENAI_MODEL || 'gpt-5-mini';
+      await saveSummary(db, cityId, summary, model, { input: result.inputTokens, output: result.outputTokens });
+    } catch (err) {
+      log.error(`${cityId} DB write failed`, err);
+    }
+  }
+
+  log.info(`${cityId}: summary generated (${headlines.length} headlines)`);
 }

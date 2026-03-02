@@ -5,13 +5,18 @@
 
 import { Router } from 'express';
 import type { Cache } from '../lib/cache.js';
+import type { Db } from '../db/index.js';
+import { loadTransitAlerts } from '../db/reads.js';
 import { getCityConfig } from '../config/index.js';
+import { createLogger } from '../lib/logger.js';
 import type { TransitAlert } from '../cron/ingest-transit.js';
 
-export function createTransitRouter(cache: Cache) {
+const log = createLogger('route:transit');
+
+export function createTransitRouter(cache: Cache, db: Db | null = null) {
   const router = Router();
 
-  router.get('/:city/transit', (req, res) => {
+  router.get('/:city/transit', async (req, res) => {
     const city = getCityConfig(req.params.city);
     if (!city) {
       res.status(404).json({ error: 'City not found' });
@@ -19,12 +24,24 @@ export function createTransitRouter(cache: Cache) {
     }
 
     const alerts = cache.get<TransitAlert[]>(`${city.id}:transit:alerts`);
-    if (!alerts) {
-      res.json([]);
+    if (alerts) {
+      res.json(alerts);
       return;
     }
 
-    res.json(alerts);
+    if (db) {
+      try {
+        const dbAlerts = await loadTransitAlerts(db, city.id);
+        if (dbAlerts) {
+          res.json(dbAlerts);
+          return;
+        }
+      } catch (err) {
+        log.error(`${city.id} DB read failed`, err);
+      }
+    }
+
+    res.json([]);
   });
 
   return router;

@@ -4,6 +4,9 @@
  */
 
 import cron from 'node-cron';
+import { createLogger } from './logger.js';
+
+const log = createLogger('scheduler');
 
 export interface ScheduledJob {
   name: string;
@@ -37,19 +40,26 @@ export function createScheduler(jobs: ScheduledJob[]) {
         await job.handler();
         info.lastRun = new Date();
       } catch (err) {
-        console.error(`[scheduler] ${job.name} failed:`, err);
+        log.error(`${job.name} failed`, err);
       }
     });
     tasks.push(task);
-
-    if (job.runOnStart) {
-      job.handler().then(() => {
-        info.lastRun = new Date();
-      }).catch((err) => {
-        console.error(`[scheduler] ${job.name} (startup) failed:`, err);
-      });
-    }
   }
+
+  // Run startup jobs sequentially (in definition order) so later jobs
+  // can depend on data produced by earlier ones (e.g. summarize needs feeds).
+  (async () => {
+    for (const job of jobs) {
+      if (!job.runOnStart) continue;
+      try {
+        await job.handler();
+        const info = jobInfos.find((j) => j.name === job.name);
+        if (info) info.lastRun = new Date();
+      } catch (err) {
+        log.error(`${job.name} (startup) failed`, err);
+      }
+    }
+  })();
 
   function getJobs(): JobInfo[] {
     return jobInfos;

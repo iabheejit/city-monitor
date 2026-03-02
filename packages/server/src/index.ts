@@ -4,10 +4,12 @@
  */
 
 import { createApp } from './app.js';
+import { createLogger } from './lib/logger.js';
 
-const { app } = createApp();
+const log = createLogger('server');
+const { app } = await createApp();
 const port = Number(process.env.PORT) || 3001;
 
 app.listen(port, () => {
-  console.log(`Server listening on port ${port}`);
+  log.info(`listening on port ${port}`);
 });

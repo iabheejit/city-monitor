@@ -16,6 +16,9 @@
  */
 
 import OpenAI from 'openai';
+import { createLogger } from './logger.js';
+
+const log = createLogger('openai');
 
 interface UsageEntry {
   input: number;
@@ -43,18 +46,19 @@ export async function summarizeHeadlines(
   cityName: string,
   headlines: string[],
   lang: string,
-): Promise<{ summary: string; cached: boolean } | null> {
+): Promise<{ summary: string; cached: boolean; inputTokens: number; outputTokens: number } | null> {
   const openai = getClient();
   if (!openai) return null;
 
   const language = lang === 'de' ? 'German' : 'English';
 
   try {
+    log.info(`summarizing ${headlines.length} headlines for ${cityName}…`);
+    const start = performance.now();
+
     const response = await openai.chat.completions.create({
-      model: process.env.OPENAI_MODEL || 'gpt-4.1-mini',
-      temperature: 0.3,
-      max_tokens: 150,
-      top_p: 0.9,
+      model: process.env.OPENAI_MODEL || 'gpt-5-mini',
+      reasoning_effort: 'low',
       messages: [
         {
           role: 'system',
@@ -67,6 +71,11 @@ export async function summarizeHeadlines(
       ],
     });
 
+    const ms = Math.round(performance.now() - start);
+    const inTok = response.usage?.prompt_tokens ?? 0;
+    const outTok = response.usage?.completion_tokens ?? 0;
+    log.info(`${cityName}: done in ${ms}ms (${inTok}in/${outTok}out tokens)`);
+
     const summary = response.choices[0]?.message?.content?.trim() ?? '';
 
     // Track usage
@@ -74,13 +83,18 @@ export async function summarizeHeadlines(
     if (!usage[cityKey]) {
       usage[cityKey] = { input: 0, output: 0, calls: 0 };
     }
-    usage[cityKey].input += response.usage?.prompt_tokens ?? 0;
-    usage[cityKey].output += response.usage?.completion_tokens ?? 0;
+    usage[cityKey].input += inTok;
+    usage[cityKey].output += outTok;
     usage[cityKey].calls += 1;
 
-    return { summary, cached: false };
+    return {
+      summary,
+      cached: false,
+      inputTokens: inTok,
+      outputTokens: outTok,
+    };
   } catch (err) {
-    console.error(`[openai] summarization failed for ${cityName}:`, err);
+    log.error(`summarization failed for ${cityName}`, err);
     return null;
   }
 }
@@ -88,8 +102,8 @@ export async function summarizeHeadlines(
 export function getUsageStats(): Record<string, UsageEntry & { estimatedCostUsd: number }> {
   const result: Record<string, UsageEntry & { estimatedCostUsd: number }> = {};
   for (const [city, entry] of Object.entries(usage)) {
-    // Rough cost estimate for gpt-4.1-mini: $0.40/1M input, $1.60/1M output
-    const cost = (entry.input * 0.0000004) + (entry.output * 0.0000016);
+    // Rough cost estimate for gpt-5-mini: $1.00/1M input, $4.00/1M output
+    const cost = (entry.input * 0.000001) + (entry.output * 0.000004);
     result[city] = { ...entry, estimatedCostUsd: Math.round(cost * 10000) / 10000 };
   }
   return result;

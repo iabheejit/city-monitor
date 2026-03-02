@@ -4,9 +4,14 @@
  */
 
 import type { Cache } from '../lib/cache.js';
+import type { Db } from '../db/index.js';
+import { saveSafetyReports } from '../db/writes.js';
 import { parseFeed } from '../lib/rss-parser.js';
 import { hashString } from '../lib/hash.js';
 import { getActiveCities } from '../config/index.js';
+import { createLogger } from '../lib/logger.js';
+
+const log = createLogger('ingest-safety');
 
 export interface SafetyReport {
   id: string;
@@ -27,30 +32,27 @@ const BERLIN_DISTRICTS = [
   'Moabit', 'Tiergarten',
 ];
 
-export function createSafetyIngestion(cache: Cache) {
+export function createSafetyIngestion(cache: Cache, db: Db | null = null) {
   return async function ingestSafety(): Promise<void> {
     const cities = getActiveCities();
     for (const city of cities) {
       if (!city.dataSources.police) continue;
       try {
-        await ingestCitySafety(city.id, city.dataSources.police.url, cache);
+        await ingestCitySafety(city.id, city.dataSources.police.url, cache, db);
       } catch (err) {
-        console.error(`[ingest-safety] ${city.id} failed:`, err);
+        log.error(`${city.id} failed`, err);
       }
     }
   };
 }
 
-async function ingestCitySafety(cityId: string, feedUrl: string, cache: Cache): Promise<void> {
-  const response = await fetch(feedUrl, {
+async function ingestCitySafety(cityId: string, feedUrl: string, cache: Cache, db: Db | null): Promise<void> {
+  const response = await log.fetch(feedUrl, {
     signal: AbortSignal.timeout(SAFETY_TIMEOUT_MS),
     headers: { 'User-Agent': 'CityMonitor/1.0' },
   });
 
-  if (!response.ok) {
-    console.warn(`[ingest-safety] ${cityId}: feed returned ${response.status}`);
-    return;
-  }
+  if (!response.ok) return;
 
   const xml = await response.text();
   const items = parseFeed(xml);
@@ -70,7 +72,16 @@ async function ingestCitySafety(cityId: string, feedUrl: string, cache: Cache): 
   );
 
   cache.set(`${cityId}:safety:recent`, reports, 900);
-  console.log(`[ingest-safety] ${cityId}: ${reports.length} reports`);
+
+  if (db) {
+    try {
+      await saveSafetyReports(db, cityId, reports);
+    } catch (err) {
+      log.error(`${cityId} DB write failed`, err);
+    }
+  }
+
+  log.info(`${cityId}: ${reports.length} reports`);
 }
 
 function extractDistrict(title: string): string | undefined {

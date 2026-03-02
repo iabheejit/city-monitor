@@ -12,7 +12,7 @@ describe('GET /api/health', () => {
   let baseUrl: string;
 
   beforeAll(async () => {
-    const { app } = createApp({ skipScheduler: true });
+    const { app } = await createApp({ skipScheduler: true });
     await new Promise<void>((resolve) => {
       server = app.listen(0, () => {
         const addr = server.address();

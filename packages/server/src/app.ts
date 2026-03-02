@@ -7,6 +7,8 @@ import express from 'express';
 import cors from 'cors';
 import { createCache } from './lib/cache.js';
 import { createScheduler, type ScheduledJob } from './lib/scheduler.js';
+import { createDb } from './db/index.js';
+import { warmCache } from './db/warm-cache.js';
 import { createHealthRouter } from './routes/health.js';
 import { createNewsRouter } from './routes/news.js';
 import { createWeatherRouter } from './routes/weather.js';
@@ -20,25 +22,31 @@ import { createTransitIngestion } from './cron/ingest-transit.js';
 import { createEventsIngestion } from './cron/ingest-events.js';
 import { createSafetyIngestion } from './cron/ingest-safety.js';
 
-export function createApp(options?: { skipScheduler?: boolean }) {
+export async function createApp(options?: { skipScheduler?: boolean }) {
   const app = express();
   app.use(cors());
   app.use(express.json());
 
   const cache = createCache();
+  const db = createDb();
+
+  if (db) {
+    await warmCache(db, cache);
+  }
+
   const ingestFeeds = createFeedIngestion(cache);
-  const ingestWeather = createWeatherIngestion(cache);
-  const summarizeNews = createSummarization(cache);
-  const ingestTransit = createTransitIngestion(cache);
-  const ingestEvents = createEventsIngestion(cache);
-  const ingestSafety = createSafetyIngestion(cache);
+  const ingestWeather = createWeatherIngestion(cache, db);
+  const summarizeNews = createSummarization(cache, db);
+  const ingestTransit = createTransitIngestion(cache, db);
+  const ingestEvents = createEventsIngestion(cache, db);
+  const ingestSafety = createSafetyIngestion(cache, db);
 
   const jobs: ScheduledJob[] = [
     { name: 'ingest-feeds', schedule: '*/10 * * * *', handler: ingestFeeds, runOnStart: true },
-    { name: 'summarize-news', schedule: '5,20,35,50 * * * *', handler: summarizeNews },
+    { name: 'summarize-news', schedule: '5,20,35,50 * * * *', handler: summarizeNews, runOnStart: true },
     { name: 'ingest-weather', schedule: '*/30 * * * *', handler: ingestWeather, runOnStart: true },
     { name: 'ingest-transit', schedule: '*/5 * * * *', handler: ingestTransit, runOnStart: true },
-    { name: 'ingest-events', schedule: '0 */6 * * *', handler: ingestEvents },
+    { name: 'ingest-events', schedule: '0 */6 * * *', handler: ingestEvents, runOnStart: true },
     { name: 'ingest-safety', schedule: '*/10 * * * *', handler: ingestSafety, runOnStart: true },
   ];
 
@@ -47,11 +55,11 @@ export function createApp(options?: { skipScheduler?: boolean }) {
     : createScheduler(jobs);
 
   app.use('/api', createHealthRouter(cache, scheduler as any));
-  app.use('/api', createNewsRouter(cache));
-  app.use('/api', createWeatherRouter(cache));
-  app.use('/api', createTransitRouter(cache));
-  app.use('/api', createEventsRouter(cache));
-  app.use('/api', createSafetyRouter(cache));
+  app.use('/api', createNewsRouter(cache, db));
+  app.use('/api', createWeatherRouter(cache, db));
+  app.use('/api', createTransitRouter(cache, db));
+  app.use('/api', createEventsRouter(cache, db));
+  app.use('/api', createSafetyRouter(cache, db));
 
-  return { app, cache, scheduler };
+  return { app, cache, db, scheduler };
 }

@@ -4,7 +4,12 @@
  */
 
 import type { Cache } from '../lib/cache.js';
+import type { Db } from '../db/index.js';
+import { saveEvents } from '../db/writes.js';
 import { getActiveCities } from '../config/index.js';
+import { createLogger } from '../lib/logger.js';
+
+const log = createLogger('ingest-events');
 
 export interface CityEvent {
   id: string;
@@ -51,39 +56,36 @@ interface KulturdatenResponse {
   };
 }
 
-export function createEventsIngestion(cache: Cache) {
+export function createEventsIngestion(cache: Cache, db: Db | null = null) {
   return async function ingestEvents(): Promise<void> {
     const cities = getActiveCities();
     for (const city of cities) {
       if (!city.dataSources.events) continue;
       try {
-        await ingestCityEvents(city.id, city.dataSources.events.url, cache);
+        await ingestCityEvents(city.id, city.dataSources.events.url, cache, db);
       } catch (err) {
-        console.error(`[ingest-events] ${city.id} failed:`, err);
+        log.error(`${city.id} failed`, err);
       }
     }
   };
 }
 
-async function ingestCityEvents(cityId: string, sourceUrl: string, cache: Cache): Promise<void> {
+async function ingestCityEvents(cityId: string, sourceUrl: string, cache: Cache, db: Db | null): Promise<void> {
   const startDate = new Date().toISOString().slice(0, 10);
   const endDate = new Date(Date.now() + 7 * 86400_000).toISOString().slice(0, 10);
 
   const url = `${sourceUrl}?startDate=${startDate}&endDate=${endDate}&pageSize=${EVENTS_PAGE_SIZE}&page=1`;
 
-  const response = await fetch(url, {
+  const response = await log.fetch(url, {
     signal: AbortSignal.timeout(EVENTS_TIMEOUT_MS),
     headers: { 'User-Agent': 'CityMonitor/1.0', 'Accept': 'application/json' },
   });
 
-  if (!response.ok) {
-    console.warn(`[ingest-events] ${cityId}: API returned ${response.status}`);
-    return;
-  }
+  if (!response.ok) return;
 
   const raw: KulturdatenResponse = await response.json();
   if (!raw.success || !raw.data?.events) {
-    console.warn(`[ingest-events] ${cityId}: API returned unsuccessful response`);
+    log.warn(`${cityId}: API returned unsuccessful response`);
     return;
   }
 
@@ -96,7 +98,16 @@ async function ingestCityEvents(cityId: string, sourceUrl: string, cache: Cache)
   events.sort((a, b) => a.date.localeCompare(b.date));
 
   cache.set(`${cityId}:events:upcoming`, events, 21600);
-  console.log(`[ingest-events] ${cityId}: ${events.length} events (next 7 days)`);
+
+  if (db) {
+    try {
+      await saveEvents(db, cityId, events);
+    } catch (err) {
+      log.error(`${cityId} DB write failed`, err);
+    }
+  }
+
+  log.info(`${cityId}: ${events.length} events (next 7 days)`);
 }
 
 function transformKulturdatenEvent(raw: KulturdatenEvent): CityEvent | null {

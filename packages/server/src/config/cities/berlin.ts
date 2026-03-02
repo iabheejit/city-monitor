@@ -32,7 +32,7 @@ export const berlin: CityConfig = {
     { name: 'Berlin.de News', url: 'https://www.berlin.de/news/rss/all.rss', tier: 1, type: 'gov', lang: 'de' },
     { name: 'Berliner Zeitung', url: 'https://www.berliner-zeitung.de/feed.xml', tier: 2, type: 'mainstream', lang: 'de' },
     { name: 'taz Berlin', url: 'https://taz.de/Berlin/!p4610;rss/', tier: 2, type: 'mainstream', lang: 'de' },
-    { name: 'RBB Polizei', url: 'https://www.berlin.de/polizei/polizeimeldungen/index/feed/rss', tier: 1, type: 'gov', lang: 'de', category: 'crime' },
+    { name: 'RBB Polizei', url: 'https://www.berlin.de/polizei/polizeimeldungen/index.php/rss', tier: 1, type: 'gov', lang: 'de', category: 'crime' },
     { name: 'Gründerszene Berlin', url: 'https://www.businessinsider.de/gruenderszene/feed/', tier: 3, type: 'tech', lang: 'de' },
     { name: 'Exberliner', url: 'https://www.exberliner.com/feed/', tier: 3, type: 'other', lang: 'en' },
   ],
@@ -40,6 +40,6 @@ export const berlin: CityConfig = {
     weather: { provider: 'open-meteo', lat: 52.52, lon: 13.405 },
     transit: { provider: 'hafas', operatorId: 'VBB' },
     events: { provider: 'api', url: 'https://api-v2.kulturdaten.berlin/api/events' },
-    police: { provider: 'rss', url: 'https://www.berlin.de/polizei/polizeimeldungen/index/feed/rss' },
+    police: { provider: 'rss', url: 'https://www.berlin.de/polizei/polizeimeldungen/index.php/rss' },
   },
 };
