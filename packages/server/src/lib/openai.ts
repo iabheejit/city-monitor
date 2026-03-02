@@ -168,7 +168,7 @@ Respond ONLY with JSON: {"items":[{"index":0,"relevant":true,"confidence":0.9,"l
     const llmItems = parsed.items ?? [];
 
     // Resolve location names to coordinates via Nominatim
-    const { geocode } = await import('./nominatim.js');
+    const { geocode } = await import('./geocode.js');
     const results: FilteredItem[] = [];
     for (const item of llmItems) {
       const result: FilteredItem = {
@@ -250,7 +250,7 @@ Respond ONLY with JSON: {"items":[{"index":0,"locationLabel":"Alexanderplatz, Mi
     const llmItems = parsed.items ?? [];
 
     // Resolve location names to coordinates via Nominatim
-    const { geocode } = await import('./nominatim.js');
+    const { geocode } = await import('./geocode.js');
     const results: GeolocatedReport[] = [];
     for (const item of llmItems) {
       const result: GeolocatedReport = {

@@ -109,6 +109,7 @@ Adding a city = adding a config file + registering in `ALL_CITIES` + setting `AC
 | `OPENAI_FILTER_MODEL` | No | `gpt-5-nano` | Model for news filtering + location extraction |
 | `ACTIVE_CITIES` | No | `berlin` | Comma-separated city IDs |
 | `APONET_TOKEN` | No | _(community token)_ | aponet.de API token for emergency pharmacies |
+| `LOCATIONIQ_TOKEN` | No | — | LocationIQ geocoding token. Used as fallback when Nominatim is rate-limited. |
 | `TOMTOM_API_KEY` | No | — | TomTom traffic API key. Traffic skipped if not set. |
 
 ## Utility Libraries
@@ -119,4 +120,4 @@ Adding a city = adding a config file + registering in `ALL_CITIES` + setting `AC
 | `lib/rate-gate.ts` | Serializes concurrent calls with minimum gap. Factory: `createRateGate(minGapMs)`. |
 | `lib/rss-parser.ts` | RSS 2.0 + Atom parser using `fast-xml-parser`. Returns `FeedItem[]`. |
 | `lib/classifier.ts` | German keyword-based headline classification into 8 categories. |
-| `lib/nominatim.ts` | OSM Nominatim geocoding with 1 req/sec rate limiting. Used by LLM pipelines. |
+| `lib/geocode.ts` | Nominatim-first geocoding (1 QPS, free). Falls back to LocationIQ when rate-limited and `LOCATIONIQ_TOKEN` is set. |
