@@ -1,0 +1,20 @@
+/**
+ * Copyright (C) 2026 Odin Mühlenbein
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
+import { api, type TrafficIncident } from '../lib/api.js';
+
+export function useTrafficIncidents(cityId: string) {
+  return useQuery<TrafficIncident[]>({
+    queryKey: ['traffic', cityId],
+    queryFn: () => api.getTraffic(cityId),
+    refetchInterval: 5 * 60 * 1000,
+    refetchIntervalInBackground: false,
+    staleTime: 2 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+    retry: 2,
+    placeholderData: keepPreviousData,
+  });
+}

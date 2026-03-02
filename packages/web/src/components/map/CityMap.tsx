@@ -19,9 +19,10 @@ import { useSafety } from '../../hooks/useSafety.js';
 import { useNina } from '../../hooks/useNina.js';
 import { useAirQuality } from '../../hooks/useAirQuality.js';
 import { usePharmacies } from '../../hooks/usePharmacies.js';
+import { useTrafficIncidents } from '../../hooks/useTraffic.js';
 import { useCommandCenter } from '../../hooks/useCommandCenter.js';
 import { getAqiLevel } from '../strips/AirQualityStrip.js';
-import type { TransitAlert, NewsItem, SafetyReport, NinaWarning, EmergencyPharmacy } from '../../lib/api.js';
+import type { TransitAlert, NewsItem, SafetyReport, NinaWarning, EmergencyPharmacy, TrafficIncident } from '../../lib/api.js';
 
 const DARK_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-nolabels-gl-style/style.json';
 const LIGHT_STYLE = 'https://basemaps.cartocdn.com/gl/positron-nolabels-gl-style/style.json';
@@ -66,7 +67,8 @@ function simplifyMap(map: maplibregl.Map) {
       !layer.id.startsWith('news-') &&
       !layer.id.startsWith('safety-') &&
       !layer.id.startsWith('warning-') &&
-      !layer.id.startsWith('pharmacy-')
+      !layer.id.startsWith('pharmacy-') &&
+      !layer.id.startsWith('traffic-')
     ) {
       map.setLayoutProperty(layer.id, 'visibility', 'none');
     }
@@ -492,6 +494,89 @@ function pharmaciesToGeoJSON(pharmacies: EmergencyPharmacy[]): GeoJSON.FeatureCo
   return { type: 'FeatureCollection', features };
 }
 
+const TRAFFIC_SEVERITY_COLORS: Record<string, string> = {
+  critical: '#dc2626',
+  major: '#f97316',
+  moderate: '#eab308',
+  low: '#84cc16',
+};
+
+function trafficToGeoJSON(incidents: TrafficIncident[]): GeoJSON.FeatureCollection {
+  const features: GeoJSON.Feature[] = [];
+  for (const inc of incidents) {
+    if (!inc.geometry?.coordinates?.length) continue;
+    features.push({
+      type: 'Feature',
+      geometry: inc.geometry as GeoJSON.Geometry,
+      properties: {
+        id: inc.id,
+        type: inc.type,
+        severity: inc.severity,
+        description: inc.description,
+        road: inc.road ?? '',
+        from: inc.from ?? '',
+        to: inc.to ?? '',
+        delay: inc.delay ?? 0,
+        color: TRAFFIC_SEVERITY_COLORS[inc.severity] ?? TRAFFIC_SEVERITY_COLORS.low,
+      },
+    });
+  }
+  return { type: 'FeatureCollection', features };
+}
+
+function updateTrafficLayers(map: maplibregl.Map, incidents: TrafficIncident[], _isDark: boolean) {
+  const geojson = trafficToGeoJSON(incidents);
+
+  for (const id of ['traffic-line', 'traffic-line-casing']) {
+    if (map.getLayer(id)) map.removeLayer(id);
+  }
+  if (map.getSource('traffic-incidents')) map.removeSource('traffic-incidents');
+
+  if (geojson.features.length === 0) return;
+
+  map.addSource('traffic-incidents', { type: 'geojson', data: geojson });
+
+  map.addLayer({
+    id: 'traffic-line-casing',
+    type: 'line',
+    source: 'traffic-incidents',
+    layout: { 'line-cap': 'round', 'line-join': 'round' },
+    paint: {
+      'line-color': '#000000',
+      'line-width': 6,
+      'line-opacity': 0.3,
+    },
+  });
+
+  map.addLayer({
+    id: 'traffic-line',
+    type: 'line',
+    source: 'traffic-incidents',
+    layout: { 'line-cap': 'round', 'line-join': 'round' },
+    paint: {
+      'line-color': ['get', 'color'],
+      'line-width': 4,
+      'line-opacity': 0.8,
+    },
+  });
+
+  map.on('click', 'traffic-line', (e) => {
+    if (!e.features?.length) return;
+    const props = e.features[0].properties!;
+    const delayMin = props.delay ? Math.round(Number(props.delay) / 60) : 0;
+    const html = `<div style="font-size:13px;max-width:280px">
+      <div style="font-weight:600;margin-bottom:4px">${props.type}${props.road ? ` — ${props.road}` : ''}</div>
+      ${props.description ? `<div style="font-size:12px">${props.description}</div>` : ''}
+      ${props.from && props.to ? `<div style="font-size:11px;opacity:0.6;margin-top:2px">${props.from} → ${props.to}</div>` : ''}
+      ${delayMin > 0 ? `<div style="font-size:11px;margin-top:2px">Delay: ~${delayMin} min</div>` : ''}
+    </div>`;
+    new maplibregl.Popup({ offset: 10, maxWidth: '300px' }).setLngLat(e.lngLat).setHTML(html).addTo(map);
+  });
+
+  map.on('mouseenter', 'traffic-line', () => { map.getCanvas().style.cursor = 'pointer'; });
+  map.on('mouseleave', 'traffic-line', () => { map.getCanvas().style.cursor = ''; });
+}
+
 function updatePharmacyMarkers(map: maplibregl.Map, pharmacies: EmergencyPharmacy[], isDark: boolean) {
   const geojson = pharmaciesToGeoJSON(pharmacies);
 
@@ -632,6 +717,7 @@ export function CityMap() {
   const { data: ninaWarnings } = useNina(city.id);
   const { data: airQuality } = useAirQuality(city.id);
   const { data: pharmacyList } = usePharmacies(city.id);
+  const { data: trafficIncidents } = useTrafficIncidents(city.id);
   const activeLayers = useCommandCenter((s) => s.activeLayers);
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
@@ -643,6 +729,7 @@ export function CityMap() {
   const safetyItems = activeLayers.has('safety') ? (safetyReports ?? []) : [];
   const warningItems = activeLayers.has('warnings') ? (ninaWarnings ?? []) : [];
   const pharmacyItems = activeLayers.has('pharmacies') ? (pharmacyList ?? []) : [];
+  const trafficItems = activeLayers.has('traffic') ? (trafficIncidents ?? []) : [];
 
   // Keep current values in refs so the style.load handler always reads fresh values
   const isDarkRef = useRef(isDark);
@@ -659,6 +746,8 @@ export function CityMap() {
   warningItemsRef.current = warningItems;
   const pharmacyItemsRef = useRef(pharmacyItems);
   pharmacyItemsRef.current = pharmacyItems;
+  const trafficItemsRef = useRef(trafficItems);
+  trafficItemsRef.current = trafficItems;
 
   // Create map once
   useEffect(() => {
@@ -692,6 +781,7 @@ export function CityMap() {
       updateSafetyMarkers(map, safetyItemsRef.current, isDarkRef.current);
       updateWarningPolygons(map, warningItemsRef.current, isDarkRef.current);
       updatePharmacyMarkers(map, pharmacyItemsRef.current, isDarkRef.current);
+      updateTrafficLayers(map, trafficItemsRef.current, isDarkRef.current);
 
       // Collapse the attribution control (MapLibre opens it by default)
       containerRef.current
@@ -727,6 +817,7 @@ export function CityMap() {
       updateSafetyMarkers(map, safetyItemsRef.current, isDark);
       updateWarningPolygons(map, warningItemsRef.current, isDark);
       updatePharmacyMarkers(map, pharmacyItemsRef.current, isDark);
+      updateTrafficLayers(map, trafficItemsRef.current, isDark);
     });
   }, [isDark, city.id]);
 
@@ -769,6 +860,14 @@ export function CityMap() {
     updatePharmacyMarkers(map, pharmacyItems, isDarkRef.current);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pharmacyItems]);
+
+  // Update traffic incident layers
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !map.isStyleLoaded()) return;
+    updateTrafficLayers(map, trafficItems, isDarkRef.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [trafficItems]);
 
   const showAqi = activeLayers.has('air-quality') && airQuality?.current;
   const aqiLevel = showAqi ? getAqiLevel(airQuality!.current.europeanAqi) : null;

@@ -18,6 +18,7 @@ import { createSafetyRouter } from './routes/safety.js';
 import { createNinaRouter } from './routes/nina.js';
 import { createAirQualityRouter } from './routes/air-quality.js';
 import { createPharmaciesRouter } from './routes/pharmacies.js';
+import { createTrafficRouter } from './routes/traffic.js';
 import { createFeedIngestion } from './cron/ingest-feeds.js';
 import { createWeatherIngestion } from './cron/ingest-weather.js';
 import { createSummarization } from './cron/summarize.js';
@@ -27,6 +28,7 @@ import { createSafetyIngestion } from './cron/ingest-safety.js';
 import { createNinaIngestion } from './cron/ingest-nina.js';
 import { createDataRetention } from './cron/data-retention.js';
 import { createPharmacyIngestion } from './cron/ingest-pharmacies.js';
+import { createTrafficIngestion } from './cron/ingest-traffic.js';
 
 export async function createApp(options?: { skipScheduler?: boolean }) {
   const app = express();
@@ -48,6 +50,7 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
   const ingestSafety = createSafetyIngestion(cache, db);
   const ingestNina = createNinaIngestion(cache, db);
   const ingestPharmacies = createPharmacyIngestion(cache);
+  const ingestTraffic = createTrafficIngestion(cache);
 
   const retainData = db ? createDataRetention(db) : async () => {};
 
@@ -60,6 +63,7 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
     { name: 'ingest-safety', schedule: '*/10 * * * *', handler: ingestSafety, runOnStart: true },
     { name: 'ingest-nina', schedule: '*/5 * * * *', handler: ingestNina, runOnStart: true },
     { name: 'ingest-pharmacies', schedule: '0 */6 * * *', handler: ingestPharmacies, runOnStart: true },
+    { name: 'ingest-traffic', schedule: '*/5 * * * *', handler: ingestTraffic, runOnStart: true },
     { name: 'data-retention', schedule: '0 3 * * *', handler: retainData },
   ];
 
@@ -80,6 +84,7 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
   app.use('/api', cacheFor(120), createNinaRouter(cache, db));
   app.use('/api', cacheFor(600), createAirQualityRouter(cache));
   app.use('/api', cacheFor(3600), createPharmaciesRouter(cache));
+  app.use('/api', cacheFor(120), createTrafficRouter(cache));
 
   return { app, cache, db, scheduler };
 }

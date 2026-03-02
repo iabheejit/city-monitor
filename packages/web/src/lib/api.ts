@@ -109,6 +109,21 @@ export interface AirQuality {
   }>;
 }
 
+export interface TrafficIncident {
+  id: string;
+  type: 'jam' | 'closure' | 'construction' | 'accident' | 'other';
+  severity: 'low' | 'moderate' | 'major' | 'critical';
+  description: string;
+  road?: string;
+  from?: string;
+  to?: string;
+  delay?: number;
+  length?: number;
+  geometry: { type: string; coordinates: number[][] };
+  startTime?: string;
+  endTime?: string;
+}
+
 export interface EmergencyPharmacy {
   id: string;
   name: string;
@@ -132,4 +147,5 @@ export const api = {
   getNina: (city: string) => fetchJson<NinaWarning[]>(`${BASE}/${city}/nina`),
   getAirQuality: (city: string) => fetchJson<AirQuality | null>(`${BASE}/${city}/air-quality`),
   getPharmacies: (city: string) => fetchJson<EmergencyPharmacy[]>(`${BASE}/${city}/pharmacies`),
+  getTraffic: (city: string) => fetchJson<TrafficIncident[]>(`${BASE}/${city}/traffic`),
 };

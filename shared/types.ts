@@ -98,6 +98,22 @@ export interface WeatherData {
   alerts: WeatherAlert[];
 }
 
+// Traffic incidents
+export interface TrafficIncident {
+  id: string;
+  type: 'jam' | 'closure' | 'construction' | 'accident' | 'other';
+  severity: 'low' | 'moderate' | 'major' | 'critical';
+  description: string;
+  road?: string;
+  from?: string;
+  to?: string;
+  delay?: number;
+  length?: number;
+  geometry: { type: string; coordinates: number[][] };
+  startTime?: string;
+  endTime?: string;
+}
+
 // Emergency pharmacies
 export interface EmergencyPharmacy {
   id: string;
