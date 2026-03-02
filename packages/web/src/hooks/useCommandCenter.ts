@@ -6,7 +6,7 @@
 import { create } from 'zustand';
 
 export type TimeRange = '1h' | '6h' | '24h' | '48h' | '7d' | 'all';
-export type DataLayer = 'transit' | 'events' | 'weather' | 'news' | 'safety' | 'warnings' | 'air-quality' | 'pharmacies' | 'traffic';
+export type DataLayer = 'transit' | 'weather' | 'news' | 'safety' | 'warnings' | 'air-quality' | 'pharmacies' | 'traffic';
 export type MapMode = 'default' | 'political';
 export type PoliticalLayer = 'bezirke' | 'bundestag' | 'landesparlament';
 
@@ -21,7 +21,7 @@ interface CommandCenterState {
   setPoliticalLayer: (layer: PoliticalLayer) => void;
 }
 
-const DEFAULT_LAYERS: Set<DataLayer> = new Set(['transit', 'events']);
+const DEFAULT_LAYERS: Set<DataLayer> = new Set(['transit']);
 
 export const useCommandCenter = create<CommandCenterState>((set) => ({
   timeRange: '7d',

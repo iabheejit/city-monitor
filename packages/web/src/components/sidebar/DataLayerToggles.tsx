@@ -6,7 +6,7 @@
 import { useTranslation } from 'react-i18next';
 import { useCommandCenter, type DataLayer } from '../../hooks/useCommandCenter.js';
 
-const LAYERS: DataLayer[] = ['transit', 'events', 'weather', 'news', 'safety', 'warnings', 'air-quality', 'pharmacies', 'traffic'];
+const LAYERS: DataLayer[] = ['transit', 'weather', 'news', 'safety', 'warnings', 'air-quality', 'pharmacies', 'traffic'];
 
 export function DataLayerToggles() {
   const { t } = useTranslation();
