@@ -203,6 +203,24 @@ export async function loadPoliticalDistricts(
   return rows[0].districts as PoliticalDistrict[];
 }
 
+export async function loadPoliticalFetchedAt(
+  db: Db,
+  cityId: string,
+  level: string,
+): Promise<Date | null> {
+  const rows = await db
+    .select({ fetchedAt: politicalDistricts.fetchedAt })
+    .from(politicalDistricts)
+    .where(and(
+      eq(politicalDistricts.cityId, cityId),
+      eq(politicalDistricts.level, level),
+    ))
+    .limit(1);
+
+  if (rows.length === 0) return null;
+  return rows[0].fetchedAt;
+}
+
 export async function loadAirQualityGrid(db: Db, cityId: string): Promise<AirQualityGridPoint[] | null> {
   const rows = await db
     .select()

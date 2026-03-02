@@ -5,6 +5,9 @@
 
 import type { CityConfig, PoliticalDistrict, Representative } from '@city-monitor/shared';
 import type { Cache } from '../lib/cache.js';
+import type { Db } from '../db/index.js';
+import { savePoliticalDistricts } from '../db/writes.js';
+import { loadPoliticalFetchedAt } from '../db/reads.js';
 import { getActiveCities } from '../config/index.js';
 import { createLogger } from '../lib/logger.js';
 
@@ -15,6 +18,44 @@ export type { PoliticalDistrict, Representative };
 const API_BASE = 'https://www.abgeordnetenwatch.de/api/v2';
 const TIMEOUT_MS = 30_000;
 const TTL_SECONDS = 604800; // 7 days
+
+/**
+ * Hardcoded Bezirksbürgermeister per city.
+ * Source: https://berlin.de/rbmskzl/regierender-buergermeister/buergermeister-von-berlin/rat-der-buergermeister/
+ * Last verified: 2026-03-02
+ */
+const BEZIRKSBUERGERMEISTER: Record<string, PoliticalDistrict[]> = {
+  berlin: [
+    { id: 'bm-mitte', name: 'Mitte', level: 'bezirk', representatives: [{ name: 'Stefanie Remlinger', party: 'Grüne', role: 'Bezirksbürgermeisterin', profileUrl: 'https://www.berlin.de/ba-mitte/politik-und-verwaltung/bezirksamt/' }] },
+    { id: 'bm-friedrichshain-kreuzberg', name: 'Friedrichshain-Kreuzberg', level: 'bezirk', representatives: [{ name: 'Clara Herrmann', party: 'Grüne', role: 'Bezirksbürgermeisterin', profileUrl: 'https://www.berlin.de/ba-friedrichshain-kreuzberg/politik-und-verwaltung/bezirksamt/' }] },
+    { id: 'bm-pankow', name: 'Pankow', level: 'bezirk', representatives: [{ name: 'Dr. Cordelia Koch', party: 'Grüne', role: 'Bezirksbürgermeisterin', profileUrl: 'https://www.berlin.de/ba-pankow/politik-und-verwaltung/bezirksamt/' }] },
+    { id: 'bm-charlottenburg-wilmersdorf', name: 'Charlottenburg-Wilmersdorf', level: 'bezirk', representatives: [{ name: 'Kirstin Bauch', party: 'Grüne', role: 'Bezirksbürgermeisterin', profileUrl: 'https://www.berlin.de/ba-charlottenburg-wilmersdorf/politik-und-verwaltung/bezirksamt/' }] },
+    { id: 'bm-spandau', name: 'Spandau', level: 'bezirk', representatives: [{ name: 'Frank Bewig', party: 'CDU', role: 'Bezirksbürgermeister', profileUrl: 'https://www.berlin.de/ba-spandau/politik-und-verwaltung/bezirksamt/' }] },
+    { id: 'bm-steglitz-zehlendorf', name: 'Steglitz-Zehlendorf', level: 'bezirk', representatives: [{ name: 'Maren Schellenberg', party: 'Grüne', role: 'Bezirksbürgermeisterin', profileUrl: 'https://www.berlin.de/ba-steglitz-zehlendorf/politik-und-verwaltung/bezirksamt/' }] },
+    { id: 'bm-tempelhof-schoeneberg', name: 'Tempelhof-Schöneberg', level: 'bezirk', representatives: [{ name: 'Jörn Oltmann', party: 'Grüne', role: 'Bezirksbürgermeister', profileUrl: 'https://www.berlin.de/ba-tempelhof-schoeneberg/politik-und-verwaltung/bezirksamt/' }] },
+    { id: 'bm-neukoelln', name: 'Neukölln', level: 'bezirk', representatives: [{ name: 'Martin Hikel', party: 'SPD', role: 'Bezirksbürgermeister', profileUrl: 'https://www.berlin.de/ba-neukoelln/politik-und-verwaltung/bezirksamt/' }] },
+    { id: 'bm-treptow-koepenick', name: 'Treptow-Köpenick', level: 'bezirk', representatives: [{ name: 'Oliver Igel', party: 'SPD', role: 'Bezirksbürgermeister', profileUrl: 'https://www.berlin.de/ba-treptow-koepenick/politik-und-verwaltung/bezirksamt/' }] },
+    { id: 'bm-marzahn-hellersdorf', name: 'Marzahn-Hellersdorf', level: 'bezirk', representatives: [{ name: 'Nadja Zivkovic', party: 'CDU', role: 'Bezirksbürgermeisterin', profileUrl: 'https://www.berlin.de/ba-marzahn-hellersdorf/politik-und-verwaltung/bezirksamt/' }] },
+    { id: 'bm-lichtenberg', name: 'Lichtenberg', level: 'bezirk', representatives: [{ name: 'Martin Schaefer', party: 'CDU', role: 'Bezirksbürgermeister', profileUrl: 'https://www.berlin.de/ba-lichtenberg/politik-und-verwaltung/bezirksamt/' }] },
+    { id: 'bm-reinickendorf', name: 'Reinickendorf', level: 'bezirk', representatives: [{ name: 'Emine Demirbüken-Wegner', party: 'CDU', role: 'Bezirksbürgermeisterin', profileUrl: 'https://www.berlin.de/ba-reinickendorf/politik-und-verwaltung/bezirksamt/' }] },
+  ],
+};
+
+/** Berlin Bezirk names for constituency-to-bezirk mapping */
+const BERLIN_BEZIRKE = [
+  'Mitte',
+  'Friedrichshain-Kreuzberg',
+  'Pankow',
+  'Charlottenburg-Wilmersdorf',
+  'Spandau',
+  'Steglitz-Zehlendorf',
+  'Tempelhof-Schöneberg',
+  'Neukölln',
+  'Treptow-Köpenick',
+  'Marzahn-Hellersdorf',
+  'Lichtenberg',
+  'Reinickendorf',
+];
 
 /**
  * Parliament IDs on abgeordnetenwatch.de.
@@ -63,7 +104,20 @@ interface AW_Response {
   meta: { result: { total: number; count: number } };
 }
 
-export function createPoliticalIngestion(cache: Cache) {
+/**
+ * Pre-cache hardcoded Bezirksbürgermeister data so it's available immediately
+ * on server start, before the full political cron job runs.
+ */
+export function preCacheBezirke(cache: Cache): void {
+  for (const city of getActiveCities()) {
+    const bmData = BEZIRKSBUERGERMEISTER[city.id];
+    if (bmData) {
+      cache.set(`${city.id}:political:bezirke`, bmData, TTL_SECONDS);
+    }
+  }
+}
+
+export function createPoliticalIngestion(cache: Cache, db: Db | null) {
   return async function ingestPolitical(): Promise<void> {
     const cities = getActiveCities();
     for (const city of cities) {
@@ -72,7 +126,7 @@ export function createPoliticalIngestion(cache: Cache) {
       if (!config) continue;
 
       try {
-        await ingestCityPolitical(city, config, cache);
+        await ingestCityPolitical(city, config, cache, db);
       } catch (err) {
         log.error(`${city.id} failed`, err);
       }
@@ -90,7 +144,7 @@ async function fetchMandates(periodId: number): Promise<AW_Mandate[]> {
       + `?parliament_period=${periodId}`
       + `&type=mandate`
       + `&range_start=${page * pageSize}`
-      + `&range_end=${pageSize}`;
+      + `&range_end=${(page + 1) * pageSize}`;
 
     const response = await log.fetch(url, {
       signal: AbortSignal.timeout(TIMEOUT_MS),
@@ -115,11 +169,12 @@ async function fetchMandates(periodId: number): Promise<AW_Mandate[]> {
 }
 
 async function fetchCurrentPeriod(parliamentId: number): Promise<number | null> {
+  // Fetch several recent periods so we can filter for legislature (not election) type
   const url = `${API_BASE}/parliament-periods`
     + `?parliament=${parliamentId}`
     + `&sort_by=start_date_period`
     + `&sort_direction=desc`
-    + `&range_end=1`;
+    + `&range_end=5`;
 
   const response = await log.fetch(url, {
     signal: AbortSignal.timeout(TIMEOUT_MS),
@@ -128,8 +183,10 @@ async function fetchCurrentPeriod(parliamentId: number): Promise<number | null> 
 
   if (!response.ok) return null;
 
-  const data = (await response.json()) as { data: Array<{ id: number }> };
-  return data.data[0]?.id ?? null;
+  const data = (await response.json()) as { data: Array<{ id: number; type: string }> };
+  // Prefer legislature periods — election periods have no mandate data
+  const legislature = data.data.find((p) => p.type === 'legislature');
+  return legislature?.id ?? data.data[0]?.id ?? null;
 }
 
 function normalizeParty(fractionLabel: string): string {
@@ -141,17 +198,32 @@ function normalizeParty(fractionLabel: string): string {
   if (fractionLabel.includes('Linke')) return 'Die Linke';
   if (fractionLabel.includes('BSW')) return 'BSW';
   if (fractionLabel.includes('AfD')) return 'AfD';
+  if (fractionLabel.toLowerCase().includes('fraktionslos')) return 'Fraktionslos';
   return fractionLabel;
+}
+
+/**
+ * Normalize constituency label from abgeordnetenwatch API.
+ * Input:  "78 - Berlin-Steglitz-Zehlendorf (Bundestag 2025 - 2029)"
+ * Output: "Berlin-Steglitz-Zehlendorf"
+ */
+function normalizeConstituencyName(label: string): string {
+  // Strip leading number + dash: "78 - Berlin-Mitte (...)" → "Berlin-Mitte (...)"
+  let name = label.replace(/^\d+\s*-\s*/, '');
+  // Strip trailing parenthetical: "Berlin-Mitte (Bundestag 2025 - 2029)" → "Berlin-Mitte"
+  name = name.replace(/\s*\([^)]*\)\s*$/, '');
+  return name.trim();
 }
 
 function mandateToRepresentative(m: AW_Mandate, role: string): Representative {
   const party = m.fraction_membership?.[0]?.fraction?.label ?? 'Parteilos';
+  const rawConstituency = m.electoral_data?.constituency?.label;
   return {
     name: m.politician.label,
     party: normalizeParty(party),
     role,
     profileUrl: m.politician.abgeordnetenwatch_url,
-    constituency: m.electoral_data?.constituency?.label,
+    constituency: rawConstituency ? normalizeConstituencyName(rawConstituency) : undefined,
   };
 }
 
@@ -168,11 +240,69 @@ function filterBundestagForCity(mandates: AW_Mandate[], cityName: string): AW_Ma
   });
 }
 
+/**
+ * Deduplicate mandates by politician ID.
+ * The API can return multiple entries per politician (e.g. direct + list mandate).
+ * Keep the first occurrence (which has constituency data for direct mandates).
+ */
+function deduplicateMandates(mandates: AW_Mandate[]): AW_Mandate[] {
+  const seen = new Set<number>();
+  return mandates.filter((m) => {
+    if (seen.has(m.politician.id)) return false;
+    seen.add(m.politician.id);
+    return true;
+  });
+}
+
+/**
+ * Map a state constituency name to its parent Bezirk.
+ * E.g. "Charlottenburg-Wilmersdorf 3" → "Charlottenburg-Wilmersdorf"
+ */
+function constituencyToBezirk(constituency: string, bezirke: string[]): string | null {
+  const lower = constituency.toLowerCase();
+  for (const b of bezirke) {
+    if (lower.startsWith(b.toLowerCase())) return b;
+  }
+  return null;
+}
+
 async function ingestCityPolitical(
   city: CityConfig,
   config: ParliamentConfig,
   cache: Cache,
+  db: Db | null,
 ): Promise<void> {
+  // Helper: persist to DB without killing the ingestion on failure
+  const persistToDb = async (level: string, districts: PoliticalDistrict[]) => {
+    if (!db) return;
+    try {
+      await savePoliticalDistricts(db, city.id, level, districts);
+    } catch (err) {
+      log.error(`${city.id}: DB save for ${level} failed`, err);
+    }
+  };
+
+  // Cache hardcoded Bezirksbürgermeister data
+  const bmData = BEZIRKSBUERGERMEISTER[city.id];
+  if (bmData) {
+    cache.set(`${city.id}:political:bezirke`, bmData, TTL_SECONDS);
+    await persistToDb('bezirke', bmData);
+    log.info(`${city.id}: ${bmData.length} Bezirksbürgermeister cached`);
+  }
+
+  // Skip API calls if DB data is still fresh (fetched within the 7-day TTL)
+  if (db) {
+    const fetchedAt = await loadPoliticalFetchedAt(db, city.id, 'bundestag');
+    if (fetchedAt) {
+      const ageMs = Date.now() - fetchedAt.getTime();
+      if (ageMs < TTL_SECONDS * 1000) {
+        const ageDays = Math.round(ageMs / 86_400_000);
+        log.info(`${city.id}: political data is ${ageDays}d old (TTL 7d), skipping API fetch`);
+        return;
+      }
+    }
+  }
+
   // Fetch current Bundestag period dynamically
   const bundestagPeriodId = await fetchCurrentPeriod(config.bundestag.parliamentId);
   if (!bundestagPeriodId) {
@@ -181,7 +311,7 @@ async function ingestCityPolitical(
   }
 
   const allBundestag = await fetchMandates(bundestagPeriodId);
-  const cityBundestag = filterBundestagForCity(allBundestag, city.name);
+  const cityBundestag = deduplicateMandates(filterBundestagForCity(allBundestag, city.name));
 
   const bundestagDistricts: PoliticalDistrict[] = [];
   const byConstituency = new Map<string, Representative[]>();
@@ -204,12 +334,13 @@ async function ingestCityPolitical(
   }
 
   cache.set(`${city.id}:political:bundestag`, bundestagDistricts, TTL_SECONDS);
+  await persistToDb('bundestag', bundestagDistricts);
   log.info(`${city.id}: ${bundestagDistricts.length} Bundestag constituencies, ${cityBundestag.length} MdBs`);
 
   // State parliament mandates
   const statePeriodId = await fetchCurrentPeriod(config.state.parliamentId);
   if (statePeriodId) {
-    const stateMandates = await fetchMandates(statePeriodId);
+    const stateMandates = deduplicateMandates(await fetchMandates(statePeriodId));
     const stateReps = stateMandates.map((m) =>
       mandateToRepresentative(m, config.state.role),
     );
@@ -234,6 +365,34 @@ async function ingestCityPolitical(
     }
 
     cache.set(`${city.id}:political:state`, stateDistricts, TTL_SECONDS);
+    await persistToDb('state', stateDistricts);
     log.info(`${city.id}: ${stateDistricts.length} state constituencies, ${stateReps.length} ${config.state.role}s`);
+
+    // Aggregate state MdAs by Bezirk for the "landesparlament on bezirke" view
+    const bezirke = city.id === 'berlin' ? BERLIN_BEZIRKE : [];
+    if (bezirke.length > 0) {
+      const byBezirk = new Map<string, Representative[]>();
+      for (const rep of stateReps) {
+        const bezirk = rep.constituency ? constituencyToBezirk(rep.constituency, bezirke) : null;
+        if (!bezirk) continue;
+        const arr = byBezirk.get(bezirk) ?? [];
+        arr.push(rep);
+        byBezirk.set(bezirk, arr);
+      }
+
+      const stateBezirke: PoliticalDistrict[] = [];
+      for (const [name, reps] of byBezirk) {
+        stateBezirke.push({
+          id: `state-bezirk-${name.toLowerCase().replace(/\s+/g, '-')}`,
+          name,
+          level: 'landesparlament',
+          representatives: reps,
+        });
+      }
+
+      cache.set(`${city.id}:political:state-bezirke`, stateBezirke, TTL_SECONDS);
+      await persistToDb('state-bezirke', stateBezirke);
+      log.info(`${city.id}: ${stateBezirke.length} Bezirke with aggregated ${config.state.role}s`);
+    }
   }
 }
