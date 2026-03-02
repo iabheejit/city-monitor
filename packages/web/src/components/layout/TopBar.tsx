@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
+import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useTheme } from '../../hooks/useTheme.js';
@@ -28,12 +29,13 @@ export function TopBar() {
   return (
     <header className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
       <div className="flex items-center gap-3">
-        <h1
-          className="text-lg font-bold"
+        <Link
+          to="/"
+          className="text-lg font-bold hover:opacity-80"
           style={{ color: city.theme.accent }}
         >
           {city.name}
-        </h1>
+        </Link>
         {current && weatherInfo && (
           <span className="text-sm text-gray-600 dark:text-gray-300">
             {weatherInfo.icon} {Math.round(current.temp)}°

@@ -39,4 +39,26 @@ describe('City config', () => {
     const config = getCityConfig('berlin');
     expect(config!.dataSources.weather.provider).toBe('open-meteo');
   });
+
+  it('getCityConfig returns Hamburg config', () => {
+    const config = getCityConfig('hamburg');
+    expect(config).toBeDefined();
+    expect(config!.id).toBe('hamburg');
+    expect(config!.name).toBe('Hamburg');
+    expect(config!.theme.accent).toBe('#004B93');
+  });
+
+  it('Hamburg config has feeds and data sources', () => {
+    const config = getCityConfig('hamburg');
+    expect(config!.feeds.length).toBeGreaterThan(0);
+    expect(config!.dataSources.weather.provider).toBe('open-meteo');
+    expect(config!.dataSources.transit?.provider).toBe('hafas');
+  });
+
+  it('supports multiple active cities', () => {
+    vi.stubEnv('ACTIVE_CITIES', 'berlin,hamburg');
+    const cities = getActiveCities();
+    expect(cities).toHaveLength(2);
+    expect(cities.map((c) => c.id)).toEqual(['berlin', 'hamburg']);
+  });
 });

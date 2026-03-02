@@ -4,6 +4,7 @@
  */
 
 import { useEffect } from 'react';
+import { Routes, Route, useParams, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { CityProvider, useCityConfig } from './hooks/useCityConfig.js';
 import { useTheme } from './hooks/useTheme.js';
@@ -16,6 +17,8 @@ import { TransitPanel } from './components/panels/TransitPanel.js';
 import { EventsPanel } from './components/panels/EventsPanel.js';
 import { SafetyPanel } from './components/panels/SafetyPanel.js';
 import { MapPanel } from './components/panels/MapPanel.js';
+import { CityPicker } from './components/pages/CityPicker.js';
+import { getCityConfig, getDefaultCityId } from './config/index.js';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -50,6 +53,21 @@ function Dashboard() {
   );
 }
 
+function CityRoute() {
+  const { cityId } = useParams<{ cityId: string }>();
+  const config = cityId ? getCityConfig(cityId) : undefined;
+
+  if (!config) {
+    return <Navigate to="/" replace />;
+  }
+
+  return (
+    <CityProvider cityId={cityId}>
+      <Dashboard />
+    </CityProvider>
+  );
+}
+
 export function App() {
   const theme = useTheme((s) => s.theme);
 
@@ -59,9 +77,11 @@ export function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <CityProvider>
-        <Dashboard />
-      </CityProvider>
+      <Routes>
+        <Route path="/" element={<CityPicker />} />
+        <Route path="/:cityId" element={<CityRoute />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
     </QueryClientProvider>
   );
 }

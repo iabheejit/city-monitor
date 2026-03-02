@@ -5,9 +5,11 @@
 
 import type { CityConfig } from '@city-monitor/shared';
 import { berlin } from './cities/berlin.js';
+import { hamburg } from './cities/hamburg.js';
 
 const ALL_CITIES: Record<string, CityConfig> = {
   berlin,
+  hamburg,
 };
 
 export function getActiveCities(): CityConfig[] {
