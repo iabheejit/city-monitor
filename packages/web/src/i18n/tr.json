@@ -105,17 +105,8 @@
     "daysAgo": "{{count}} gün önce"
   },
   "sidebar": {
-    "timeRange": {
-      "label": "Zaman Aralığı",
-      "1h": "1s",
-      "6h": "6s",
-      "24h": "24s",
-      "48h": "48s",
-      "7d": "7g",
-      "all": "Tümü"
-    },
     "layers": {
-      "label": "Veri Katmanları",
+      "label": "Katmanlar",
       "transit": "Ulaşım",
       "events": "Etkinlikler",
       "weather": "Hava",

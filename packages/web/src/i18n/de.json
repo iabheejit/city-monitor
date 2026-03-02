@@ -105,17 +105,8 @@
     "daysAgo": "vor {{count}} T."
   },
   "sidebar": {
-    "timeRange": {
-      "label": "Zeitraum",
-      "1h": "1h",
-      "6h": "6h",
-      "24h": "24h",
-      "48h": "48h",
-      "7d": "7T",
-      "all": "Alle"
-    },
     "layers": {
-      "label": "Datenebenen",
+      "label": "Ebenen",
       "transit": "Nahverkehr",
       "events": "Veranstaltungen",
       "weather": "Wetter",

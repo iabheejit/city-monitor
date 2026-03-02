@@ -25,6 +25,7 @@ import { useCommandCenter } from '../../hooks/useCommandCenter.js';
 import type { TransitAlert, NewsItem, SafetyReport, NinaWarning, EmergencyPharmacy, TrafficIncident, PoliticalDistrict, AirQualityGridPoint } from '../../lib/api.js';
 import { SEVERITY_COLORS, NEWS_CATEGORY_COLORS, AQI_LEVEL_COLORS, registerAllMapIcons } from '../../lib/map-icons.js';
 import { getAqiLevel } from '../../lib/aqi.js';
+import { getPartyColor, getMajorityParty } from '../../lib/party-colors.js';
 
 const DARK_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-nolabels-gl-style/style.json';
 const LIGHT_STYLE = 'https://basemaps.cartocdn.com/gl/positron-nolabels-gl-style/style.json';
@@ -42,6 +43,24 @@ const KEEP_LAYERS = new Set([
   'boundary_country_outline',
   'boundary_country_inner',
 ]);
+
+// Major road case layers from CARTO style — shown when the traffic data layer is active.
+// Only case (outline) layers, not fill layers. The native CARTO paint is too subtle at
+// city-wide zoom, so setTrafficRoadVisibility overrides color + width.
+const TRAFFIC_ROAD_LAYERS: { id: string; width: number }[] = [
+  { id: 'road_mot_case_noramp', width: 2.5 },
+  { id: 'road_mot_case_ramp', width: 2 },
+  { id: 'bridge_mot_case', width: 2.5 },
+  { id: 'road_trunk_case_noramp', width: 2 },
+  { id: 'road_trunk_case_ramp', width: 1.5 },
+  { id: 'bridge_trunk_case', width: 2 },
+  { id: 'road_pri_case_noramp', width: 1.5 },
+  { id: 'road_pri_case_ramp', width: 1.2 },
+  { id: 'bridge_pri_case', width: 1.5 },
+  { id: 'road_sec_case_noramp', width: 1 },
+  { id: 'bridge_sec_case', width: 1 },
+];
+const ROAD_LAYER_IDS = new Set(TRAFFIC_ROAD_LAYERS.map((l) => l.id));
 
 const DISTRICT_URLS: Record<string, { url: string; nameField: string }> = {
   berlin: {
@@ -64,21 +83,6 @@ const CONSTITUENCY_URLS: Record<string, Record<string, { url: string; nameField:
   },
 };
 
-const PARTY_COLORS: Record<string, string> = {
-  'SPD': '#E3000F',
-  'CDU': '#000000',
-  'CSU': '#008AC5',
-  'Grüne': '#64A12D',
-  'FDP': '#FFED00',
-  'Die Linke': '#BE3075',
-  'BSW': '#732048',
-  'AfD': '#009EE0',
-  'Parteilos': '#808080',
-};
-
-function getPartyColor(party: string): string {
-  return PARTY_COLORS[party] ?? '#808080';
-}
 
 function simplifyMap(map: maplibregl.Map) {
   const style = map.getStyle();
@@ -86,6 +90,7 @@ function simplifyMap(map: maplibregl.Map) {
   for (const layer of style.layers) {
     if (
       !KEEP_LAYERS.has(layer.id) &&
+      !ROAD_LAYER_IDS.has(layer.id) &&
       !layer.id.startsWith('district-') &&
       !layer.id.startsWith('transit-') &&
       !layer.id.startsWith('news-') &&
@@ -96,6 +101,21 @@ function simplifyMap(map: maplibregl.Map) {
       !layer.id.startsWith('aq-')
     ) {
       map.setLayoutProperty(layer.id, 'visibility', 'none');
+    }
+  }
+}
+
+function setTrafficRoadVisibility(map: maplibregl.Map, visible: boolean, isDark: boolean) {
+  const color = isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.25)';
+  for (const { id, width } of TRAFFIC_ROAD_LAYERS) {
+    if (!map.getLayer(id)) continue;
+    if (visible) {
+      map.setPaintProperty(id, 'line-color', color);
+      map.setPaintProperty(id, 'line-width', width);
+      map.setPaintProperty(id, 'line-opacity', 1);
+    } else {
+      // Reset to near-invisible defaults so roads blend into background
+      map.setPaintProperty(id, 'line-opacity', 0);
     }
   }
 }
@@ -178,12 +198,12 @@ function applyPoliticalStyling(
 ) {
   if (!map.getLayer('district-fill') || !map.getSource('districts')) return;
 
-  // Build a color mapping: district name → party color
+  // Build a color mapping: district name → majority party color
   const colorMap = new Map<string, string>();
   for (const d of districts) {
-    const leadParty = d.representatives[0]?.party;
-    if (leadParty) {
-      colorMap.set(d.name.toLowerCase(), getPartyColor(leadParty));
+    const majorityParty = getMajorityParty(d.representatives);
+    if (majorityParty) {
+      colorMap.set(d.name.toLowerCase(), getPartyColor(majorityParty));
     }
   }
 
@@ -215,6 +235,18 @@ function resetDistrictStyling(map: maplibregl.Map, isDark: boolean) {
   ]);
 }
 
+function sortRepsByPartyMajority(reps: PoliticalDistrict['representatives']): PoliticalDistrict['representatives'] {
+  const counts = new Map<string, number>();
+  for (const r of reps) counts.set(r.party, (counts.get(r.party) ?? 0) + 1);
+  return [...reps].sort((a, b) => {
+    const ca = counts.get(a.party) ?? 0;
+    const cb = counts.get(b.party) ?? 0;
+    if (ca !== cb) return cb - ca;
+    if (a.party !== b.party) return a.party.localeCompare(b.party);
+    return a.name.localeCompare(b.name);
+  });
+}
+
 function buildPoliticalPopupHtml(districtName: string, districts: PoliticalDistrict[]): string {
   const match = districts.find(
     (d) => d.name.toLowerCase() === districtName.toLowerCase(),
@@ -223,10 +255,13 @@ function buildPoliticalPopupHtml(districtName: string, districts: PoliticalDistr
     return `<div style="font-size:13px"><strong>${districtName}</strong><br><em>No data available</em></div>`;
   }
 
-  const parts = [`<div style="font-size:13px;max-height:300px;overflow-y:auto">`];
+  // Sort representatives by party majority (largest party first)
+  const sorted = sortRepsByPartyMajority(match.representatives);
+
+  const parts = [`<div style="font-size:13px;max-height:400px;overflow-y:auto">`];
   parts.push(`<div style="font-weight:600;margin-bottom:6px">${districtName}</div>`);
 
-  for (const rep of match.representatives.slice(0, 5)) {
+  for (const rep of sorted) {
     const color = getPartyColor(rep.party);
     parts.push(
       `<div style="border-left:3px solid ${color};padding-left:8px;margin-bottom:6px">` +
@@ -235,10 +270,6 @@ function buildPoliticalPopupHtml(districtName: string, districts: PoliticalDistr
       (rep.profileUrl ? `<br><a href="${rep.profileUrl}" target="_blank" rel="noopener" style="font-size:11px;color:#3b82f6">Profile →</a>` : '') +
       `</div>`,
     );
-  }
-
-  if (match.representatives.length > 5) {
-    parts.push(`<div style="font-size:11px;opacity:0.6">+${match.representatives.length - 5} more</div>`);
   }
 
   parts.push(`</div>`);
@@ -823,7 +854,7 @@ function updateAqGridLayer(map: maplibregl.Map, points: AirQualityGridPoint[], i
     const coords = (e.features[0].geometry as GeoJSON.Point).coordinates.slice() as [number, number];
     const level = getAqiLevel(Number(props.aqi));
     const linkIcon = props.url
-      ? ` <a href="${props.url}" target="_blank" rel="noopener" style="color:#3b82f6;text-decoration:none;vertical-align:middle"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></a>`
+      ? ` <a href="${props.url}" target="_blank" rel="noopener" style="display:inline;color:#3b82f6;text-decoration:none;margin-left:3px;vertical-align:middle"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></a>`
       : '';
     const html = `<div style="font-size:13px;max-width:240px">
       <div style="font-weight:600;margin-bottom:4px">${props.station}${linkIcon}</div>
@@ -957,6 +988,7 @@ export function CityMap() {
   const politicalLayer = useCommandCenter((s) => s.politicalLayer);
   const activeLayers = useCommandCenter((s) => s.activeLayers);
   const politicalActive = activeLayers.has('political');
+  const trafficActive = activeLayers.has('traffic');
   const { data: bezirkeData } = usePolitical(city.id, 'bezirke');
   const { data: bundestagData } = usePolitical(city.id, 'bundestag');
   const { data: stateBezirkeData } = usePolitical(city.id, 'state-bezirke');
@@ -993,6 +1025,8 @@ export function CityMap() {
   trafficItemsRef.current = trafficItems;
   const aqGridItemsRef = useRef(aqGridItems);
   aqGridItemsRef.current = aqGridItems;
+  const trafficActiveRef = useRef(trafficActive);
+  trafficActiveRef.current = trafficActive;
   const politicalActiveRef = useRef(politicalActive);
   politicalActiveRef.current = politicalActive;
   const politicalLayerRef = useRef(politicalLayer);
@@ -1023,6 +1057,7 @@ export function CityMap() {
 
     map.on('load', () => {
       simplifyMap(map);
+      setTrafficRoadVisibility(map, trafficActiveRef.current, isDarkRef.current);
       registerAllMapIcons(map, isDarkRef.current);
       addDistrictLayer(map, cityIdRef.current, isDarkRef.current);
       setupDistrictHover(map);
@@ -1062,6 +1097,7 @@ export function CityMap() {
     map.setStyle(isDark ? DARK_STYLE : LIGHT_STYLE);
     map.once('styledata', () => {
       simplifyMap(map);
+      setTrafficRoadVisibility(map, trafficActiveRef.current, isDark);
       registerAllMapIcons(map, isDark);
 
       // Restore the correct political/district GeoJSON after style swap
@@ -1159,6 +1195,20 @@ export function CityMap() {
     updateTrafficLayers(map, trafficItems, isDarkRef.current);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trafficItems]);
+
+  // Show/hide major road layers when traffic data layer is toggled
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const apply = () => setTrafficRoadVisibility(map, trafficActive, isDarkRef.current);
+    if (map.isStyleLoaded()) {
+      apply();
+      return;
+    }
+    // Style not loaded yet — defer until idle, but clean up on re-render/unmount
+    map.once('idle', apply);
+    return () => { map.off('idle', apply); };
+  }, [trafficActive]);
 
   // Update air quality grid circles
   useEffect(() => {

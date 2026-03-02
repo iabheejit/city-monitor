@@ -29,13 +29,15 @@ App
             Shell
               TopBar (city name link, weather, language switcher, theme toggle)
               CommandLayout
-                Sidebar (time range selector, data layer toggles) — hidden < lg
+                Sidebar (time range selector, data layer icon toggles) — hidden < lg
                 CityMap (full viewport height, transit markers)
-                BriefingStrip (AI summary)
-                NewsStrip (category filter + headlines)
-                EventsStrip (compact event cards)
-                SafetyStrip (compact report cards)
-                TransitStrip (line badges + expandable alert cards)
+                DashboardGrid
+                  Tile(span=1, expandable) → WeatherStrip (current + hourly/daily)
+                  Tile(span=1, expandable) → AirQualityStrip (AQI gauge + pollutants)
+                  Tile(span=2) → BriefingStrip (AI summary)
+                  Tile(span=2) → NewsStrip (category filter + headlines)
+                  Tile(span=2) → EventsStrip (day/time-of-day/category filters, 2-col grid, future-only)
+                  Tile(span=2) → TransitStrip (line badges + expandable alert cards, container queries)
               Footer (AGPL source link)
 ```
 
@@ -77,9 +79,12 @@ Frontend type definitions for `NewsDigest`, `TransitAlert`, `CityEvent`, `Safety
 ## Layout
 
 - **Shell** — Full-height flex column: TopBar, main content, Footer. Dark mode via Tailwind `dark:` classes.
-- **PanelGrid** — `grid-cols-[repeat(auto-fill,minmax(320px,1fr))]` with 4px gap. Responsive: 1 column on mobile, 2-3 on desktop.
+- **DashboardGrid** — CSS Grid: `grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 p-4`. No 3-column breakpoint to avoid gaps with span-2 tiles.
+- **Tile** — Card wrapper with `title`, `span` (1 | 2 | 'full'), optional `expandable` (chevron toggle in header, render-function children receiving `expanded` boolean), optional `height` ('auto' | 'sm' | 'md' | 'lg'). Rounded border, shadow, `@container` body for container queries. Maps span to `col-span-*` classes.
 - **TopBar** — City name (link back to `/`), current weather, language switcher (DE/EN/TR/AR), theme toggle.
 - **Footer** — AGPL-required source code link (Section 13 compliance).
+
+Tile assignments: Weather (1, expandable), Air Quality (1, expandable), Briefing (2), News (2), Events (2), Transit (2). Expandable tiles use render-function children `(expanded: boolean) => ReactNode` to pass expand state. Strips with internal grids (Events, Transit) use Tailwind v4 container query variants (`@xs:`, `@lg:`, `@2xl:`) so internal layouts respond to tile width, not viewport.
 
 ## Internationalization (i18n)
 
@@ -107,11 +112,12 @@ City accent colors are set via CSS custom property `--accent` with `[data-city='
 
 - MapLibre GL JS (open-source Mapbox fork), lazy-loaded via `React.lazy`
 - CARTO basemaps: dark-matter-nolabels (dark theme), positron-nolabels (light theme) — free, no API key
-- Minimal style: only keeps background, landcover, parks, and boundary layers (water, roads, labels hidden via `simplifyMap()`)
+- Minimal style: only keeps background, landcover, parks, and boundary layers (water, roads, labels hidden via `simplifyMap()`). Major road case layers (`TRAFFIC_ROAD_LAYERS` — motorway, trunk, primary, secondary + bridges) are excluded from `simplifyMap` and controlled via `setTrafficRoadVisibility()` which uses `line-opacity` (0 hidden, 1 visible) with overridden color/width paint properties. Roads appear as semi-transparent dark lines (light mode) or light lines (dark mode) when the traffic data layer is active
 - Initialized from city config: `bounds` (auto-fit to show full city), minZoom, maxZoom, maxBounds
 - Controls: NavigationControl (zoom only, no compass), AttributionControl (compact, collapsed on load)
 - Theme-aware: swaps map style on dark/light toggle via `map.setStyle()` with `isFirstRender` ref to prevent race condition on mount
-- District boundaries: GeoJSON overlay with fill, line (dashed), and label layers per city (`DISTRICT_URLS` config)
+- District boundaries: GeoJSON overlay with fill, line (dashed), and label layers per city (`DISTRICT_URLS` config). Constituency-level GeoJSON (`CONSTITUENCY_URLS`) used when political layer selects bundestag or landesparlament — source is swapped via fetch + remove/re-add pattern with AbortController for race protection
+- Political layer: data layer toggle (not a separate map mode) with mutually exclusive sub-options (bezirke/bundestag/landesparlament). Party colors from `PARTY_COLORS` map applied via MapLibre `match` expression on `district-fill`. Click popups show representatives from abgeordnetenwatch API. Available GeoJSON: Berlin bezirke + bundestag; Hamburg bezirke only. Berlin AGH and Hamburg bundestag/buergerschaft deferred
 - Hover effect: feature-state-based fill opacity change + cursor pointer on district polygons (`setupDistrictHover()`)
 - Map icons: `lib/map-icons.ts` renders Lucide SVG icons onto canvas via `Path2D` (synchronous, no async image loading). `registerAllMapIcons(map, isDark)` pre-registers 14 icon variants (rounded-square background + white Lucide glyph): 3 transit (TrainFront × severity), 8 news (Newspaper × category), 1 safety (ShieldAlert), 1 pharmacy (Pill). Called once on `load` and `styledata`, before any marker updates. Exports `SEVERITY_COLORS` and `NEWS_CATEGORY_COLORS` used by both map-icons and CityMap.
 - Point markers: All 4 point data layers use `symbol` layers with pre-registered icon images. Transit uses severity-based `match` expression; news uses category-based `match`; safety and pharmacy use fixed icon IDs. Click popups and hover cursors on each layer.
@@ -123,7 +129,7 @@ City accent colors are set via CSS custom property `--accent` with `[data-city='
 | File | Purpose |
 |---|---|
 | `lib/format-time.ts` | `formatRelativeTime(iso)` — "just now", "5 min ago", "2h ago", "3d ago" |
-| `lib/map-icons.ts` | Lucide-to-canvas icon renderer, `registerAllMapIcons()`, color maps |
+| `lib/map-icons.ts` | Lucide-to-canvas icon renderer, `registerAllMapIcons()`, color maps, exports `IconNode` type |
 | `lib/weather-codes.ts` | WMO code to emoji + label mapping |
 
 ## SEO & PWA
