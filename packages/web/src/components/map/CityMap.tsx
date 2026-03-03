@@ -80,15 +80,18 @@ const DISTRICT_URLS: Record<string, { url: string; nameField: string }> = {
   },
 };
 
-// Constituency GeoJSON per city + political layer (bezirke uses DISTRICT_URLS)
-const CONSTITUENCY_URLS: Record<string, Record<string, { url: string; nameField: string }>> = {
-  berlin: {
-    bundestag: {
-      url: new URL('../../data/districts/berlin-bundestag.geojson', import.meta.url).href,
-      nameField: 'name',
-    },
-  },
-};
+/** Strip city prefix and constituency suffixes so API names match Bezirke GeoJSON.
+ *  e.g. "Berlin-Spandau – Charlottenburg Nord" → "spandau" */
+function normalizePoliticalName(name: string): string {
+  let n = name.toLowerCase();
+  // Strip city prefix (e.g. "berlin-")
+  const dash = n.indexOf('-');
+  if (dash > 0 && dash < 10) n = n.slice(dash + 1);
+  // Take only the part before " – " (constituency compounds)
+  const em = n.indexOf(' – ');
+  if (em > 0) n = n.slice(0, em);
+  return n.trim();
+}
 
 
 function simplifyMap(map: maplibregl.Map) {
@@ -291,12 +294,12 @@ function applyPoliticalStyling(
 ) {
   if (!map.getLayer('district-fill') || !map.getSource('districts')) return;
 
-  // Build a color mapping: district name → majority party color
+  // Build a color mapping: normalized district name → majority party color
   const colorMap = new Map<string, string>();
   for (const d of districts) {
     const majorityParty = getMajorityParty(d.representatives);
     if (majorityParty) {
-      colorMap.set(d.name.toLowerCase(), getPartyColor(majorityParty));
+      colorMap.set(normalizePoliticalName(d.name), getPartyColor(majorityParty));
     }
   }
 
@@ -341,8 +344,9 @@ function sortRepsByPartyMajority(reps: PoliticalDistrict['representatives']): Po
 }
 
 function buildPoliticalPopupHtml(districtName: string, districts: PoliticalDistrict[]): string {
+  const normalized = normalizePoliticalName(districtName);
   const match = districts.find(
-    (d) => d.name.toLowerCase() === districtName.toLowerCase(),
+    (d) => normalizePoliticalName(d.name) === normalized,
   );
   if (!match || match.representatives.length === 0) {
     return `<div style="font-size:13px"><strong>${districtName}</strong><br><em>No data available</em></div>`;
@@ -426,17 +430,18 @@ function updatePoliticalMarkers(
 
   if (!districts.length || !geojsonFeatures.length) return;
 
-  // Build name → majority party color map
+  // Build normalized name → majority party color map
   const colorMap = new Map<string, string>();
   const uniqueColors = new Set<string>();
   for (const d of districts) {
     const party = getMajorityParty(d.representatives);
     const color = party ? getPartyColor(party) : '#808080';
-    colorMap.set(d.name.toLowerCase(), color);
+    colorMap.set(normalizePoliticalName(d.name), color);
     uniqueColors.add(color);
   }
 
-  // Register icons for all party colors used
+  // Register icons for all party colors used (including fallback)
+  uniqueColors.add('#808080');
   registerPoliticalIcons(map, subLayer, [...uniqueColors], isDark);
 
   const points: GeoJSON.Feature[] = [];
@@ -461,7 +466,7 @@ function updatePoliticalMarkers(
       continue;
     }
 
-    const color = colorMap.get(name.toLowerCase()) ?? '#808080';
+    const color = colorMap.get(normalizePoliticalName(name)) ?? '#808080';
     const iconId = `political-icon-${color.replace('#', '')}`;
 
     points.push({
@@ -490,15 +495,6 @@ function updatePoliticalMarkers(
     },
   });
 
-  // Register hover/click popups for markers
-  registerPopupHandlers(map, POLITICAL_MARKER_LAYER, (e) => {
-    if (!e.features?.length) return null;
-    const name = e.features[0].properties?.name as string | undefined;
-    if (!name) return null;
-    const coords = (e.features[0].geometry as GeoJSON.Point).coordinates.slice() as [number, number];
-    const html = buildPoliticalPopupHtml(name, districts);
-    return { html, lngLat: coords };
-  }, { maxWidth: '320px' });
 }
 
 function removePoliticalMarkers(map: maplibregl.Map) {
@@ -1634,7 +1630,7 @@ export function CityMap() {
       // Restore the correct political/district GeoJSON after style swap
       if (politicalActiveRef.current) {
         const pl = politicalLayerRef.current;
-        const resolved = CONSTITUENCY_URLS[city.id]?.[pl] ?? DISTRICT_URLS[city.id];
+        const resolved = DISTRICT_URLS[city.id];
         if (resolved) {
           fetch(resolved.url)
             .then((r) => r.json())
@@ -1713,32 +1709,44 @@ export function CityMap() {
   // Update transit markers when alerts or layer toggle changes
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !map.isStyleLoaded()) return;
-    updateTransitMarkers(map, transitItems, isDarkRef.current);
+    if (!map) return;
+    const apply = () => updateTransitMarkers(map, transitItems, isDarkRef.current);
+    if (map.isStyleLoaded()) { apply(); return; }
+    map.once('idle', apply);
+    return () => { map.off('idle', apply); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [transitItems]);
 
   // Update news markers when data or layer toggle changes
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !map.isStyleLoaded()) return;
-    updateNewsMarkers(map, newsItems, isDarkRef.current);
+    if (!map) return;
+    const apply = () => updateNewsMarkers(map, newsItems, isDarkRef.current);
+    if (map.isStyleLoaded()) { apply(); return; }
+    map.once('idle', apply);
+    return () => { map.off('idle', apply); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [newsItems]);
 
   // Update safety markers when data or layer toggle changes
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !map.isStyleLoaded()) return;
-    updateSafetyMarkers(map, safetyItems, isDarkRef.current);
+    if (!map) return;
+    const apply = () => updateSafetyMarkers(map, safetyItems, isDarkRef.current);
+    if (map.isStyleLoaded()) { apply(); return; }
+    map.once('idle', apply);
+    return () => { map.off('idle', apply); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [safetyItems]);
 
   // Update NINA warning polygons
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !map.isStyleLoaded()) return;
-    updateWarningPolygons(map, warningItems, isDarkRef.current);
+    if (!map) return;
+    const apply = () => updateWarningPolygons(map, warningItems, isDarkRef.current);
+    if (map.isStyleLoaded()) { apply(); return; }
+    map.once('idle', apply);
+    return () => { map.off('idle', apply); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [warningItems]);
 
@@ -1746,25 +1754,36 @@ export function CityMap() {
   // to ensure both update atomically when the emergency layer toggles on.
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !map.isStyleLoaded()) return;
-    updatePharmacyMarkers(map, pharmacyItems, isDarkRef.current);
-    updateAedMarkers(map, aedItems, isDarkRef.current);
+    if (!map) return;
+    const apply = () => {
+      updatePharmacyMarkers(map, pharmacyItems, isDarkRef.current);
+      updateAedMarkers(map, aedItems, isDarkRef.current);
+    };
+    if (map.isStyleLoaded()) { apply(); return; }
+    map.once('idle', apply);
+    return () => { map.off('idle', apply); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [emergencyActive, emergencySubLayers, pharmacyList, aedList]);
 
   // Update traffic incident layers
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !map.isStyleLoaded()) return;
-    updateTrafficLayers(map, trafficItems, isDarkRef.current);
+    if (!map) return;
+    const apply = () => updateTrafficLayers(map, trafficItems, isDarkRef.current);
+    if (map.isStyleLoaded()) { apply(); return; }
+    map.once('idle', apply);
+    return () => { map.off('idle', apply); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trafficItems]);
 
   // Update construction layers
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !map.isStyleLoaded()) return;
-    updateConstructionLayers(map, constructionItems, isDarkRef.current);
+    if (!map) return;
+    const apply = () => updateConstructionLayers(map, constructionItems, isDarkRef.current);
+    if (map.isStyleLoaded()) { apply(); return; }
+    map.once('idle', apply);
+    return () => { map.off('idle', apply); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [constructionItems]);
 
@@ -1798,16 +1817,22 @@ export function CityMap() {
   // Update air quality grid circles
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !map.isStyleLoaded()) return;
-    updateAqGridLayer(map, aqGridItems, isDarkRef.current);
+    if (!map) return;
+    const apply = () => updateAqGridLayer(map, aqGridItems, isDarkRef.current);
+    if (map.isStyleLoaded()) { apply(); return; }
+    map.once('idle', apply);
+    return () => { map.off('idle', apply); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [aqGridItems]);
 
   // Update water level markers
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !map.isStyleLoaded()) return;
-    updateWaterLevelMarkers(map, waterLevelItems, isDarkRef.current);
+    if (!map) return;
+    const apply = () => updateWaterLevelMarkers(map, waterLevelItems, isDarkRef.current);
+    if (map.isStyleLoaded()) { apply(); return; }
+    map.once('idle', apply);
+    return () => { map.off('idle', apply); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [waterLevelItems]);
 
@@ -1821,24 +1846,35 @@ export function CityMap() {
   politicalDataRef.current = politicalData;
   const activeNameFieldRef = useRef('name');
   const politicalGeoFeaturesRef = useRef<GeoJSON.Feature[]>([]);
+  const politicalWasActiveRef = useRef(false);
 
   // Effect 1: swap GeoJSON source when political layer changes
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !map.isStyleLoaded()) return;
+    if (!map) return;
 
+    // Cleanup: only runs when political was previously active (avoids calling
+    // map.getLayer() before the style is parsed on the very first render).
+    // Skips the isStyleLoaded() guard because other effects in the same render
+    // cycle may have added sources, temporarily making isStyleLoaded() false.
     if (!politicalActive) {
-      // Political off — restore default Bezirke GeoJSON and remove markers
-      removePoliticalMarkers(map);
-      politicalGeoFeaturesRef.current = [];
-      addDistrictLayer(map, cityIdRef.current, isDarkRef.current);
-      activeNameFieldRef.current = DISTRICT_URLS[cityIdRef.current]?.nameField ?? 'name';
+      if (politicalWasActiveRef.current) {
+        removePoliticalMarkers(map);
+        politicalGeoFeaturesRef.current = [];
+        addDistrictLayer(map, cityIdRef.current, isDarkRef.current);
+        activeNameFieldRef.current = DISTRICT_URLS[cityIdRef.current]?.nameField ?? 'name';
+        politicalWasActiveRef.current = false;
+      }
       return;
     }
 
-    // Determine which GeoJSON to load based on politicalLayer
-    const resolved = CONSTITUENCY_URLS[cityIdRef.current]?.[politicalLayer]
-      ?? DISTRICT_URLS[cityIdRef.current];
+    // Creation path requires the style to be fully loaded
+    if (!map.isStyleLoaded()) return;
+
+    politicalWasActiveRef.current = true;
+
+    // All political sub-layers use the same Bezirke boundaries
+    const resolved = DISTRICT_URLS[cityIdRef.current];
     if (!resolved) return;
 
     activeNameFieldRef.current = resolved.nameField;
@@ -1944,6 +1980,49 @@ export function CityMap() {
     map.on('click', 'district-fill', handler);
     return () => { map.off('click', 'district-fill', handler); };
   }, [politicalActive]);
+
+  // Political marker popup on hover/click (registered once, uses refs for fresh data)
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    const getPopupHtml = (e: maplibregl.MapMouseEvent & { features?: maplibregl.MapGeoJSONFeature[] }) => {
+      if (!e.features?.length) return null;
+      const name = e.features[0].properties?.name as string | undefined;
+      if (!name) return null;
+      const data = politicalDataRef.current;
+      if (!data?.length) return null;
+      const coords = (e.features[0].geometry as GeoJSON.Point).coordinates.slice() as [number, number];
+      return { html: buildPoliticalPopupHtml(name, data), coords };
+    };
+
+    const onEnter = (e: maplibregl.MapMouseEvent & { features?: maplibregl.MapGeoJSONFeature[] }) => {
+      const result = getPopupHtml(e);
+      if (!result) return;
+      map.getCanvas().style.cursor = 'pointer';
+      showMapPopup(map, result.coords, result.html, { maxWidth: '320px', sticky: false });
+    };
+    const onLeave = () => {
+      map.getCanvas().style.cursor = '';
+      _clearHoverTimer();
+      _hoverTimer = setTimeout(_closeHoverPopup, 300);
+    };
+    const onClick = (e: maplibregl.MapMouseEvent & { features?: maplibregl.MapGeoJSONFeature[] }) => {
+      const result = getPopupHtml(e);
+      if (!result) return;
+      showMapPopup(map, result.coords, result.html, { maxWidth: '320px', sticky: true });
+    };
+
+    map.on('mouseenter', POLITICAL_MARKER_LAYER, onEnter);
+    map.on('mouseleave', POLITICAL_MARKER_LAYER, onLeave);
+    map.on('click', POLITICAL_MARKER_LAYER, onClick);
+    return () => {
+      map.off('mouseenter', POLITICAL_MARKER_LAYER, onEnter);
+      map.off('mouseleave', POLITICAL_MARKER_LAYER, onLeave);
+      map.off('click', POLITICAL_MARKER_LAYER, onClick);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="relative w-full h-full min-h-[300px]">
