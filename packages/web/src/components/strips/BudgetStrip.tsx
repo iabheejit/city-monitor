@@ -167,7 +167,7 @@ function AreaSelect({
     <select
       value={value}
       onChange={(e) => onChange(Number(e.target.value))}
-      className="w-full text-[11px] bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded px-1.5 py-1 border-none outline-none cursor-pointer"
+      className="w-full text-[11px] bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded px-1.5 py-1 border-none cursor-pointer"
     >
       {areas.map((a) => (
         <option key={a.areaCode} value={a.areaCode}>
