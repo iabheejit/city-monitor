@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useWeather } from '../../hooks/useWeather.js';
 import { getWeatherInfo } from '../../lib/weather-codes.js';
+import { StripErrorFallback } from '../ErrorFallback.js';
 import { Skeleton } from '../layout/Skeleton.js';
 
 function formatDayName(dateStr: string, locale: string): string {
@@ -60,10 +61,11 @@ const DAILY_COUNT = 7;
 
 export function WeatherStrip({ expanded }: { expanded: boolean }) {
   const { id: cityId } = useCityConfig();
-  const { data, isLoading } = useWeather(cityId);
+  const { data, isLoading, isError, refetch } = useWeather(cityId);
   const { t, i18n } = useTranslation();
 
   if (isLoading) return <Skeleton lines={2} />;
+  if (isError) return <StripErrorFallback domain="Weather" onRetry={refetch} />;
 
   const current = data?.current;
   if (!current) return null;

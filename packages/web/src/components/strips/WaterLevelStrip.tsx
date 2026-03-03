@@ -7,6 +7,7 @@ import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useWaterLevels } from '../../hooks/useWaterLevels.js';
+import { StripErrorFallback } from '../ErrorFallback.js';
 import { Skeleton } from '../layout/Skeleton.js';
 import type { WaterLevelStation } from '../../lib/api.js';
 
@@ -61,12 +62,13 @@ const StationRow = memo(function StationRow({ station, t }: { station: WaterLeve
 
 export function WaterLevelStrip() {
   const { id: cityId } = useCityConfig();
-  const { data, isLoading } = useWaterLevels(cityId);
+  const { data, isLoading, isError, refetch } = useWaterLevels(cityId);
   const { t } = useTranslation();
 
   if (isLoading) {
     return <Skeleton lines={3} />;
   }
+  if (isError) return <StripErrorFallback domain="Water Levels" onRetry={refetch} />;
 
   if (!data || data.stations.length === 0) {
     return <p className="text-sm text-gray-400 py-2 text-center">{t('panel.waterLevels.empty')}</p>;

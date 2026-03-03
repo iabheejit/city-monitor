@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useEvents } from '../../hooks/useEvents.js';
 import { useTabKeys } from '../../hooks/useTabKeys.js';
+import { StripErrorFallback } from '../ErrorFallback.js';
 import { Skeleton } from '../layout/Skeleton.js';
 import type { CityEvent } from '../../lib/api.js';
 
@@ -129,7 +130,7 @@ function EventCard({ event, lang, t }: { event: CityEvent; lang: string; t: (key
 
 export function EventsStrip({ expanded, onExpand }: { expanded: boolean; onExpand: () => void }) {
   const { id: cityId } = useCityConfig();
-  const { data, isLoading } = useEvents(cityId);
+  const { data, isLoading, isError, refetch } = useEvents(cityId);
   const { t, i18n } = useTranslation();
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
@@ -251,6 +252,8 @@ export function EventsStrip({ expanded, onExpand }: { expanded: boolean; onExpan
           })}
         </div>
       )}
+
+      {isError && <StripErrorFallback domain="Events" onRetry={refetch} />}
 
       <div id="events-panel" role="tabpanel" aria-labelledby={`events-cat-tab-${resolvedCategory}`}>
         {isLoading ? (

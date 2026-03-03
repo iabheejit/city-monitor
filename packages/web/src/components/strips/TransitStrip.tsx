@@ -7,6 +7,7 @@ import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useTransit } from '../../hooks/useTransit.js';
+import { StripErrorFallback } from '../ErrorFallback.js';
 import { Skeleton } from '../layout/Skeleton.js';
 import type { TransitAlert } from '../../lib/api.js';
 
@@ -48,7 +49,7 @@ const AlertRow = memo(function AlertRow({ alert }: { alert: TransitAlert }) {
 
 export function TransitStrip({ expanded = false, onExpand }: { expanded?: boolean; onExpand?: () => void }) {
   const { id: cityId } = useCityConfig();
-  const { data, isLoading } = useTransit(cityId);
+  const { data, isLoading, isError, refetch } = useTransit(cityId);
   const { t } = useTranslation();
 
   const alerts = data ?? [];
@@ -59,6 +60,8 @@ export function TransitStrip({ expanded = false, onExpand }: { expanded?: boolea
   const limit = expanded ? EXPANDED_MAX : COLLAPSED_MAX;
   const visible = sorted.slice(0, limit);
   const hiddenCount = sorted.length - visible.length;
+
+  if (isError) return <StripErrorFallback domain="Transit" onRetry={refetch} />;
 
   return isLoading ? (
     <Skeleton lines={4} />

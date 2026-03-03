@@ -7,6 +7,7 @@ import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useWastewater } from '../../hooks/useWastewater.js';
+import { StripErrorFallback } from '../ErrorFallback.js';
 import { Skeleton } from '../layout/Skeleton.js';
 import type { WastewaterPathogen } from '../../lib/api.js';
 
@@ -86,11 +87,12 @@ const Sparkline = memo(function Sparkline({ data, color, sampleDate, label }: { 
 export function WastewaterStrip({ expanded }: { expanded: boolean }) {
   const { id: cityId } = useCityConfig();
   const isBerlin = cityId === 'berlin';
-  const { data, isLoading } = useWastewater(cityId, isBerlin);
+  const { data, isLoading, isError, refetch } = useWastewater(cityId, isBerlin);
   const { t } = useTranslation();
 
   if (!isBerlin) return null;
   if (isLoading) return <Skeleton lines={2} />;
+  if (isError) return <StripErrorFallback domain="Wastewater" onRetry={refetch} />;
   if (!data) return <p className="text-sm text-gray-400 py-2 text-center">{t('panel.wastewater.empty')}</p>;
 
   if (!expanded) {

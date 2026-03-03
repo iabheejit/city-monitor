@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useBudget } from '../../hooks/useBudget.js';
 import { useTabKeys } from '../../hooks/useTabKeys.js';
+import { StripErrorFallback } from '../ErrorFallback.js';
 import { Skeleton } from '../layout/Skeleton.js';
 import type { BudgetAreaSummary, BudgetCategoryAmount } from '../../lib/api.js';
 
@@ -186,7 +187,7 @@ function AreaSelect({
 
 export function BudgetStrip() {
   const { id: cityId } = useCityConfig();
-  const { data, isLoading } = useBudget(cityId);
+  const { data, isLoading, isError, refetch } = useBudget(cityId);
   const { t } = useTranslation();
   const [mode, setMode] = useState<Mode>('city');
 
@@ -206,6 +207,7 @@ export function BudgetStrip() {
   const { setTabRef: setModeRef, onKeyDown: onModeKeyDown } = useTabKeys(modes.length, modeIdx, selectModeByIdx);
 
   if (isLoading) return <Skeleton lines={3} />;
+  if (isError) return <StripErrorFallback domain="Budget" onRetry={refetch} />;
   if (!data || data.areas.length === 0) {
     return <p className="text-sm text-gray-400 py-2 text-center">{t('panel.budget.empty')}</p>;
   }

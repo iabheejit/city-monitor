@@ -6,6 +6,7 @@
 import { useTranslation } from 'react-i18next';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useLaborMarket } from '../../hooks/useLaborMarket.js';
+import { StripErrorFallback } from '../ErrorFallback.js';
 import { Skeleton } from '../layout/Skeleton.js';
 
 function formatYoy(percent: number): { text: string; color: string } {
@@ -22,11 +23,12 @@ function formatYoy(percent: number): { text: string; color: string } {
 export function LaborMarketStrip() {
   const { id: cityId } = useCityConfig();
   const isBerlin = cityId === 'berlin';
-  const { data, isLoading } = useLaborMarket(cityId, isBerlin);
+  const { data, isLoading, isError, refetch } = useLaborMarket(cityId, isBerlin);
   const { t } = useTranslation();
 
   if (!isBerlin) return null;
   if (isLoading) return <Skeleton lines={2} />;
+  if (isError) return <StripErrorFallback domain="Unemployment" onRetry={refetch} />;
   if (!data) return <p className="text-sm text-gray-400 py-2 text-center">{t('panel.laborMarket.empty')}</p>;
 
   const totalYoy = formatYoy(data.yoyChangePercent);

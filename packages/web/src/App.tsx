@@ -18,6 +18,8 @@ import { ImprintPage } from './pages/ImprintPage.js';
 import { PrivacyPage } from './pages/PrivacyPage.js';
 import { NoTrackingPage } from './pages/NoTrackingPage.js';
 import { SourcesPage } from './pages/SourcesPage.js';
+import { ErrorBoundary } from 'react-error-boundary';
+import { AppErrorFallback } from './components/ErrorFallback.js';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -81,13 +83,15 @@ export function App() {
   return (
     <HelmetProvider>
       <QueryClientProvider client={queryClient}>
-        <Routes>
-          <Route path="/" element={<Navigate to="/berlin" replace />} />
-          <Route path="/imprint" element={<ImprintPage />} />
-          <Route path="/privacy" element={<PrivacyPage />} />
-          <Route path="/no-ads-no-tracking" element={<NoTrackingPage />} />
-          <Route path="/:cityId/*" element={<CityRoute />} />
-        </Routes>
+        <ErrorBoundary FallbackComponent={AppErrorFallback}>
+          <Routes>
+            <Route path="/" element={<Navigate to="/berlin" replace />} />
+            <Route path="/imprint" element={<ImprintPage />} />
+            <Route path="/privacy" element={<PrivacyPage />} />
+            <Route path="/no-ads-no-tracking" element={<NoTrackingPage />} />
+            <Route path="/:cityId/*" element={<CityRoute />} />
+          </Routes>
+        </ErrorBoundary>
       </QueryClientProvider>
     </HelmetProvider>
   );

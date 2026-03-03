@@ -7,6 +7,7 @@ import { memo, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useBathing } from '../../hooks/useBathing.js';
+import { StripErrorFallback } from '../ErrorFallback.js';
 import { Skeleton } from '../layout/Skeleton.js';
 import type { BathingSpot } from '../../lib/api.js';
 
@@ -57,12 +58,13 @@ const SpotRow = memo(function SpotRow({ spot, t }: { spot: BathingSpot; t: (k: s
 
 export function BathingStrip({ expanded = true }: { expanded?: boolean }) {
   const { id: cityId } = useCityConfig();
-  const { data, isLoading } = useBathing(cityId);
+  const { data, isLoading, isError, refetch } = useBathing(cityId);
   const { t } = useTranslation();
 
   if (isLoading) {
     return <Skeleton lines={3} />;
   }
+  if (isError) return <StripErrorFallback domain="Bathing" onRetry={refetch} />;
 
   if (!data || data.length === 0) {
     return <p className="text-sm text-gray-400 py-2 text-center">{t('panel.bathing.empty')}</p>;

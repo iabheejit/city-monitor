@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useNewsSummary } from '../../hooks/useNewsSummary.js';
 import { formatRelativeTime } from '../../lib/format-time.js';
+import { StripErrorFallback } from '../ErrorFallback.js';
 import { Skeleton } from '../layout/Skeleton.js';
 
 function BriefingContent({ text }: { text: string }) {
@@ -23,8 +24,10 @@ function BriefingContent({ text }: { text: string }) {
 
 export function BriefingStrip() {
   const { id: cityId } = useCityConfig();
-  const { data: summary, isLoading: summaryLoading } = useNewsSummary(cityId);
+  const { data: summary, isLoading: summaryLoading, isError: summaryError, refetch: summaryRefetch } = useNewsSummary(cityId);
   const { t } = useTranslation();
+
+  if (summaryError) return <StripErrorFallback domain="Briefing" onRetry={summaryRefetch} />;
 
   return (
     <>

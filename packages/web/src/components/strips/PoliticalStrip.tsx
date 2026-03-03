@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { usePolitical } from '../../hooks/usePolitical.js';
 import { getPartyColor } from '../../lib/party-colors.js';
+import { StripErrorFallback } from '../ErrorFallback.js';
 import { Skeleton } from '../layout/Skeleton.js';
 import type { PoliticalDistrict, Representative } from '../../lib/api.js';
 
@@ -176,9 +177,10 @@ export function PoliticalStrip({ expanded, onExpand }: { expanded: boolean; onEx
   const { id: cityId } = useCityConfig();
   const { t } = useTranslation();
 
-  const { data, isLoading } = usePolitical(cityId, VIEW_LEVELS[view]);
+  const { data, isLoading, isError, refetch } = usePolitical(cityId, VIEW_LEVELS[view]);
 
   if (isLoading) return <Skeleton lines={2} />;
+  if (isError) return <StripErrorFallback domain="Political" onRetry={refetch} />;
 
   const views: { key: View; label: string }[] = [
     { key: 'state', label: t('sidebar.political.landesparlament') },

@@ -7,6 +7,7 @@ import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useAppointments } from '../../hooks/useAppointments.js';
+import { StripErrorFallback } from '../ErrorFallback.js';
 import { Skeleton } from '../layout/Skeleton.js';
 import type { BuergeramtService } from '../../lib/api.js';
 
@@ -62,12 +63,13 @@ const EXPANDED_SERVICES = 10;
 
 export function AppointmentsStrip({ expanded = false, onExpand }: { expanded?: boolean; onExpand?: () => void }) {
   const { id: cityId } = useCityConfig();
-  const { data, isLoading } = useAppointments(cityId);
+  const { data, isLoading, isError, refetch } = useAppointments(cityId);
   const { t } = useTranslation();
 
   if (isLoading) {
     return <Skeleton lines={4} />;
   }
+  if (isError) return <StripErrorFallback domain="Appointments" onRetry={refetch} />;
 
   if (!data || data.services.length === 0) {
     return (

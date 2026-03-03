@@ -24,6 +24,8 @@ import { BudgetStrip } from '../strips/BudgetStrip.js';
 import { LaborMarketStrip } from '../strips/LaborMarketStrip.js';
 import { WastewaterStrip } from '../strips/WastewaterStrip.js';
 import { Skeleton } from './Skeleton.js';
+import { ErrorBoundary } from 'react-error-boundary';
+import { MapErrorFallback } from '../ErrorFallback.js';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useNina } from '../../hooks/useNina.js';
 import { useCommandCenter, type DataLayer } from '../../hooks/useCommandCenter.js';
@@ -55,9 +57,11 @@ export function CommandLayout() {
       <div className="flex h-[50vh] lg:h-[calc(100vh-37px)]">
         <Sidebar />
         <div className="flex-1 min-w-0 relative">
-          <Suspense fallback={<div className="w-full h-full flex items-center justify-center"><Skeleton lines={4} /></div>}>
-            <CityMap />
-          </Suspense>
+          <ErrorBoundary FallbackComponent={MapErrorFallback}>
+            <Suspense fallback={<div className="w-full h-full flex items-center justify-center"><Skeleton lines={4} /></div>}>
+              <CityMap />
+            </Suspense>
+          </ErrorBoundary>
           <MobileLayerDrawer />
         </div>
       </div>

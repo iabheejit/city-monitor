@@ -3,6 +3,14 @@
     "title": "City Monitor",
     "noscript": "This site requires JavaScript."
   },
+  "error": {
+    "title": "Something went wrong",
+    "reload": "Reload",
+    "details": "Error details",
+    "loadFailed": "Failed to load {{domain}}",
+    "retry": "Retry",
+    "mapUnavailable": "Map unavailable"
+  },
   "topbar": {
     "language": "Language",
     "theme": {

@@ -9,6 +9,7 @@ import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useAirQuality } from '../../hooks/useAirQuality.js';
 import { useAirQualityGrid } from '../../hooks/useAirQualityGrid.js';
 import { getAqiLevel } from '../../lib/aqi.js';
+import { StripErrorFallback } from '../ErrorFallback.js';
 import { Skeleton } from '../layout/Skeleton.js';
 
 /* ── AQI scale segments ───────────────────────────────────── */
@@ -106,13 +107,14 @@ const StationEntry = memo(function StationEntry({ name, aqi }: { name: string; a
 
 export function AirQualityStrip({ expanded }: { expanded: boolean }) {
   const { id: cityId } = useCityConfig();
-  const { data, isLoading } = useAirQuality(cityId);
+  const { data, isLoading, isError, refetch } = useAirQuality(cityId);
   const { data: gridData } = useAirQualityGrid(cityId);
   const { t } = useTranslation();
 
   if (isLoading) {
     return <Skeleton lines={2} />;
   }
+  if (isError) return <StripErrorFallback domain="Air Quality" onRetry={refetch} />;
 
   if (!data) return null;
 

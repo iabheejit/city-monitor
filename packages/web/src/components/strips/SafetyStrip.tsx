@@ -7,11 +7,12 @@ import { useTranslation } from 'react-i18next';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useSafety } from '../../hooks/useSafety.js';
 import { formatRelativeTime } from '../../lib/format-time.js';
+import { StripErrorFallback } from '../ErrorFallback.js';
 import { Skeleton } from '../layout/Skeleton.js';
 
 export function SafetyStrip() {
   const { id: cityId } = useCityConfig();
-  const { data, isLoading } = useSafety(cityId);
+  const { data, isLoading, isError, refetch } = useSafety(cityId);
   const { t } = useTranslation();
 
   const reports = data ?? [];
@@ -22,7 +23,9 @@ export function SafetyStrip() {
         {t('panel.safety.title')}
       </h2>
 
-      {isLoading ? (
+      {isError ? (
+        <StripErrorFallback domain="Safety" onRetry={refetch} />
+      ) : isLoading ? (
         <Skeleton lines={4} />
       ) : reports.length === 0 ? (
         <p className="text-sm text-gray-400 py-2 text-center">{t('panel.safety.empty')}</p>

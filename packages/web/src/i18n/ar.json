@@ -3,6 +3,14 @@
     "title": "City Monitor",
     "noscript": "يتطلب هذا الموقع JavaScript."
   },
+  "error": {
+    "title": "حدث خطأ ما",
+    "reload": "إعادة تحميل",
+    "details": "تفاصيل الخطأ",
+    "loadFailed": "فشل تحميل {{domain}}",
+    "retry": "إعادة المحاولة",
+    "mapUnavailable": "الخريطة غير متاحة"
+  },
   "topbar": {
     "language": "اللغة",
     "theme": {

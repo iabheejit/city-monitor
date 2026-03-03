@@ -9,6 +9,7 @@ import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useNewsDigest } from '../../hooks/useNewsDigest.js';
 import { useTabKeys } from '../../hooks/useTabKeys.js';
 import { formatRelativeTime } from '../../lib/format-time.js';
+import { StripErrorFallback } from '../ErrorFallback.js';
 import { Skeleton } from '../layout/Skeleton.js';
 import type { NewsItem } from '../../lib/api.js';
 
@@ -43,7 +44,7 @@ const COLLAPSED_ITEMS = 5;
 
 export function NewsStrip({ expanded, onExpand }: { expanded: boolean; onExpand: () => void }) {
   const { id: cityId } = useCityConfig();
-  const { data, isLoading } = useNewsDigest(cityId);
+  const { data, isLoading, isError, refetch } = useNewsDigest(cityId);
   const { t } = useTranslation();
   const [activeCategory, setActiveCategory] = useState<string>('all');
 
@@ -86,6 +87,7 @@ export function NewsStrip({ expanded, onExpand }: { expanded: boolean; onExpand:
   const { setTabRef, onKeyDown } = useTabKeys(availableCategories.length, activeIndex, selectByIndex);
 
   if (isLoading) return <Skeleton lines={6} />;
+  if (isError) return <StripErrorFallback domain="News" onRetry={refetch} />;
 
   const displayItems = expanded ? filteredItems : filteredItems.slice(0, COLLAPSED_ITEMS);
   const remaining = expanded ? 0 : filteredItems.length - displayItems.length;

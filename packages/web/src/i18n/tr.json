@@ -3,6 +3,14 @@
     "title": "City Monitor",
     "noscript": "Bu site JavaScript gerektirir."
   },
+  "error": {
+    "title": "Bir şeyler yanlış gitti",
+    "reload": "Yeniden yükle",
+    "details": "Hata detayları",
+    "loadFailed": "{{domain}} yüklenemedi",
+    "retry": "Tekrar dene",
+    "mapUnavailable": "Harita kullanılamıyor"
+  },
   "topbar": {
     "language": "Dil",
     "theme": {
