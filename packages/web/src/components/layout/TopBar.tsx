@@ -30,10 +30,18 @@ export function TopBar() {
     : null;
 
   return (
-    <header className="flex items-center justify-between px-4 py-1.5 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
+    <header className="relative flex items-center justify-between px-4 py-1.5 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
+      {/* Centered city name — desktop only */}
+      <span
+        className="hidden md:block absolute left-1/2 -translate-x-1/2 text-lg font-bold pointer-events-none"
+        style={{ color: city.theme.accent }}
+      >
+        {city.name.toUpperCase()}
+      </span>
+
       <div className="flex items-center gap-2 min-w-0">
         <span
-          className="text-lg font-bold mr-1 shrink-0"
+          className="md:hidden text-lg font-bold mr-1 shrink-0"
           style={{ color: city.theme.accent }}
         >
           {city.name.toUpperCase()}
