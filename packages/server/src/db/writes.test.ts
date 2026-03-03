@@ -11,37 +11,35 @@ import type { TransitAlert } from '../cron/ingest-transit.js';
 import type { CityEvent } from '../cron/ingest-events.js';
 import type { SafetyReport } from '../cron/ingest-safety.js';
 
-interface MockTxOps {
-  delete: ReturnType<typeof vi.fn>;
-  insert: ReturnType<typeof vi.fn>;
-}
-
 function createMockDb() {
-  const txOps: MockTxOps = {
-    delete: vi.fn().mockReturnValue({ where: vi.fn().mockResolvedValue(undefined) }),
-    insert: vi.fn().mockReturnValue({ values: vi.fn().mockResolvedValue(undefined) }),
-  };
+  const onConflictDoUpdate = vi.fn().mockResolvedValue(undefined);
+  const values = vi.fn().mockReturnValue({ onConflictDoUpdate });
+  // Also resolve directly for non-upsert inserts
+  values.mockImplementation(() => ({
+    onConflictDoUpdate,
+    then: (resolve: (v: unknown) => void) => resolve(undefined),
+  }));
+  const insert = vi.fn().mockReturnValue({ values });
 
-  const db = {
-    transaction: vi.fn(async (fn: (tx: MockTxOps) => Promise<void>) => {
-      await fn(txOps);
-    }),
-  };
-
-  return { db: db as unknown as Db, txOps };
+  const db = { insert } as unknown as Db;
+  return { db, insert, values, onConflictDoUpdate };
 }
 
 describe('DB writes', () => {
   let db: Db;
-  let txOps: MockTxOps;
+  let insert: ReturnType<typeof vi.fn>;
+  let values: ReturnType<typeof vi.fn>;
+  let onConflictDoUpdate: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     const mock = createMockDb();
     db = mock.db;
-    txOps = mock.txOps;
+    insert = mock.insert;
+    values = mock.values;
+    onConflictDoUpdate = mock.onConflictDoUpdate;
   });
 
-  it('saveWeather calls transaction with delete + insert', async () => {
+  it('saveWeather inserts a new snapshot row', async () => {
     const data = {
       current: { temp: 10 },
       hourly: [{ time: 'now', temp: 10 }],
@@ -50,75 +48,66 @@ describe('DB writes', () => {
     };
 
     await saveWeather(db, 'berlin', data as unknown as WeatherData);
-    expect(db.transaction).toHaveBeenCalledOnce();
-    expect(txOps.delete).toHaveBeenCalled();
-    expect(txOps.insert).toHaveBeenCalled();
+    expect(insert).toHaveBeenCalledOnce();
+    expect(values).toHaveBeenCalledOnce();
   });
 
-  it('saveTransitAlerts calls transaction with delete + batch insert', async () => {
+  it('saveTransitAlerts inserts disruptions', async () => {
     const alerts = [
       { id: '1', line: 'U2', type: 'disruption', severity: 'high', message: 'Test', detail: 'Test detail', station: 'Alexanderplatz', location: { lat: 52.52, lon: 13.41 }, affectedStops: [] },
     ];
 
     await saveTransitAlerts(db, 'berlin', alerts as unknown as TransitAlert[]);
-    expect(db.transaction).toHaveBeenCalledOnce();
-    expect(txOps.delete).toHaveBeenCalled();
-    expect(txOps.insert).toHaveBeenCalled();
+    expect(insert).toHaveBeenCalledOnce();
+    expect(values).toHaveBeenCalledOnce();
   });
 
   it('saveTransitAlerts skips insert when alerts array is empty', async () => {
     await saveTransitAlerts(db, 'berlin', []);
-    expect(db.transaction).toHaveBeenCalledOnce();
-    expect(txOps.delete).toHaveBeenCalled();
-    expect(txOps.insert).not.toHaveBeenCalled();
+    expect(insert).not.toHaveBeenCalled();
   });
 
-  it('saveEvents calls transaction with per-source delete + batch insert', async () => {
+  it('saveEvents upserts events', async () => {
     const items = [
       { id: '1', title: 'Test', date: '2026-03-03T19:00:00Z', category: 'music', url: 'https://example.com', source: 'kulturdaten' },
     ];
 
     await saveEvents(db, 'berlin', 'kulturdaten', items as unknown as CityEvent[]);
-    expect(db.transaction).toHaveBeenCalledOnce();
-    expect(txOps.delete).toHaveBeenCalled();
-    expect(txOps.insert).toHaveBeenCalled();
+    expect(insert).toHaveBeenCalledOnce();
+    expect(onConflictDoUpdate).toHaveBeenCalledOnce();
   });
 
-  it('saveSafetyReports calls transaction with delete + batch insert', async () => {
+  it('saveSafetyReports upserts reports', async () => {
     const reports = [
       { id: '1', title: 'Report', description: 'Test', publishedAt: '2026-03-01T00:00:00Z', url: 'https://example.com' },
     ];
 
     await saveSafetyReports(db, 'berlin', reports as unknown as SafetyReport[]);
-    expect(db.transaction).toHaveBeenCalledOnce();
-    expect(txOps.insert).toHaveBeenCalled();
+    expect(insert).toHaveBeenCalledOnce();
+    expect(onConflictDoUpdate).toHaveBeenCalledOnce();
   });
 
-  it('saveSummary calls transaction with delete + insert', async () => {
+  it('saveSummary inserts a new summary row', async () => {
     const summary = { briefing: 'Test briefing', headlineCount: 5, headlineHash: 'abc123' };
 
     await saveSummary(db, 'berlin', summary, 'gpt-4.1-mini', { input: 100, output: 50 });
-    expect(db.transaction).toHaveBeenCalledOnce();
-    expect(txOps.delete).toHaveBeenCalled();
-    expect(txOps.insert).toHaveBeenCalled();
+    expect(insert).toHaveBeenCalledOnce();
+    expect(values).toHaveBeenCalledOnce();
   });
 
-  it('saveAirQualityGrid calls transaction with delete + batch insert', async () => {
+  it('saveAirQualityGrid inserts grid points', async () => {
     const points = [
       { lat: 52.52, lon: 13.41, europeanAqi: 42, station: 'Berlin Mitte', url: 'https://example.com' },
       { lat: 52.48, lon: 13.35, europeanAqi: 35, station: 'Steglitz' },
     ];
 
     await saveAirQualityGrid(db, 'berlin', points);
-    expect(db.transaction).toHaveBeenCalledOnce();
-    expect(txOps.delete).toHaveBeenCalled();
-    expect(txOps.insert).toHaveBeenCalled();
+    expect(insert).toHaveBeenCalledOnce();
+    expect(values).toHaveBeenCalledOnce();
   });
 
   it('saveAirQualityGrid skips insert when points array is empty', async () => {
     await saveAirQualityGrid(db, 'berlin', []);
-    expect(db.transaction).toHaveBeenCalledOnce();
-    expect(txOps.delete).toHaveBeenCalled();
-    expect(txOps.insert).not.toHaveBeenCalled();
+    expect(insert).not.toHaveBeenCalled();
   });
 });

@@ -91,8 +91,9 @@ export async function summarizeHeadlines(
 
 export interface FilteredItem {
   index: number;
-  relevant: boolean;
-  confidence: number;
+  relevant_to_city: boolean;
+  category: string;
+  importance: number;
   lat?: number;
   lon?: number;
   locationLabel?: string;
@@ -100,10 +101,13 @@ export interface FilteredItem {
 
 interface LlmFilterResult {
   index: number;
-  relevant: boolean;
-  confidence: number;
+  relevant_to_city: boolean;
+  category: string;
+  importance: number;
   locationLabel?: string;
 }
+
+const VALID_CATEGORIES = new Set(['local', 'politics', 'transit', 'culture', 'crime', 'weather', 'economy', 'sports']);
 
 export async function filterAndGeolocateNews(
   cityId: string,
@@ -130,12 +134,18 @@ export async function filterAndGeolocateNews(
         {
           role: 'system',
           content: `You are a local news editor for ${cityName}. For each headline below, determine:
-1. Is this news item specifically about ${cityName} or its immediate region? (relevant: true/false)
-2. How confident are you? (confidence: 0.0–1.0)
-3. If the item mentions a specific location in ${cityName}, extract the location name (street, landmark, neighborhood). Do NOT generate coordinates.
 
-National/international news should be marked relevant:false UNLESS it has a concrete local angle.
-Respond ONLY with JSON: {"items":[{"index":0,"relevant":true,"confidence":0.9,"locationLabel":"Alexanderplatz, Mitte"},...]}`
+1. **relevant_to_city** (true/false): Is this specifically about ${cityName} or its immediate region? National/international news = false UNLESS it has a concrete local angle.
+2. **category**: Classify into exactly one of: local, politics, transit, culture, crime, economy, sports. Use "local" as fallback if unclear.
+3. **importance** (0.0–1.0): How significant is this news for people living in ${cityName}?
+   - 0.0–0.2: Routine filler — minor openings, generic announcements, press releases with no public impact
+   - 0.3–0.4: Mildly noteworthy — small infrastructure changes, minor cultural events, routine policy updates
+   - 0.5–0.6: Significant — major transit disruptions, notable crime incidents, political decisions with real impact
+   - 0.7–0.8: Very important — large emergencies, major policy changes, events affecting large parts of the city
+   - 0.9–1.0: Critical/breaking — city-wide emergencies, disasters, events requiring immediate public attention
+4. **locationLabel** (string, try hard): Extract or infer the most specific location in ${cityName} relevant to this news item. Look for: explicit street names, landmarks, neighborhoods, districts, transit stations, buildings, parks. If the headline mentions an organization or institution based in ${cityName}, use their known address or neighborhood. If the news source name implies a district (e.g., "Kreuzberg Blog"), use it. Only omit if truly no location can be reasonably inferred.
+
+Respond ONLY with JSON: {"items":[{"index":0,"relevant_to_city":true,"category":"transit","importance":0.6,"locationLabel":"Alexanderplatz, Mitte"},...]}`
         },
         { role: 'user', content: itemList },
       ],
@@ -161,10 +171,16 @@ Respond ONLY with JSON: {"items":[{"index":0,"relevant":true,"confidence":0.9,"l
     const { geocode } = await import('./geocode.js');
     const results: FilteredItem[] = [];
     for (const item of llmItems) {
+      const category = VALID_CATEGORIES.has(item.category) ? item.category : 'local';
+      const importance = typeof item.importance === 'number'
+        ? Math.max(0, Math.min(1, item.importance))
+        : 0.3;
+
       const result: FilteredItem = {
         index: item.index,
-        relevant: item.relevant,
-        confidence: item.confidence,
+        relevant_to_city: !!item.relevant_to_city,
+        category,
+        importance,
         locationLabel: item.locationLabel,
       };
 

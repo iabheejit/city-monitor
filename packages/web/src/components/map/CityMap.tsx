@@ -1669,6 +1669,7 @@ export function CityMap() {
   const { data: bathingData } = useBathing(city.id);
   const politicalLayer = useCommandCenter((s) => s.politicalLayer);
   const activeLayers = useCommandCenter((s) => s.activeLayers);
+  const newsSubLayers = useCommandCenter((s) => s.newsSubLayers);
   const emergencySubLayers = useCommandCenter((s) => s.emergencySubLayers);
   const politicalActive = activeLayers.has('political');
   const trafficSubLayers = useCommandCenter((s) => s.trafficSubLayers);
@@ -1676,8 +1677,10 @@ export function CityMap() {
   const constructionActive = activeLayers.has('traffic') && trafficSubLayers.has('roadworks');
   const roadsActive = trafficActive || constructionActive;
   const weatherActive = activeLayers.has('weather');
-  const rentMapActive = activeLayers.has('rent-map') && city.id === 'berlin';
-  const socialAtlasActive = activeLayers.has('social-atlas') && city.id === 'berlin';
+  const socioeconomicLayer = useCommandCenter((s) => s.socioeconomicLayer);
+  const socioeconomicActive = activeLayers.has('socioeconomic') && city.id === 'berlin';
+  const rentMapActive = socioeconomicActive && socioeconomicLayer === 'rent';
+  const socialAtlasActive = socioeconomicActive && socioeconomicLayer === 'social-atlas';
   const waterActive = activeLayers.has('water');
   const waterSubLayers = useCommandCenter((s) => s.waterSubLayers);
   const { data: socialAtlasData } = useSocialAtlas(city.id, socialAtlasActive);
@@ -1691,8 +1694,13 @@ export function CityMap() {
   const mapConfig = city.map;
 
   const transitItems = (activeLayers.has('traffic') && trafficSubLayers.has('public-transport')) ? (transitAlerts ?? []) : [];
-  const newsItems = activeLayers.has('news') ? (newsDigest?.items ?? []) : [];
-  const safetyItems = activeLayers.has('safety') ? (safetyReports ?? []) : [];
+  const newsActive = activeLayers.has('news');
+  const newsItems = newsActive
+    ? (newsDigest?.items ?? [])
+        .filter((i) => (newsSubLayers as Set<string>).has(i.category))
+        .filter((i) => (i.importance ?? 0) >= 0.5)
+    : [];
+  const safetyItems = (newsActive && newsSubLayers.has('police')) ? (safetyReports ?? []) : [];
   const warningItems = activeLayers.has('warnings') ? (ninaWarnings ?? []) : [];
   const emergencyActive = activeLayers.has('emergencies');
   const pharmacyItems = (emergencyActive && emergencySubLayers.has('pharmacies')) ? (pharmacyList ?? []) : [];

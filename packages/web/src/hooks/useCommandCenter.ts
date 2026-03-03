@@ -5,8 +5,10 @@
 
 import { create } from 'zustand';
 
-export type DataLayer = 'weather' | 'news' | 'safety' | 'warnings' | 'air-quality' | 'emergencies' | 'traffic' | 'water' | 'social-atlas' | 'political' | 'rent-map';
+export type DataLayer = 'weather' | 'news' | 'warnings' | 'air-quality' | 'emergencies' | 'traffic' | 'water' | 'socioeconomic' | 'political';
 export type PoliticalLayer = 'bezirke' | 'bundestag' | 'landesparlament';
+export type SocioeconomicLayer = 'social-atlas' | 'rent';
+export type NewsSubLayer = 'local' | 'politics' | 'transit' | 'culture' | 'crime' | 'economy' | 'sports' | 'police';
 export type EmergencySubLayer = 'pharmacies' | 'aeds';
 export type WaterSubLayer = 'levels' | 'bathing';
 export type TrafficSubLayer = 'public-transport' | 'incidents' | 'roadworks';
@@ -15,18 +17,23 @@ interface CommandCenterState {
   singleView: boolean;
   activeLayers: Set<DataLayer>;
   politicalLayer: PoliticalLayer;
+  socioeconomicLayer: SocioeconomicLayer;
+  newsSubLayers: Set<NewsSubLayer>;
   emergencySubLayers: Set<EmergencySubLayer>;
   waterSubLayers: Set<WaterSubLayer>;
   trafficSubLayers: Set<TrafficSubLayer>;
   toggleSingleView: () => void;
   toggleLayer: (layer: DataLayer) => void;
   setPoliticalLayer: (layer: PoliticalLayer) => void;
+  setSocioeconomicLayer: (layer: SocioeconomicLayer) => void;
+  toggleNewsSubLayer: (sub: NewsSubLayer) => void;
   toggleEmergencySubLayer: (sub: EmergencySubLayer) => void;
   toggleWaterSubLayer: (sub: WaterSubLayer) => void;
   toggleTrafficSubLayer: (sub: TrafficSubLayer) => void;
 }
 
-const DEFAULT_LAYERS: Set<DataLayer> = new Set(['traffic']);
+const DEFAULT_LAYERS: Set<DataLayer> = new Set(['warnings']);
+const ALL_NEWS_SUBS: Set<NewsSubLayer> = new Set(['local', 'politics', 'transit', 'culture', 'crime', 'economy', 'sports', 'police']);
 const ALL_EMERGENCY_SUBS: Set<EmergencySubLayer> = new Set(['pharmacies', 'aeds']);
 const ALL_WATER_SUBS: Set<WaterSubLayer> = new Set(['levels', 'bathing']);
 const ALL_TRAFFIC_SUBS: Set<TrafficSubLayer> = new Set(['public-transport', 'incidents', 'roadworks']);
@@ -35,6 +42,8 @@ export const useCommandCenter = create<CommandCenterState>((set) => ({
   singleView: true,
   activeLayers: new Set(DEFAULT_LAYERS),
   politicalLayer: 'bezirke',
+  socioeconomicLayer: 'social-atlas',
+  newsSubLayers: new Set(ALL_NEWS_SUBS),
   emergencySubLayers: new Set(ALL_EMERGENCY_SUBS),
   waterSubLayers: new Set(ALL_WATER_SUBS),
   trafficSubLayers: new Set(ALL_TRAFFIC_SUBS),
@@ -65,6 +74,17 @@ export const useCommandCenter = create<CommandCenterState>((set) => ({
       return { activeLayers: next };
     }),
   setPoliticalLayer: (layer) => set({ politicalLayer: layer }),
+  setSocioeconomicLayer: (layer) => set({ socioeconomicLayer: layer }),
+  toggleNewsSubLayer: (sub) =>
+    set((state) => {
+      const next = new Set(state.newsSubLayers);
+      if (next.has(sub)) {
+        if (next.size > 1) next.delete(sub);
+      } else {
+        next.add(sub);
+      }
+      return { newsSubLayers: next };
+    }),
   toggleEmergencySubLayer: (sub) =>
     set((state) => {
       const next = new Set(state.emergencySubLayers);

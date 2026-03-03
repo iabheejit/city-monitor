@@ -100,7 +100,8 @@
         "6": "Energie & Gewerbe",
         "7": "Verkehr",
         "8": "Finanzwirtschaft"
-      }
+      },
+      "selectDistrict": "Bezirk auswählen"
     },
     "appointments": {
       "title": "Bürgeramt",

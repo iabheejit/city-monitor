@@ -9,7 +9,6 @@ import type { Db } from '../db/index.js';
 import { saveNewsItems, type PersistedNewsItem } from '../db/writes.js';
 import { loadNewsItems } from '../db/reads.js';
 import { parseFeed } from '../lib/rss-parser.js';
-import { classifyHeadline } from '../lib/classifier.js';
 import { hashString } from '../lib/hash.js';
 import { getActiveCities } from '../config/index.js';
 import { createLogger } from '../lib/logger.js';
@@ -36,6 +35,7 @@ export interface NewsItem {
   tier: number;
   lang: string;
   location?: { lat: number; lon: number; label?: string };
+  importance?: number;
 }
 
 export interface NewsDigest {
@@ -86,8 +86,9 @@ async function ingestCityFeeds(city: CityConfig, cache: Cache, db: Db | null): P
     if (stored) {
       known.push({
         ...item,
+        category: stored.category ?? item.category,
         location: stored.location ?? item.location,
-        assessment: { relevant: stored.relevant, confidence: stored.confidence },
+        assessment: { relevant_to_city: stored.relevant_to_city, importance: stored.importance, category: stored.category },
       });
     } else {
       fresh.push(item);
@@ -97,13 +98,15 @@ async function ingestCityFeeds(city: CityConfig, cache: Cache, db: Db | null): P
   // 5. Run LLM relevance filter on new items only
   const assessed = await applyLlmFilter(city, fresh);
 
-  // 6. Merge, re-sort, filter irrelevant
+  // 6. Merge, re-sort by importance (higher first), filter irrelevant
   const merged: PersistedNewsItem[] = [...known, ...assessed];
-  merged.sort((a, b) =>
-    a.tier !== b.tier
-      ? a.tier - b.tier
-      : new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime(),
-  );
+  merged.sort((a, b) => {
+    if (a.tier !== b.tier) return a.tier - b.tier;
+    const aImp = a.assessment?.importance ?? 0;
+    const bImp = b.assessment?.importance ?? 0;
+    if (aImp !== bImp) return bImp - aImp;
+    return new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime();
+  });
   const visible = applyDropLogic(merged);
 
   // 7. Build category buckets
@@ -188,21 +191,18 @@ async function fetchOneFeed(
       if (!res.ok) return null;
 
       const xml = await res.text();
-      return parseFeed(xml).map((fi): NewsItem => {
-        const cls = classifyHeadline(fi.title, 'berlin');
-        return {
-          id: hashString(fi.url + fi.title),
-          title: fi.title,
-          url: fi.url,
-          publishedAt: fi.publishedAt,
-          sourceName: feed.name,
-          sourceUrl: feed.url,
-          description: fi.description,
-          category: feed.category || cls.category,
-          tier: feed.tier,
-          lang: feed.lang,
-        };
-      });
+      return parseFeed(xml).map((fi): NewsItem => ({
+        id: hashString(fi.url + fi.title),
+        title: fi.title,
+        url: fi.url,
+        publishedAt: fi.publishedAt,
+        sourceName: feed.name,
+        sourceUrl: feed.url,
+        description: fi.description,
+        category: feed.category || 'local',
+        tier: feed.tier,
+        lang: feed.lang,
+      }));
     });
   } catch {
     log.warn(`failed to fetch ${feed.name}`);
@@ -214,21 +214,31 @@ async function fetchOneFeed(
 // DB assessment reuse
 // ---------------------------------------------------------------------------
 
+interface PriorAssessment {
+  relevant_to_city: boolean;
+  importance: number;
+  category?: string;
+  location?: NewsItem['location'];
+}
+
 async function loadPriorAssessments(
   db: Db | null,
   cityId: string,
-): Promise<Map<string, { relevant: boolean; confidence: number; location?: NewsItem['location'] }>> {
-  const map = new Map<string, { relevant: boolean; confidence: number; location?: NewsItem['location'] }>();
+): Promise<Map<string, PriorAssessment>> {
+  const map = new Map<string, PriorAssessment>();
   if (!db) return map;
 
   try {
     const rows = await loadNewsItems(db, cityId);
     if (rows) {
       for (const row of rows) {
-        if (row.assessment?.relevant != null) {
+        // Only reuse assessments that have the new importance field;
+        // items with old-format assessments (relevant/confidence) get re-assessed
+        if (row.assessment?.relevant_to_city != null && row.assessment?.importance != null) {
           map.set(row.id, {
-            relevant: row.assessment.relevant,
-            confidence: row.assessment.confidence ?? 0,
+            relevant_to_city: row.assessment.relevant_to_city,
+            importance: row.assessment.importance,
+            category: row.assessment.category,
             location: row.location,
           });
         }
@@ -268,7 +278,12 @@ async function applyLlmFilter(city: CityConfig, items: NewsItem[]): Promise<Pers
       const item: PersistedNewsItem = { ...items[i] };
 
       if (verdict) {
-        item.assessment = { relevant: verdict.relevant, confidence: verdict.confidence };
+        item.category = verdict.category;
+        item.assessment = {
+          relevant_to_city: verdict.relevant_to_city,
+          importance: verdict.importance,
+          category: verdict.category,
+        };
         if (verdict.lat != null && verdict.lon != null) {
           item.location = { lat: verdict.lat, lon: verdict.lon, label: verdict.locationLabel };
         }
@@ -292,10 +307,15 @@ async function applyLlmFilter(city: CityConfig, items: NewsItem[]): Promise<Pers
  * Shared by ingest-feeds, warm-cache, and the news digest route.
  */
 export function applyDropLogic(items: PersistedNewsItem[]): NewsItem[] {
-  return items.filter((item) => {
-    const a = item.assessment;
-    if (!a) return true;
-    if (a.relevant === false) return false;
-    return true;
-  });
+  return items
+    .filter((item) => {
+      const a = item.assessment;
+      if (!a) return true;
+      if (a.relevant_to_city === false) return false;
+      return true;
+    })
+    .map(({ assessment, ...rest }) => ({
+      ...rest,
+      importance: assessment?.importance ?? 0.5,
+    }));
 }

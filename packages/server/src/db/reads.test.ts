@@ -7,31 +7,37 @@ import { describe, it, expect, vi } from 'vitest';
 import { loadWeather, loadTransitAlerts, loadEvents, loadSafetyReports, loadSummary, loadAirQualityGrid } from './reads.js';
 import type { Db } from './index.js';
 
+/**
+ * Creates a mock Db that supports two query patterns:
+ * 1. Snapshot reads: select().from().where().orderBy().limit() → rows
+ * 2. Latest-batch reads: select({ val: max() }).from().where() → [{ val: Date }],
+ *    then select().from().where() → rows
+ */
 function createMockDb(rows: Record<string, unknown>[] = []) {
-  const chain = {
-    from: vi.fn().mockReturnThis(),
-    where: vi.fn().mockReturnThis(),
-    orderBy: vi.fn().mockReturnThis(),
-    limit: vi.fn().mockResolvedValue(rows),
-  };
+  const maxDate = new Date('2026-03-02T12:00:00Z');
 
-  // When no limit() is called (e.g. for arrays), resolve from where/orderBy
-  chain.where.mockImplementation(() => {
-    const next = {
-      orderBy: vi.fn().mockImplementation(() => {
-        const orderNext = { limit: vi.fn().mockResolvedValue(rows) };
-        // Also resolve as array directly (for queries without limit)
-        Object.assign(orderNext, { then: (resolve: (v: unknown) => void) => resolve(rows) });
-        return orderNext;
-      }),
-      limit: vi.fn().mockResolvedValue(rows),
-      then: (resolve: (v: unknown) => void) => resolve(rows),
-    };
-    return next;
-  });
+  function makeChain(resolveWith: unknown) {
+    const chain: Record<string, ReturnType<typeof vi.fn>> = {};
+    chain.from = vi.fn().mockReturnValue(chain);
+    chain.where = vi.fn().mockReturnValue(chain);
+    chain.orderBy = vi.fn().mockReturnValue(chain);
+    chain.limit = vi.fn().mockResolvedValue(resolveWith);
+    // Support direct await (for queries without .limit())
+    Object.defineProperty(chain, 'then', {
+      value: (resolve: (v: unknown) => void) => resolve(resolveWith),
+      writable: true,
+    });
+    return chain;
+  }
 
   const db = {
-    select: vi.fn().mockReturnValue(chain),
+    select: vi.fn().mockImplementation((cols?: Record<string, unknown>) => {
+      if (cols && Object.keys(cols).length > 0) {
+        // MAX(fetched_at) subquery: return date if rows exist, null otherwise
+        return makeChain(rows.length > 0 ? [{ val: maxDate }] : [{ val: null }]);
+      }
+      return makeChain(rows);
+    }),
   };
 
   return db as unknown as Db;

@@ -197,7 +197,15 @@ export async function findStaleJobs(db: Db, specs: FreshnessSpec[]): Promise<Set
 }
 
 function buildDigestFromItems(items: import('./writes.js').PersistedNewsItem[]): NewsDigest {
-  const filtered = applyDropLogic(items);
+  // Sort by tier (asc), importance (desc), publishedAt (desc) — same as ingest-feeds
+  const sorted = [...items].sort((a, b) => {
+    if (a.tier !== b.tier) return a.tier - b.tier;
+    const aImp = a.assessment?.importance ?? 0;
+    const bImp = b.assessment?.importance ?? 0;
+    if (aImp !== bImp) return bImp - aImp;
+    return new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime();
+  });
+  const filtered = applyDropLogic(sorted);
 
   const categories: Record<string, NewsItem[]> = {};
   for (const item of filtered) {

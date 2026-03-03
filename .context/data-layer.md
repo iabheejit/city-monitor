@@ -55,7 +55,12 @@ ORM: Drizzle (schema-as-code, no code generation). Driver: `postgres` (node-post
 
 ### Schema (`schema.ts`)
 
-All data domains now have DB persistence. Tables use JSONB snapshot pattern (single row per city, delete-then-insert) for simpler domains, and per-row storage for structured domains.
+All data domains now have DB persistence. Tables use three write patterns:
+- **Snapshot tables** (weather, water levels, budget, etc.): INSERT-only, read latest via `ORDER BY fetchedAt DESC LIMIT 1`.
+- **Multi-row current-state tables** (transit, air quality): INSERT-only batches, read latest batch via `MAX(fetchedAt)` with staleness guard.
+- **Hash-keyed tables** (news, events, safety, NINA): UPSERT on unique keys, avoiding duplicates while preserving history.
+
+Historical data accumulates and is cleaned by the data-retention cron.
 
 | Table | Key Columns | Index |
 |---|---|---|
@@ -63,7 +68,7 @@ All data domains now have DB persistence. Tables use JSONB snapshot pattern (sin
 | `transitDisruptions` | cityId, line, type, severity, message, affectedStops (JSONB), resolved | `transit_city_idx(cityId)` |
 | `events` | cityId, title, venue, date, category, url, free, hash | `events_city_date_idx(cityId, date)` |
 | `safetyReports` | cityId, title, description, publishedAt, url, district, hash | `safety_city_published_idx(cityId, publishedAt)` |
-| `newsItems` | cityId, hash, title, url, publishedAt, category, tier, relevant, confidence, lat/lon | `news_city_idx(cityId)` |
+| `newsItems` | cityId, hash, title, url, publishedAt, category, tier, relevantToCity, importance, lat/lon | `news_city_idx(cityId)`, unique `news_city_hash_idx(cityId, hash)` |
 | `airQualityGrid` | cityId, lat, lon, europeanAqi, station, url | `aq_grid_city_idx(cityId)` |
 | `geocodeLookups` | query, lat, lon, displayName, provider | `geocode_query_idx(query)` (unique) |
 | `waterLevelSnapshots` | cityId, stations (JSONB) | `water_level_city_idx(cityId)` |
@@ -84,16 +89,19 @@ All tables have `id` (serial PK), `cityId` (text), and `fetchedAt` (timestamp, d
 
 ### Reads (`reads.ts`)
 
-Query functions that return typed objects or `null`. Each loads the most recent data for a city:
+Query functions that return typed objects or `null`. Each loads the most recent data for a city. Snapshot tables use `ORDER BY fetchedAt DESC LIMIT 1`. Multi-row tables (transit, air quality, NINA) use `MAX(fetchedAt)` to find the latest batch, with staleness guards (30–60 min) to avoid serving stale data when the current state is empty.
 - `loadWeather`, `loadTransitAlerts`, `loadEvents`, `loadSafetyReports`, `loadNewsItems`, `loadSummary`, `loadNinaWarnings`, `loadAirQualityGrid`, `loadWaterLevels`, `loadPoliticalDistricts`, `loadAppointments`
 - `loadBudget`, `loadConstructionSites`, `loadTrafficIncidents`, `loadPharmacies`, `loadAeds`, `loadSocialAtlas`, `loadWastewater`, `loadBathingSpots`, `loadLaborMarket`
 
 ### Writes (`writes.ts`)
 
-All use transactions with delete-then-insert (full refresh per city, not upsert):
-- `saveWeather`, `saveTransitAlerts`, `saveEvents`, `saveSafetyReports`, `saveNewsItems`, `saveSummary`, `saveNinaWarnings`, `saveAirQualityGrid`, `saveWaterLevels`, `saveAppointments`
-- `saveBudget`, `saveConstructionSites`, `saveTrafficIncidents`, `savePharmacies`, `saveAeds`, `saveSocialAtlas`, `saveWastewater`, `saveBathingSpots`, `saveLaborMarket`
-- Exception: `savePoliticalDistricts` uses upsert on (cityId, level)
+Three write patterns (no transactions, no deletes — retention cron handles cleanup):
+- **Snapshot tables** (12 tables): Plain INSERT of one row per city per ingestion.
+- **Multi-row tables** (transit, air quality): Plain INSERT of batch rows. Guard for empty arrays (skip insert).
+- **Hash-keyed tables** (news, events, safety): UPSERT via `onConflictDoUpdate` on (cityId, hash). Refreshes assessment fields and fetchedAt on conflict.
+- **NINA warnings**: UPSERT on (cityId, warningId, version). Refreshes fetchedAt on conflict.
+- **Political districts**: UPSERT on (cityId, level).
+- **AI summaries**: Plain INSERT.
 
 ### Cache Warming (`warm-cache.ts`)
 
@@ -105,26 +113,20 @@ Runs on server start if DB is connected. Loads all data types for all active cit
 
 ### Data Retention (`cron/data-retention.ts`)
 
-Nightly cron (3am) prunes old data to keep DB size manageable:
+Nightly cron (3am) prunes old data from all 20 tables. Since writes are INSERT-only (no delete-then-insert), historical data accumulates and this cron is the sole cleanup mechanism. Each table cleanup is independent — one failure doesn't block others.
 
-| Table | Retention |
-|---|---|
-| `weatherSnapshots` | 30 days |
-| `transitDisruptions` (resolved) | 48 hours |
-| `safetyReports` | 7 days |
-| `newsItems` | 7 days |
-| `airQualityGrid` | 48 hours |
-| `waterLevelSnapshots` | 7 days |
-| `politicalDistricts` | 30 days |
-| `aiSummaries` | 30 days |
-
-Note: JSONB snapshot tables (budget, construction, traffic, pharmacies, aeds, social atlas, wastewater, bathing, labor market, appointments) hold exactly one row per city (delete-then-insert), so they don't accumulate and don't need retention policies.
+| Category | Tables | Retention |
+|---|---|---|
+| Frequent | weather, transit, air quality, traffic, construction | 7 days |
+| Moderate | news, events, safety, NINA, water levels, bathing, pharmacies, appointments, wastewater | 7 days |
+| Infrequent | budget, political, social atlas, AEDs, labor market | 30 days |
+| Summaries | AI summaries | 30 days |
 
 ## Patterns
 
 - **Cache-first reads:** Route handlers check cache, then DB (with try/catch + logging), then return empty defaults.
 - **Dual writes:** Cron jobs write to cache immediately, then attempt DB write (errors caught, logged, non-fatal).
-- **Full refresh:** DB writes delete all rows for a city then insert fresh data in a transaction. Simple and correct for small per-city datasets.
+- **Append-only writes:** DB writes INSERT new rows without deleting old ones. Historical data is cleaned by the nightly retention cron. Hash-keyed tables (news, events, safety, NINA) use UPSERT to avoid duplicates.
 - **Optional DB:** Everything works without `DATABASE_URL` — cache-only mode with no persistence across restarts.
 - **City isolation:** All cache keys and DB queries are prefixed/filtered by `cityId`. No cross-city data leaks.
 - **Berlin-only domains:** Wastewater, bathing, and labor market ingestion hardcode `'berlin'` as cityId. Warm-cache guards these with `cityId === 'berlin'`.

@@ -114,7 +114,7 @@ describe('ingest-feeds — DB assessment reuse', () => {
         tier: 1,
         lang: 'de',
         location: { lat: 52.52, lon: 13.41, label: 'Alexanderplatz' },
-        assessment: { relevant: true, confidence: 0.95 },
+        assessment: { relevant_to_city: true, importance: 0.7, category: 'transit' },
       },
       {
         id: hash2,
@@ -126,7 +126,7 @@ describe('ingest-feeds — DB assessment reuse', () => {
         category: 'local',
         tier: 1,
         lang: 'de',
-        assessment: { relevant: true, confidence: 0.8 },
+        assessment: { relevant_to_city: true, importance: 0.5, category: 'local' },
       },
       {
         id: hash3,
@@ -138,7 +138,7 @@ describe('ingest-feeds — DB assessment reuse', () => {
         category: 'local',
         tier: 1,
         lang: 'de',
-        assessment: { relevant: false, confidence: 0.95 },
+        assessment: { relevant_to_city: false, importance: 0.2, category: 'sports' },
       },
     ]);
 
@@ -179,14 +179,14 @@ describe('ingest-feeds — DB assessment reuse', () => {
         category: 'transit',
         tier: 1,
         lang: 'de',
-        assessment: { relevant: true, confidence: 0.95 },
+        assessment: { relevant_to_city: true, importance: 0.7, category: 'transit' },
       },
     ]);
 
     // LLM filter returns verdicts for the 2 new items
     vi.mocked(filterAndGeolocateNews).mockResolvedValue([
-      { index: 0, relevant: true, confidence: 0.8, locationLabel: 'Alexanderplatz' },
-      { index: 1, relevant: false, confidence: 0.85 },
+      { index: 0, relevant_to_city: true, category: 'local', importance: 0.6, locationLabel: 'Alexanderplatz' },
+      { index: 1, relevant_to_city: false, category: 'sports', importance: 0.1 },
     ]);
 
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
@@ -247,7 +247,7 @@ describe('ingest-feeds — DB assessment reuse', () => {
         category: 'transit',
         tier: 1,
         lang: 'de',
-        assessment: { relevant: true, confidence: 0.95 },
+        assessment: { relevant_to_city: true, importance: 0.7, category: 'transit' },
       },
       {
         id: hash2,
@@ -259,7 +259,7 @@ describe('ingest-feeds — DB assessment reuse', () => {
         category: 'local',
         tier: 1,
         lang: 'de',
-        assessment: { relevant: true, confidence: 0.8 },
+        assessment: { relevant_to_city: true, importance: 0.5, category: 'local' },
       },
       {
         id: hash3,
@@ -271,7 +271,7 @@ describe('ingest-feeds — DB assessment reuse', () => {
         category: 'local',
         tier: 1,
         lang: 'de',
-        assessment: { relevant: false, confidence: 0.95 },
+        assessment: { relevant_to_city: false, importance: 0.2, category: 'sports' },
       },
     ]);
 

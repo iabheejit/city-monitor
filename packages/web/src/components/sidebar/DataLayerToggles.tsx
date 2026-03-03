@@ -5,26 +5,35 @@
 
 import { createElement, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { TrainFront, Wind, Newspaper, ShieldAlert, TriangleAlert, HeartPulse, Pill, Car, Construction, Landmark, Building2, Building, CloudRain, Droplets, Waves, Home, BarChart3 } from 'lucide';
-import { useCommandCenter, type DataLayer, type PoliticalLayer, type EmergencySubLayer, type WaterSubLayer, type TrafficSubLayer } from '../../hooks/useCommandCenter.js';
+import { TrainFront, Wind, Newspaper, ShieldAlert, TriangleAlert, HeartPulse, Pill, Car, Construction, Landmark, Building2, Building, CloudRain, Droplets, Waves, Home, BarChart3, MapPin, Palette, Trophy, TrendingUp, Siren } from 'lucide';
+import { useCommandCenter, type DataLayer, type PoliticalLayer, type SocioeconomicLayer, type NewsSubLayer, type EmergencySubLayer, type WaterSubLayer, type TrafficSubLayer } from '../../hooks/useCommandCenter.js';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import type { IconNode } from '../../lib/map-icons.js';
 
 const LAYER_META: { layer: DataLayer; icon: IconNode; color: string; cities?: string[] }[] = [
-  { layer: 'traffic', icon: Car as IconNode, color: '#8b5cf6' },
-  { layer: 'news', icon: Newspaper as IconNode, color: '#6366f1' },
-  { layer: 'safety', icon: ShieldAlert as IconNode, color: '#f97316' },
   { layer: 'warnings', icon: TriangleAlert as IconNode, color: '#ef4444' },
+  { layer: 'news', icon: Newspaper as IconNode, color: '#6366f1' },
+  { layer: 'traffic', icon: Car as IconNode, color: '#8b5cf6' },
   { layer: 'weather', icon: CloudRain as IconNode, color: '#0ea5e9' },
   { layer: 'air-quality', icon: Wind as IconNode, color: '#50C878' },
   { layer: 'emergencies', icon: HeartPulse as IconNode, color: '#ef4444' },
   { layer: 'water', icon: Droplets as IconNode, color: '#3b82f6' },
-  { layer: 'social-atlas', icon: BarChart3 as IconNode, color: '#8b5cf6', cities: ['berlin'] },
-  { layer: 'rent-map', icon: Home as IconNode, color: '#10b981', cities: ['berlin'] },
+  { layer: 'socioeconomic', icon: BarChart3 as IconNode, color: '#8b5cf6', cities: ['berlin'] },
   { layer: 'political', icon: Landmark as IconNode, color: '#64748b' },
 ];
 
 const INACTIVE_COLOR = '#9ca3af';
+
+const NEWS_SUB_META: { key: NewsSubLayer; icon: IconNode; color: string }[] = [
+  { key: 'local', icon: MapPin as IconNode, color: '#6366f1' },
+  { key: 'politics', icon: Landmark as IconNode, color: '#8b5cf6' },
+  { key: 'transit', icon: TrainFront as IconNode, color: '#3b82f6' },
+  { key: 'culture', icon: Palette as IconNode, color: '#f59e0b' },
+  { key: 'crime', icon: ShieldAlert as IconNode, color: '#ef4444' },
+  { key: 'economy', icon: TrendingUp as IconNode, color: '#22c55e' },
+  { key: 'sports', icon: Trophy as IconNode, color: '#f97316' },
+  { key: 'police', icon: Siren as IconNode, color: '#f97316' },
+];
 
 const EMERGENCY_SUB_META: { key: EmergencySubLayer; icon: IconNode; color: string }[] = [
   { key: 'pharmacies', icon: Pill as IconNode, color: '#22c55e' },
@@ -40,6 +49,11 @@ const TRAFFIC_SUB_META: { key: TrafficSubLayer; icon: IconNode; color: string }[
   { key: 'public-transport', icon: TrainFront as IconNode, color: '#f59e0b' },
   { key: 'incidents', icon: Car as IconNode, color: '#8b5cf6' },
   { key: 'roadworks', icon: Construction as IconNode, color: '#d97706' },
+];
+
+const SOCIOECONOMIC_SUB_META: { key: SocioeconomicLayer; icon: IconNode; color: string }[] = [
+  { key: 'social-atlas', icon: BarChart3 as IconNode, color: '#8b5cf6' },
+  { key: 'rent', icon: Home as IconNode, color: '#10b981' },
 ];
 
 const POLITICAL_SUB_META: { key: PoliticalLayer; icon: IconNode; color: string }[] = [
@@ -89,6 +103,8 @@ export function DataLayerToggles() {
   const toggleSingleView = useCommandCenter((s) => s.toggleSingleView);
   const activeLayers = useCommandCenter((s) => s.activeLayers);
   const toggleLayer = useCommandCenter((s) => s.toggleLayer);
+  const newsSubLayers = useCommandCenter((s) => s.newsSubLayers);
+  const toggleNewsSubLayer = useCommandCenter((s) => s.toggleNewsSubLayer);
   const politicalLayer = useCommandCenter((s) => s.politicalLayer);
   const setPoliticalLayer = useCommandCenter((s) => s.setPoliticalLayer);
   const emergencySubLayers = useCommandCenter((s) => s.emergencySubLayers);
@@ -97,6 +113,8 @@ export function DataLayerToggles() {
   const toggleWaterSubLayer = useCommandCenter((s) => s.toggleWaterSubLayer);
   const trafficSubLayers = useCommandCenter((s) => s.trafficSubLayers);
   const toggleTrafficSubLayer = useCommandCenter((s) => s.toggleTrafficSubLayer);
+  const socioeconomicLayer = useCommandCenter((s) => s.socioeconomicLayer);
+  const setSocioeconomicLayer = useCommandCenter((s) => s.setSocioeconomicLayer);
 
   return (
     <div>
@@ -120,7 +138,18 @@ export function DataLayerToggles() {
           const active = activeLayers.has(layer);
 
           let subItems: ReactNode = null;
-          if (layer === 'traffic' && active) {
+          if (layer === 'news' && active) {
+            subItems = NEWS_SUB_META.map(({ key, icon: subIcon, color: subColor }) => (
+              <SubLayerItem
+                key={key}
+                icon={subIcon}
+                color={subColor}
+                active={newsSubLayers.has(key)}
+                label={t(`sidebar.news.${key}`)}
+                onClick={() => toggleNewsSubLayer(key)}
+              />
+            ));
+          } else if (layer === 'traffic' && active) {
             subItems = TRAFFIC_SUB_META.map(({ key, icon: subIcon, color: subColor }) => (
               <SubLayerItem
                 key={key}
@@ -151,6 +180,17 @@ export function DataLayerToggles() {
                 active={waterSubLayers.has(key)}
                 label={t(`sidebar.water.${key}`)}
                 onClick={() => toggleWaterSubLayer(key)}
+              />
+            ));
+          } else if (layer === 'socioeconomic' && active) {
+            subItems = SOCIOECONOMIC_SUB_META.map(({ key, icon: subIcon, color: subColor }) => (
+              <SubLayerItem
+                key={key}
+                icon={subIcon}
+                color={subColor}
+                active={socioeconomicLayer === key}
+                label={t(`sidebar.socioeconomic.${key}`)}
+                onClick={() => setSocioeconomicLayer(key)}
               />
             ));
           } else if (layer === 'political' && active) {

@@ -100,7 +100,8 @@
         "6": "Energy & Commerce",
         "7": "Transport",
         "8": "Finance"
-      }
+      },
+      "selectDistrict": "Select district"
     },
     "appointments": {
       "title": "Citizen Services",

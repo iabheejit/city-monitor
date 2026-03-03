@@ -32,14 +32,15 @@ App
                 Sidebar (single/multi view toggle, data layer icon toggles) — hidden < lg
                 CityMap (full viewport height, transit markers)
                 DashboardGrid
+                  Tile(span=1) → BriefingStrip (AI summary, 1-2 sentences)
                   Tile(span=1, expandable) → WeatherStrip (current + hourly/daily)
                   Tile(span=1, expandable) → AirQualityStrip (AQI gauge + pollutants)
-                  Tile(span=2) → BriefingStrip (AI summary)
                   Tile(span=2) → NewsStrip (category filter + headlines)
-                  Tile(span=2) → EventsStrip (day/time-of-day/category filters, 2-col grid, future-only)
-                  Tile(span=2) → TransitStrip (line badges + expandable alert cards, container queries)
+                  Tile(span=1, expandable, collapsed) → TransitStrip (severity rows, 4 collapsed / 8 expanded)
                   Tile(span=1) → WaterLevelStrip (gauge bars with MNW–MHW range)
                   Tile(span=1) → AppointmentsStrip (Bürgeramt service availability)
+                  ... (budget, support, political tiles)
+                  Tile(span=2) → EventsStrip (day/time-of-day/category filters, 2-col grid, future-only) — last tile
               Footer (AGPL source link)
 ```
 
@@ -89,7 +90,7 @@ Frontend type definitions for `NewsDigest`, `TransitAlert`, `CityEvent`, `Safety
 - **TopBar** — City name (link back to `/`), current weather, language switcher (DE/EN/TR/AR), theme toggle.
 - **Footer** — AGPL-required source code link (Section 13 compliance).
 
-Tile assignments: Weather (1, expandable), Air Quality (1, expandable), Briefing (2), News (2), Events (2), Transit (2), Water Levels (1), Appointments (1). Expandable tiles use render-function children `(expanded: boolean) => ReactNode` to pass expand state. Strips with internal grids (Events, Transit) use Tailwind v4 container query variants (`@xs:`, `@lg:`, `@2xl:`) so internal layouts respond to tile width, not viewport.
+Tile assignments: Briefing (1), Weather (1, expandable), Air Quality (1, expandable), News (2), Transit (1, expandable, collapsed by default — 4 rows collapsed, 8 expanded), Water Levels (1), Appointments (1), Events (2, last). Expandable tiles use render-function children `(expanded: boolean) => ReactNode` to pass expand state. Strips with internal grids (Events) use Tailwind v4 container query variants (`@xs:`, `@lg:`, `@2xl:`) so internal layouts respond to tile width, not viewport.
 
 ## Internationalization (i18n)
 

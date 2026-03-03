@@ -13,17 +13,15 @@ vi.mock('drizzle-orm', () => ({
 }));
 
 import { createDataRetention } from './data-retention.js';
+import type { Db } from '../db/index.js';
 
 function createMockDb() {
-  const deleteFn = vi.fn().mockReturnThis();
   const where = vi.fn().mockResolvedValue([]);
+  const deleteFn = vi.fn().mockReturnValue({ where });
   return {
-    db: { delete: deleteFn } as any,
+    db: { delete: deleteFn } as unknown as Db,
     deleteFn,
     where,
-    setup() {
-      deleteFn.mockReturnValue({ where });
-    },
   };
 }
 
@@ -34,21 +32,32 @@ describe('data-retention', () => {
     vi.setSystemTime(new Date('2026-03-02T12:00:00Z'));
   });
 
-  it('deletes old weather snapshots (>30 days)', async () => {
+  it('cleans up all tables', async () => {
     const mock = createMockDb();
-    mock.setup();
     const handler = createDataRetention(mock.db);
     await handler();
 
-    // Should call delete for weather, transit, safety, summaries
-    expect(mock.deleteFn).toHaveBeenCalled();
-    expect(mock.where).toHaveBeenCalled();
+    // 20 delete calls (one per table)
+    expect(mock.deleteFn).toHaveBeenCalledTimes(20);
+    expect(mock.where).toHaveBeenCalledTimes(20);
   });
 
   it('runs without errors when DB is empty', async () => {
     const mock = createMockDb();
-    mock.setup();
     const handler = createDataRetention(mock.db);
     await expect(handler()).resolves.not.toThrow();
+  });
+
+  it('continues cleanup even if one table fails', async () => {
+    const where = vi.fn()
+      .mockResolvedValueOnce([])    // first table OK
+      .mockRejectedValueOnce(new Error('DB error')) // second table fails
+      .mockResolvedValue([]);       // rest OK
+    const deleteFn = vi.fn().mockReturnValue({ where });
+    const db = { delete: deleteFn } as unknown as Db;
+
+    const handler = createDataRetention(db);
+    await expect(handler()).resolves.not.toThrow();
+    expect(deleteFn).toHaveBeenCalledTimes(20);
   });
 });

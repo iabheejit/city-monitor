@@ -9,15 +9,15 @@ import { MemoryRouter } from 'react-router-dom';
 import { App } from './App.js';
 
 describe('App', () => {
-  it('renders city picker at /', () => {
+  it('redirects / to /berlin', async () => {
     render(
       <MemoryRouter initialEntries={['/']}>
         <App />
       </MemoryRouter>,
     );
-    expect(screen.getByText('City Monitor')).toBeDefined();
-    expect(screen.getByRole('link', { name: /berlin/i })).toBeDefined();
-    expect(screen.getByRole('link', { name: /hamburg/i })).toBeDefined();
+    await waitFor(() => {
+      expect(screen.getByText('BERLIN')).toBeDefined();
+    });
   });
 
   it('renders Berlin dashboard at /berlin', async () => {
@@ -44,14 +44,16 @@ describe('App', () => {
     });
   });
 
-  it('redirects unknown city to /', () => {
+  it('redirects unknown city to /berlin', async () => {
     render(
       <MemoryRouter initialEntries={['/unknown-city']}>
         <App />
       </MemoryRouter>,
     );
-    // Should redirect to city picker
-    expect(screen.getByRole('link', { name: /berlin/i })).toBeDefined();
+    // Should redirect unknown city → / → /berlin
+    await waitFor(() => {
+      expect(screen.getByText('BERLIN')).toBeDefined();
+    });
   });
 
   it('renders theme toggle on dashboard', async () => {

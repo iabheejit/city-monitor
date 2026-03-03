@@ -47,6 +47,7 @@ export interface NewsItem {
   tier: number;
   description?: string;
   location?: { lat: number; lon: number; label?: string };
+  importance?: number;
 }
 
 export interface TransitAlert {

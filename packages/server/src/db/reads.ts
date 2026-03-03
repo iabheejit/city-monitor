@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-import { eq, and, desc } from 'drizzle-orm';
+import { eq, and, desc, max } from 'drizzle-orm';
 import type { Db } from './index.js';
 import {
   weatherSnapshots,
@@ -43,6 +43,7 @@ export async function loadWeather(db: Db, cityId: string): Promise<WeatherData |
     .select()
     .from(weatherSnapshots)
     .where(eq(weatherSnapshots.cityId, cityId))
+    .orderBy(desc(weatherSnapshots.fetchedAt))
     .limit(1);
 
   if (rows.length === 0) return null;
@@ -57,10 +58,21 @@ export async function loadWeather(db: Db, cityId: string): Promise<WeatherData |
 }
 
 export async function loadTransitAlerts(db: Db, cityId: string): Promise<TransitAlert[] | null> {
+  // Get only the latest batch (rows sharing the MAX fetched_at)
+  const latest = await db
+    .select({ val: max(transitDisruptions.fetchedAt) })
+    .from(transitDisruptions)
+    .where(eq(transitDisruptions.cityId, cityId));
+  const latestTs = latest[0]?.val;
+  if (!latestTs) return null;
+
+  // Guard against stale data: if the latest batch is too old, treat as empty
+  if (Date.now() - latestTs.getTime() > 30 * 60 * 1000) return null;
+
   const rows = await db
     .select()
     .from(transitDisruptions)
-    .where(eq(transitDisruptions.cityId, cityId));
+    .where(and(eq(transitDisruptions.cityId, cityId), eq(transitDisruptions.fetchedAt, latestTs)));
 
   if (rows.length === 0) return null;
 
@@ -129,7 +141,8 @@ export async function loadNewsItems(db: Db, cityId: string): Promise<PersistedNe
     .select()
     .from(newsItems)
     .where(eq(newsItems.cityId, cityId))
-    .orderBy(desc(newsItems.publishedAt));
+    .orderBy(desc(newsItems.publishedAt))
+    .limit(500);
 
   if (rows.length === 0) return null;
 
@@ -174,10 +187,21 @@ export async function loadSummary(db: Db, cityId: string): Promise<(NewsSummary 
 }
 
 export async function loadNinaWarnings(db: Db, cityId: string): Promise<NinaWarning[] | null> {
+  // Get only the latest batch (rows sharing the MAX fetched_at)
+  const latest = await db
+    .select({ val: max(ninaWarnings.fetchedAt) })
+    .from(ninaWarnings)
+    .where(eq(ninaWarnings.cityId, cityId));
+  const latestTs = latest[0]?.val;
+  if (!latestTs) return null;
+
+  // Guard against stale data: if the latest batch is too old, treat as empty
+  if (Date.now() - latestTs.getTime() > 60 * 60 * 1000) return null;
+
   const rows = await db
     .select()
     .from(ninaWarnings)
-    .where(eq(ninaWarnings.cityId, cityId))
+    .where(and(eq(ninaWarnings.cityId, cityId), eq(ninaWarnings.fetchedAt, latestTs)))
     .orderBy(desc(ninaWarnings.startDate));
 
   if (rows.length === 0) return null;
@@ -235,10 +259,21 @@ export async function loadPoliticalFetchedAt(
 }
 
 export async function loadAirQualityGrid(db: Db, cityId: string): Promise<AirQualityGridPoint[] | null> {
+  // Get only the latest batch (rows sharing the MAX fetched_at)
+  const latest = await db
+    .select({ val: max(airQualityGrid.fetchedAt) })
+    .from(airQualityGrid)
+    .where(eq(airQualityGrid.cityId, cityId));
+  const latestTs = latest[0]?.val;
+  if (!latestTs) return null;
+
+  // Guard against stale data: if the latest batch is too old, treat as empty
+  if (Date.now() - latestTs.getTime() > 60 * 60 * 1000) return null;
+
   const rows = await db
     .select()
     .from(airQualityGrid)
-    .where(eq(airQualityGrid.cityId, cityId));
+    .where(and(eq(airQualityGrid.cityId, cityId), eq(airQualityGrid.fetchedAt, latestTs)));
 
   if (rows.length === 0) return null;
 
@@ -289,6 +324,7 @@ export async function loadWaterLevels(db: Db, cityId: string): Promise<WaterLeve
     .select()
     .from(waterLevelSnapshots)
     .where(eq(waterLevelSnapshots.cityId, cityId))
+    .orderBy(desc(waterLevelSnapshots.fetchedAt))
     .limit(1);
 
   if (rows.length === 0) return null;
@@ -305,6 +341,7 @@ export async function loadAppointments(db: Db, cityId: string): Promise<Buergera
     .select()
     .from(appointmentSnapshots)
     .where(eq(appointmentSnapshots.cityId, cityId))
+    .orderBy(desc(appointmentSnapshots.fetchedAt))
     .limit(1);
 
   if (rows.length === 0) return null;
@@ -322,6 +359,7 @@ export async function loadBudget(db: Db, cityId: string): Promise<BudgetSummary 
     .select()
     .from(budgetSnapshots)
     .where(eq(budgetSnapshots.cityId, cityId))
+    .orderBy(desc(budgetSnapshots.fetchedAt))
     .limit(1);
 
   if (rows.length === 0) return null;
@@ -333,6 +371,7 @@ export async function loadConstructionSites(db: Db, cityId: string): Promise<Con
     .select()
     .from(constructionSnapshots)
     .where(eq(constructionSnapshots.cityId, cityId))
+    .orderBy(desc(constructionSnapshots.fetchedAt))
     .limit(1);
 
   if (rows.length === 0) return null;
@@ -344,6 +383,7 @@ export async function loadTrafficIncidents(db: Db, cityId: string): Promise<Traf
     .select()
     .from(trafficSnapshots)
     .where(eq(trafficSnapshots.cityId, cityId))
+    .orderBy(desc(trafficSnapshots.fetchedAt))
     .limit(1);
 
   if (rows.length === 0) return null;
@@ -355,6 +395,7 @@ export async function loadPharmacies(db: Db, cityId: string): Promise<EmergencyP
     .select()
     .from(pharmacySnapshots)
     .where(eq(pharmacySnapshots.cityId, cityId))
+    .orderBy(desc(pharmacySnapshots.fetchedAt))
     .limit(1);
 
   if (rows.length === 0) return null;
@@ -366,6 +407,7 @@ export async function loadAeds(db: Db, cityId: string): Promise<AedLocation[] | 
     .select()
     .from(aedSnapshots)
     .where(eq(aedSnapshots.cityId, cityId))
+    .orderBy(desc(aedSnapshots.fetchedAt))
     .limit(1);
 
   if (rows.length === 0) return null;
@@ -377,6 +419,7 @@ export async function loadSocialAtlas(db: Db, cityId: string): Promise<unknown |
     .select()
     .from(socialAtlasSnapshots)
     .where(eq(socialAtlasSnapshots.cityId, cityId))
+    .orderBy(desc(socialAtlasSnapshots.fetchedAt))
     .limit(1);
 
   if (rows.length === 0) return null;
@@ -388,6 +431,7 @@ export async function loadWastewater(db: Db, cityId: string): Promise<Wastewater
     .select()
     .from(wastewaterSnapshots)
     .where(eq(wastewaterSnapshots.cityId, cityId))
+    .orderBy(desc(wastewaterSnapshots.fetchedAt))
     .limit(1);
 
   if (rows.length === 0) return null;
@@ -399,6 +443,7 @@ export async function loadBathingSpots(db: Db, cityId: string): Promise<BathingS
     .select()
     .from(bathingSnapshots)
     .where(eq(bathingSnapshots.cityId, cityId))
+    .orderBy(desc(bathingSnapshots.fetchedAt))
     .limit(1);
 
   if (rows.length === 0) return null;
@@ -410,6 +455,7 @@ export async function loadLaborMarket(db: Db, cityId: string): Promise<LaborMark
     .select()
     .from(laborMarketSnapshots)
     .where(eq(laborMarketSnapshots.cityId, cityId))
+    .orderBy(desc(laborMarketSnapshots.fetchedAt))
     .limit(1);
 
   if (rows.length === 0) return null;

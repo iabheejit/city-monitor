@@ -4,7 +4,7 @@
 
 ### Data Flow
 
-1. **Ingestion** (`packages/server/src/cron/ingest-feeds.ts`) — Runs every 10 minutes. Fetches RSS/Atom feeds from city-configured sources (10 feeds for Berlin across 3 tiers). Parses with `fast-xml-parser`, classifies headlines by German keywords, deduplicates by URL+title hash, sorts by tier then recency. **Before LLM filtering, loads existing assessments from DB** — only genuinely new items (hash not in DB) are sent through the LLM filter. After filtering, writes to cache keys `{cityId}:news:digest` and `{cityId}:news:{category}` (TTL 900s), then persists all items with their assessments to Postgres. Uses in-flight coalescing via `cache.fetch()` to avoid re-fetching the same feed within 10 min.
+1. **Ingestion** (`packages/server/src/cron/ingest-feeds.ts`) — Runs every 10 minutes. Fetches RSS/Atom feeds from city-configured sources (10 feeds for Berlin across 3 tiers). Parses with `fast-xml-parser`, deduplicates by URL+title hash, sorts by tier → importance (desc) → recency. **Before LLM filtering, loads existing assessments from DB** — only genuinely new items (hash not in DB) are sent through the LLM filter. The LLM assigns `category`, `relevant_to_city`, and `importance` (0–1). After filtering, writes to cache keys `{cityId}:news:digest` and `{cityId}:news:{category}` (TTL 900s), then persists all items with their assessments to Postgres via UPSERT (dedup on cityId+hash). Uses in-flight coalescing via `cache.fetch()` to avoid re-fetching the same feed within 10 min.
 
 2. **API** (`packages/server/src/routes/news.ts`) — `GET /api/:city/news/digest` returns cached digest, falls back to Postgres (with `applyDropLogic`), then empty structure.
 
@@ -24,10 +24,6 @@ Berlin has 10 feeds: rbb24, Tagesspiegel, Berliner Morgenpost, BZ Berlin, Berlin
 - Batch concurrency: 10 feeds at once
 - Raw feed XML cached separately (TTL 600s) to avoid redundant fetches
 
-### Classifier (`packages/server/src/lib/classifier.ts`)
-
-Keyword-based German headline classification into 8 categories: transit, crime, politics, culture, weather, economy, sports, local (fallback). High-confidence keywords (0.85) like Sperrung, Mord, Senat; medium-confidence (0.6) like Baustelle, Polizei. Short keywords use word boundaries to avoid false positives.
-
 ### RSS Parser (`packages/server/src/lib/rss-parser.ts`)
 
 Supports RSS 2.0 and Atom formats. Returns normalized `FeedItem[]` with title, url, publishedAt, description, imageUrl.
@@ -36,7 +32,7 @@ Supports RSS 2.0 and Atom formats. Returns normalized `FeedItem[]` with title, u
 
 ### Data Flow
 
-1. **Summarization** (`packages/server/src/cron/summarize.ts`) — Runs every 15 minutes (at :05, :20, :35, :50). Skipped if `OPENAI_API_KEY` not set. Takes top 10 headlines (tier <= 2) from cached news digest. Hashes the top 5 headlines to detect changes — skips API call if headlines unchanged since last summary. Writes to cache key `{cityId}:news:summary` (TTL 86400s / 24h) and persists to Postgres with token counts.
+1. **Summarization** (`packages/server/src/cron/summarize.ts`) — Runs every 15 minutes (at :05, :20, :35, :50). Skipped if `OPENAI_API_KEY` not set. Takes top 10 headlines (tier <= 2, importance >= 0.3) from cached news digest. Hashes the top 5 headlines to detect changes — skips API call if headlines unchanged since last summary. Writes to cache key `{cityId}:news:summary` (TTL 86400s / 24h) and persists to Postgres with token counts.
 
 2. **API** (`packages/server/src/routes/news.ts`) — `GET /api/:city/news/summary` returns cached summary, falls back to Postgres, then empty structure.
 
@@ -47,7 +43,7 @@ Supports RSS 2.0 and Atom formats. Returns normalized `FeedItem[]` with title, u
 - **Client:** Official `openai` npm package
 - **Model:** `gpt-5-mini` (configurable via `OPENAI_MODEL` env var)
 - **Reasoning:** `low` (fast, cheap)
-- **System prompt:** Local news editor for [city], 2-3 sentence briefing, focus on daily-life impact, write in [language]
+- **System prompt:** Local news editor for [city], 4-5 bullet points (~80 words), focus on daily-life impact, write in [language]
 - **Usage tracking:** In-memory per-city totals (input/output tokens, call count). Exposed via `getUsageStats()` on the health endpoint.
 - **Cost estimate:** gpt-5-mini at $1.00/1M input, $4.00/1M output
 - **Timing:** Logs duration + token counts per call via logger
@@ -63,15 +59,16 @@ interface NewsItem {
   sourceName: string;
   sourceUrl: string;
   description?: string;
-  category: string;     // From classifier or feed config override
+  category: string;     // LLM-assigned (transit, crime, politics, culture, economy, sports, local)
   tier: number;         // 1 (primary) to 3 (tertiary)
   lang: string;
   location?: { lat: number; lon: number; label?: string };
+  importance?: number;  // 0–1, LLM-assigned (0.5 default for unassessed)
 }
 
 // Extended type with LLM assessment, used for DB persistence
 type PersistedNewsItem = NewsItem & {
-  assessment?: { relevant?: boolean; confidence?: number };
+  assessment?: { relevant_to_city?: boolean; importance?: number; category?: string };
 }
 
 interface NewsDigest {
@@ -90,9 +87,9 @@ interface NewsSummary {
 
 ## DB Schema
 
-- `newsItems` table — cityId, hash (dedup key), title, url, publishedAt, sourceName, sourceUrl, description, category, tier, lang, relevant (bool), confidence (real), lat, lon, locationLabel, fetchedAt. Full-refresh write per city. 7-day retention.
-- `aiSummaries` table — cityId, headlineHash, summary, model, inputTokens, outputTokens, generatedAt. 30-day retention.
+- `newsItems` table — cityId, hash (dedup key via unique index `news_city_hash_idx`), title, url, publishedAt, sourceName, sourceUrl, description, category, tier, lang, relevantToCity (bool), importance (real, 0–1), lat, lon, locationLabel, fetchedAt. UPSERT on (cityId, hash). 7-day retention. Reads limited to 500 rows.
+- `aiSummaries` table — cityId, headlineHash, summary, model, inputTokens, outputTokens, generatedAt. INSERT-only. 30-day retention.
 
 ## Drop Logic
 
-`applyDropLogic()` (exported from `ingest-feeds.ts`) filters out items the LLM assessed as irrelevant. Shared by the cron job, warm-cache, and the digest route. Drops all items where `relevant === false` regardless of confidence or tier. Items without assessment are kept.
+`applyDropLogic()` (exported from `ingest-feeds.ts`) filters out items the LLM assessed as irrelevant. Shared by the cron job, warm-cache, and the digest route. Drops all items where `relevant_to_city === false`. Items without assessment default to importance 0.5. Map markers require importance >= 0.5; summarization requires importance >= 0.3.

@@ -6,7 +6,7 @@
  * Draws crisp SVG-based icons onto ImageData via Path2D (synchronous).
  */
 
-import { TrainFront, Newspaper, ShieldAlert, Pill, HeartPulse, Wind, Construction, Droplets, Waves, Landmark, Building2, Building } from 'lucide';
+import { TrainFront, Newspaper, ShieldAlert, Pill, HeartPulse, Wind, Construction, Droplets, Waves, Landmark, Building2, Building, MapPin, Palette, Trophy, TrendingUp, Siren } from 'lucide';
 import type maplibregl from 'maplibre-gl';
 
 export type IconNode = [tag: string, attrs: Record<string, string | number>][];
@@ -26,6 +26,17 @@ export const NEWS_CATEGORY_COLORS: Record<string, string> = {
   economy: '#10b981',
   sports: '#f59e0b',
   local: '#6366f1',
+};
+
+export const NEWS_CATEGORY_ICONS: Record<string, IconNode> = {
+  local: MapPin as IconNode,
+  politics: Landmark as IconNode,
+  transit: TrainFront as IconNode,
+  culture: Palette as IconNode,
+  crime: ShieldAlert as IconNode,
+  weather: Newspaper as IconNode,
+  economy: TrendingUp as IconNode,
+  sports: Trophy as IconNode,
 };
 
 export const CONSTRUCTION_SUBTYPE_COLORS: Record<string, string> = {
@@ -180,17 +191,18 @@ export function registerAllMapIcons(map: maplibregl.Map, isDark: boolean) {
     map.addImage(id, createMapIcon(TrainFront as IconNode, color, stroke));
   }
 
-  // News: Newspaper × 8 category colors
+  // News: distinct icon per category × category colors
   for (const [category, color] of Object.entries(NEWS_CATEGORY_COLORS)) {
     const id = `news-icon-${category}`;
     if (map.hasImage(id)) map.removeImage(id);
-    map.addImage(id, createMapIcon(Newspaper as IconNode, color, stroke));
+    const icon = NEWS_CATEGORY_ICONS[category] ?? (Newspaper as IconNode);
+    map.addImage(id, createMapIcon(icon, color, stroke));
   }
 
-  // Safety: ShieldAlert, orange
+  // Police reports: Siren, orange
   const safetyId = 'safety-icon';
   if (map.hasImage(safetyId)) map.removeImage(safetyId);
-  map.addImage(safetyId, createMapIcon(ShieldAlert as IconNode, '#f97316', stroke));
+  map.addImage(safetyId, createMapIcon(Siren as IconNode, '#f97316', stroke));
 
   // Pharmacy: Pill, green
   const pharmacyId = 'pharmacy-icon';

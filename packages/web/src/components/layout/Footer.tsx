@@ -35,6 +35,14 @@ export function Footer() {
         {t('footer.weatherTiles')}
       </a>
       <span>{t('footer.license')}</span>
+      <a
+        href="https://ko-fi.com/OdinMB"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="hover:underline"
+      >
+        {t('support.title')}
+      </a>
     </footer>
   );
 }

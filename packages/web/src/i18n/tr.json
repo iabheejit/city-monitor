@@ -100,7 +100,8 @@
         "6": "Enerji & Ticaret",
         "7": "Ulaşım",
         "8": "Maliye"
-      }
+      },
+      "selectDistrict": "İlçe seçin"
     },
     "appointments": {
       "title": "Vatandaşlık Hizmetleri",

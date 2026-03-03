@@ -1,19 +1,35 @@
 /**
  * Copyright (C) 2026 Odin Mühlenbein
  * SPDX-License-Identifier: AGPL-3.0-or-later
+ *
+ * Prunes rows older than the configured retention period from all tables.
+ * Since save functions no longer delete before inserting, historical data
+ * accumulates and this cron is the sole cleanup mechanism.
  */
 
-import { lt, and, eq } from 'drizzle-orm';
+import { lt } from 'drizzle-orm';
 import type { Db } from '../db/index.js';
 import {
   weatherSnapshots,
   transitDisruptions,
+  events,
   safetyReports,
   newsItems,
   aiSummaries,
+  ninaWarnings,
   airQualityGrid,
   politicalDistricts,
   waterLevelSnapshots,
+  appointmentSnapshots,
+  budgetSnapshots,
+  constructionSnapshots,
+  trafficSnapshots,
+  pharmacySnapshots,
+  aedSnapshots,
+  socialAtlasSnapshots,
+  wastewaterSnapshots,
+  bathingSnapshots,
+  laborMarketSnapshots,
 } from '../db/schema.js';
 import { createLogger } from '../lib/logger.js';
 
@@ -21,52 +37,62 @@ const log = createLogger('data-retention');
 
 const DAY_MS = 86_400_000;
 
-/**
- * Prunes old data from the database:
- * - weather_snapshots older than 30 days
- * - resolved transit_disruptions older than 48 hours
- * - safety_reports older than 7 days
- * - news_items older than 7 days
- * - ai_summaries older than 30 days
- * - air_quality_grid older than 48 hours
- * - political_districts older than 30 days
- * - water_level_snapshots older than 7 days
- */
+/** Retention periods by table type */
+const RETENTION = {
+  /** Frequently updated snapshots (weather, traffic, transit, air quality) */
+  frequent: 7 * DAY_MS,
+  /** Moderately updated data (news, events, safety, water, bathing, pharmacies) */
+  moderate: 7 * DAY_MS,
+  /** Infrequently updated data (budget, political, social atlas, AEDs, labor market) */
+  infrequent: 30 * DAY_MS,
+  /** AI-generated content */
+  summaries: 30 * DAY_MS,
+} as const;
+
 export function createDataRetention(db: Db) {
   return async () => {
     const now = Date.now();
+    let cleaned = 0;
 
-    try {
-      await db.delete(weatherSnapshots)
-        .where(lt(weatherSnapshots.fetchedAt, new Date(now - 30 * DAY_MS)));
+    const tasks: Array<{ name: string; fn: () => Promise<unknown> }> = [
+      // Frequent snapshots (7 days)
+      { name: 'weather', fn: () => db.delete(weatherSnapshots).where(lt(weatherSnapshots.fetchedAt, new Date(now - RETENTION.frequent))) },
+      { name: 'transit', fn: () => db.delete(transitDisruptions).where(lt(transitDisruptions.fetchedAt, new Date(now - RETENTION.frequent))) },
+      { name: 'air_quality', fn: () => db.delete(airQualityGrid).where(lt(airQualityGrid.fetchedAt, new Date(now - RETENTION.frequent))) },
+      { name: 'traffic', fn: () => db.delete(trafficSnapshots).where(lt(trafficSnapshots.fetchedAt, new Date(now - RETENTION.frequent))) },
+      { name: 'construction', fn: () => db.delete(constructionSnapshots).where(lt(constructionSnapshots.fetchedAt, new Date(now - RETENTION.frequent))) },
 
-      await db.delete(transitDisruptions)
-        .where(and(
-          eq(transitDisruptions.resolved, true),
-          lt(transitDisruptions.fetchedAt, new Date(now - 2 * DAY_MS)),
-        ));
+      // Moderate retention (7 days)
+      { name: 'news', fn: () => db.delete(newsItems).where(lt(newsItems.fetchedAt, new Date(now - RETENTION.moderate))) },
+      { name: 'events', fn: () => db.delete(events).where(lt(events.fetchedAt, new Date(now - RETENTION.moderate))) },
+      { name: 'safety', fn: () => db.delete(safetyReports).where(lt(safetyReports.fetchedAt, new Date(now - RETENTION.moderate))) },
+      { name: 'nina', fn: () => db.delete(ninaWarnings).where(lt(ninaWarnings.fetchedAt, new Date(now - RETENTION.moderate))) },
+      { name: 'water_levels', fn: () => db.delete(waterLevelSnapshots).where(lt(waterLevelSnapshots.fetchedAt, new Date(now - RETENTION.moderate))) },
+      { name: 'bathing', fn: () => db.delete(bathingSnapshots).where(lt(bathingSnapshots.fetchedAt, new Date(now - RETENTION.moderate))) },
+      { name: 'pharmacies', fn: () => db.delete(pharmacySnapshots).where(lt(pharmacySnapshots.fetchedAt, new Date(now - RETENTION.moderate))) },
+      { name: 'appointments', fn: () => db.delete(appointmentSnapshots).where(lt(appointmentSnapshots.fetchedAt, new Date(now - RETENTION.moderate))) },
+      { name: 'wastewater', fn: () => db.delete(wastewaterSnapshots).where(lt(wastewaterSnapshots.fetchedAt, new Date(now - RETENTION.moderate))) },
 
-      await db.delete(safetyReports)
-        .where(lt(safetyReports.fetchedAt, new Date(now - 7 * DAY_MS)));
+      // Infrequent data (30 days)
+      { name: 'budget', fn: () => db.delete(budgetSnapshots).where(lt(budgetSnapshots.fetchedAt, new Date(now - RETENTION.infrequent))) },
+      { name: 'political', fn: () => db.delete(politicalDistricts).where(lt(politicalDistricts.fetchedAt, new Date(now - RETENTION.infrequent))) },
+      { name: 'social_atlas', fn: () => db.delete(socialAtlasSnapshots).where(lt(socialAtlasSnapshots.fetchedAt, new Date(now - RETENTION.infrequent))) },
+      { name: 'aeds', fn: () => db.delete(aedSnapshots).where(lt(aedSnapshots.fetchedAt, new Date(now - RETENTION.infrequent))) },
+      { name: 'labor_market', fn: () => db.delete(laborMarketSnapshots).where(lt(laborMarketSnapshots.fetchedAt, new Date(now - RETENTION.infrequent))) },
 
-      await db.delete(newsItems)
-        .where(lt(newsItems.fetchedAt, new Date(now - 7 * DAY_MS)));
+      // AI summaries (30 days)
+      { name: 'summaries', fn: () => db.delete(aiSummaries).where(lt(aiSummaries.generatedAt, new Date(now - RETENTION.summaries))) },
+    ];
 
-      await db.delete(aiSummaries)
-        .where(lt(aiSummaries.generatedAt, new Date(now - 30 * DAY_MS)));
-
-      await db.delete(airQualityGrid)
-        .where(lt(airQualityGrid.fetchedAt, new Date(now - 2 * DAY_MS)));
-
-      await db.delete(politicalDistricts)
-        .where(lt(politicalDistricts.fetchedAt, new Date(now - 30 * DAY_MS)));
-
-      await db.delete(waterLevelSnapshots)
-        .where(lt(waterLevelSnapshots.fetchedAt, new Date(now - 7 * DAY_MS)));
-
-      log.info('data retention complete');
-    } catch (err) {
-      log.error('data retention failed', err);
+    for (const task of tasks) {
+      try {
+        await task.fn();
+        cleaned++;
+      } catch (err) {
+        log.error(`cleanup ${task.name} failed`, err);
+      }
     }
+
+    log.info(`data retention complete (${cleaned}/${tasks.length} tables cleaned)`);
   };
 }

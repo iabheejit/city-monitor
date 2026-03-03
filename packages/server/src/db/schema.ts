@@ -62,6 +62,7 @@ export const events = pgTable('events', {
 }, (table) => [
   index('events_city_date_idx').on(table.cityId, table.date),
   index('events_city_source_idx').on(table.cityId, table.source, table.date),
+  uniqueIndex('events_city_hash_idx').on(table.cityId, table.hash),
 ]);
 
 // Milestone 10 — Safety Reports
@@ -80,6 +81,7 @@ export const safetyReports = pgTable('safety_reports', {
   fetchedAt: timestamp('fetched_at').defaultNow().notNull(),
 }, (table) => [
   index('safety_city_published_idx').on(table.cityId, table.publishedAt),
+  uniqueIndex('safety_city_hash_idx').on(table.cityId, table.hash),
 ]);
 
 // NINA civil protection warnings
@@ -99,6 +101,7 @@ export const ninaWarnings = pgTable('nina_warnings', {
   fetchedAt: timestamp('fetched_at').defaultNow().notNull(),
 }, (table) => [
   index('nina_city_idx').on(table.cityId, table.startDate),
+  uniqueIndex('nina_city_warning_version_idx').on(table.cityId, table.warningId, table.version),
 ]);
 
 // News items with LLM assessments
@@ -123,6 +126,7 @@ export const newsItems = pgTable('news_items', {
   fetchedAt: timestamp('fetched_at').defaultNow().notNull(),
 }, (table) => [
   index('news_city_idx').on(table.cityId),
+  uniqueIndex('news_city_hash_idx').on(table.cityId, table.hash),
 ]);
 
 // Geocode lookup table — persistent cache for geocoding results

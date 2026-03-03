@@ -54,9 +54,9 @@ async function summarizeCityNews(
   const digest = cache.get<NewsDigest>(`${cityId}:news:digest`);
   if (!digest || digest.items.length === 0) return;
 
-  // Take top headlines (tier 1+2, most recent)
+  // Take top headlines (tier 1+2, most important, most recent)
   const topItems = digest.items
-    .filter((item) => item.tier <= 2)
+    .filter((item) => item.tier <= 2 && (item.importance ?? 0) >= 0.3)
     .slice(0, TOP_HEADLINES);
 
   if (topItems.length === 0) return;

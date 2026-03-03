@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useTransit } from '../../hooks/useTransit.js';
@@ -12,6 +11,9 @@ import type { TransitAlert } from '../../lib/api.js';
 
 const SEVERITY_ORDER: Record<string, number> = { high: 0, medium: 1, low: 2 };
 
+const COLLAPSED_MAX = 6;
+const EXPANDED_MAX = 12;
+
 function getLineBadgeColor(line: string): string {
   if (line.startsWith('U')) return 'bg-blue-600 text-white';
   if (line.startsWith('S')) return 'bg-green-600 text-white';
@@ -19,54 +21,31 @@ function getLineBadgeColor(line: string): string {
   return 'bg-yellow-600 text-white';
 }
 
-function getSeverityColor(severity: TransitAlert['severity']): string {
-  if (severity === 'high') return 'border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-950';
-  if (severity === 'medium') return 'border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950';
-  return 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900';
+function getSeverityDot(severity: TransitAlert['severity']): string {
+  if (severity === 'high') return 'bg-red-500';
+  if (severity === 'medium') return 'bg-amber-500';
+  return 'bg-gray-400';
 }
 
-function AlertCard({ alert }: { alert: TransitAlert }) {
-  const hasDetail = alert.detail && alert.detail !== alert.message;
-  const [expanded, setExpanded] = useState(false);
-
+function AlertRow({ alert }: { alert: TransitAlert }) {
   return (
-    <div
-      className={`p-2 rounded border text-sm ${getSeverityColor(alert.severity)} ${hasDetail ? 'cursor-pointer' : ''}`}
-      onClick={hasDetail ? () => setExpanded((v) => !v) : undefined}
-    >
-      <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+    <div className="flex items-start gap-2 py-1.5 border-b border-gray-100 dark:border-gray-800 last:border-b-0">
+      <span className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${getSeverityDot(alert.severity)}`} />
+      <div className="flex items-center gap-1 shrink-0 flex-wrap">
         {(alert.lines ?? [alert.line]).map((ln) => (
-          <span key={ln} className={`inline-block px-1.5 py-0.5 rounded text-xs font-bold ${getLineBadgeColor(ln)}`}>
+          <span key={ln} className={`inline-block px-1.5 py-0.5 rounded text-xs font-bold leading-none ${getLineBadgeColor(ln)}`}>
             {ln}
           </span>
         ))}
-        <span className="text-xs text-gray-500 dark:text-gray-400 capitalize">
-          {alert.type.replace('-', ' ')}
-        </span>
       </div>
-      {alert.station && (
-        <p className="text-xs font-medium text-gray-600 dark:text-gray-300 mb-0.5">
-          {alert.station}
-        </p>
-      )}
-      <p className={`text-gray-800 dark:text-gray-200 ${expanded ? '' : 'line-clamp-2'}`}>
-        {expanded ? alert.detail : alert.message}
+      <p className="text-sm text-gray-700 dark:text-gray-300 line-clamp-1 min-w-0">
+        {alert.message}
       </p>
-      {alert.affectedStops.length > 0 && (
-        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">
-          {alert.affectedStops.join(' — ')}
-        </p>
-      )}
-      {hasDetail && (
-        <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-          {expanded ? '▲' : '▼ details'}
-        </p>
-      )}
     </div>
   );
 }
 
-export function TransitStrip() {
+export function TransitStrip({ expanded = false, onExpand }: { expanded?: boolean; onExpand?: () => void }) {
   const { id: cityId } = useCityConfig();
   const { data, isLoading } = useTransit(cityId);
   const { t } = useTranslation();
@@ -76,15 +55,28 @@ export function TransitStrip() {
     (a, b) => (SEVERITY_ORDER[a.severity] ?? 3) - (SEVERITY_ORDER[b.severity] ?? 3),
   );
 
+  const limit = expanded ? EXPANDED_MAX : COLLAPSED_MAX;
+  const visible = sorted.slice(0, limit);
+  const hiddenCount = sorted.length - visible.length;
+
   return isLoading ? (
     <Skeleton lines={4} />
   ) : sorted.length === 0 ? (
     <p className="text-sm text-gray-400 py-2 text-center">{t('panel.transit.empty')}</p>
   ) : (
-    <div className="grid gap-2 @xs:grid-cols-2 @lg:grid-cols-3">
-      {sorted.map((alert) => (
-        <AlertCard key={alert.id} alert={alert} />
+    <div>
+      {visible.map((alert) => (
+        <AlertRow key={alert.id} alert={alert} />
       ))}
+      {hiddenCount > 0 && (
+        <button
+          type="button"
+          onClick={onExpand}
+          className="w-full text-xs text-gray-400 dark:text-gray-500 text-center pt-1.5 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+        >
+          +{hiddenCount} {t('panel.transit.more')}
+        </button>
+      )}
     </div>
   );
 }
