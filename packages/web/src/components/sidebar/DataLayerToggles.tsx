@@ -5,11 +5,12 @@
 
 import { createElement, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { TrainFront, Wind, Newspaper, ShieldAlert, TriangleAlert, HeartPulse, Pill, Car, Construction, Landmark, Building2, Building, CloudRain, Droplets } from 'lucide';
+import { TrainFront, Wind, Newspaper, ShieldAlert, TriangleAlert, HeartPulse, Pill, Car, Construction, Landmark, Building2, Building, CloudRain, Droplets, Home } from 'lucide';
 import { useCommandCenter, type DataLayer, type PoliticalLayer, type EmergencySubLayer } from '../../hooks/useCommandCenter.js';
+import { useCityConfig } from '../../hooks/useCityConfig.js';
 import type { IconNode } from '../../lib/map-icons.js';
 
-const LAYER_META: { layer: DataLayer; icon: IconNode; color: string }[] = [
+const LAYER_META: { layer: DataLayer; icon: IconNode; color: string; cities?: string[] }[] = [
   { layer: 'transit', icon: TrainFront as IconNode, color: '#f59e0b' },
   { layer: 'news', icon: Newspaper as IconNode, color: '#6366f1' },
   { layer: 'safety', icon: ShieldAlert as IconNode, color: '#f97316' },
@@ -20,6 +21,7 @@ const LAYER_META: { layer: DataLayer; icon: IconNode; color: string }[] = [
   { layer: 'traffic', icon: Car as IconNode, color: '#8b5cf6' },
   { layer: 'construction', icon: Construction as IconNode, color: '#d97706' },
   { layer: 'water-levels', icon: Droplets as IconNode, color: '#3b82f6' },
+  { layer: 'rent-map', icon: Home as IconNode, color: '#10b981', cities: ['berlin'] },
   { layer: 'political', icon: Landmark as IconNode, color: '#64748b' },
 ];
 
@@ -72,6 +74,7 @@ function SubLayerItem({ icon, color, active, label, onClick }: { icon: IconNode;
 
 export function DataLayerToggles() {
   const { t } = useTranslation();
+  const city = useCityConfig();
   const singleView = useCommandCenter((s) => s.singleView);
   const toggleSingleView = useCommandCenter((s) => s.toggleSingleView);
   const activeLayers = useCommandCenter((s) => s.activeLayers);
@@ -99,7 +102,7 @@ export function DataLayerToggles() {
         </button>
       </div>
       <div className="space-y-0.5">
-        {LAYER_META.map(({ layer, icon, color }) => {
+        {LAYER_META.filter(({ cities }) => !cities || cities.includes(city.id)).map(({ layer, icon, color }) => {
           const active = activeLayers.has(layer);
 
           let subItems: ReactNode = null;

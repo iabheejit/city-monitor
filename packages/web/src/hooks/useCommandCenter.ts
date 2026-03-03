@@ -5,7 +5,7 @@
 
 import { create } from 'zustand';
 
-export type DataLayer = 'transit' | 'weather' | 'news' | 'safety' | 'warnings' | 'air-quality' | 'emergencies' | 'traffic' | 'construction' | 'water-levels' | 'political';
+export type DataLayer = 'transit' | 'weather' | 'news' | 'safety' | 'warnings' | 'air-quality' | 'emergencies' | 'traffic' | 'construction' | 'water-levels' | 'political' | 'rent-map';
 export type PoliticalLayer = 'bezirke' | 'bundestag' | 'landesparlament';
 export type EmergencySubLayer = 'pharmacies' | 'aeds';
 
@@ -26,7 +26,7 @@ const ALL_EMERGENCY_SUBS: Set<EmergencySubLayer> = new Set(['pharmacies', 'aeds'
 export const useCommandCenter = create<CommandCenterState>((set) => ({
   singleView: true,
   activeLayers: new Set(DEFAULT_LAYERS),
-  politicalLayer: 'bundestag',
+  politicalLayer: 'bezirke',
   emergencySubLayers: new Set(ALL_EMERGENCY_SUBS),
   toggleSingleView: () =>
     set((state) => {

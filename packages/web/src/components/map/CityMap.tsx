@@ -26,7 +26,7 @@ import { useAirQualityGrid } from '../../hooks/useAirQualityGrid.js';
 import { useWaterLevels } from '../../hooks/useWaterLevels.js';
 import { useCommandCenter } from '../../hooks/useCommandCenter.js';
 import type { TransitAlert, NewsItem, SafetyReport, NinaWarning, EmergencyPharmacy, TrafficIncident, ConstructionSite, PoliticalDistrict, AirQualityGridPoint, AedLocation, WaterLevelStation } from '../../lib/api.js';
-import { SEVERITY_COLORS, NEWS_CATEGORY_COLORS, AQI_LEVEL_COLORS, CONSTRUCTION_SUBTYPE_COLORS, WATER_STATE_COLORS, registerAllMapIcons } from '../../lib/map-icons.js';
+import { SEVERITY_COLORS, NEWS_CATEGORY_COLORS, AQI_LEVEL_COLORS, CONSTRUCTION_SUBTYPE_COLORS, WATER_STATE_COLORS, registerAllMapIcons, registerPoliticalIcons } from '../../lib/map-icons.js';
 import { getAqiLevel } from '../../lib/aqi.js';
 import { getPartyColor, getMajorityParty } from '../../lib/party-colors.js';
 
@@ -100,6 +100,7 @@ function simplifyMap(map: maplibregl.Map) {
       !ROAD_LAYER_IDS.has(layer.id) &&
       !WATER_LAYER_IDS.has(layer.id) &&
       !layer.id.startsWith('district-') &&
+      !layer.id.startsWith('political-') &&
       !layer.id.startsWith('transit-') &&
       !layer.id.startsWith('news-') &&
       !layer.id.startsWith('safety-') &&
@@ -110,7 +111,8 @@ function simplifyMap(map: maplibregl.Map) {
       !layer.id.startsWith('construction-') &&
       !layer.id.startsWith('aq-') &&
       !layer.id.startsWith('wl-') &&
-      !layer.id.startsWith('weather-')
+      !layer.id.startsWith('weather-') &&
+      !layer.id.startsWith('rent-map-')
     ) {
       map.setLayoutProperty(layer.id, 'visibility', 'none');
     }
@@ -175,6 +177,39 @@ function setWeatherOverlay(map: maplibregl.Map, visible: boolean) {
   } else {
     if (map.getLayer(WEATHER_LAYER)) map.removeLayer(WEATHER_LAYER);
     if (map.getSource(WEATHER_SOURCE)) map.removeSource(WEATHER_SOURCE);
+  }
+}
+
+const RENT_MAP_SOURCE = 'rent-map-wms';
+const RENT_MAP_LAYER = 'rent-map-layer';
+const RENT_MAP_WMS_URL =
+  'https://gdi.berlin.de/services/wms/wohnlagenadr2024?service=WMS&version=1.1.1&request=GetMap' +
+  '&layers=wohnlagenadr2024&styles=&format=image/png&transparent=true' +
+  '&srs=EPSG:3857&width=256&height=256&bbox={bbox-epsg-3857}';
+
+function setRentMapOverlay(map: maplibregl.Map, visible: boolean) {
+  if (visible) {
+    if (!map.getSource(RENT_MAP_SOURCE)) {
+      map.addSource(RENT_MAP_SOURCE, {
+        type: 'raster',
+        tiles: [RENT_MAP_WMS_URL],
+        tileSize: 256,
+        attribution: '&copy; <a href="https://daten.berlin.de" target="_blank">Berlin Open Data</a>',
+      });
+    }
+    if (!map.getLayer(RENT_MAP_LAYER)) {
+      map.addLayer({
+        id: RENT_MAP_LAYER,
+        type: 'raster',
+        source: RENT_MAP_SOURCE,
+        paint: {
+          'raster-opacity': 0.6,
+        },
+      });
+    }
+  } else {
+    if (map.getLayer(RENT_MAP_LAYER)) map.removeLayer(RENT_MAP_LAYER);
+    if (map.getSource(RENT_MAP_SOURCE)) map.removeSource(RENT_MAP_SOURCE);
   }
 }
 
@@ -357,6 +392,118 @@ function setupDistrictHover(map: maplibregl.Map) {
     }
     map.getCanvas().style.cursor = '';
   });
+}
+
+// --- Political district markers -------------------------------------------
+
+/** Compute a simple centroid from a polygon's first ring (average of vertices) */
+function polygonCentroid(coords: number[][]): [number, number] {
+  let sumLon = 0;
+  let sumLat = 0;
+  // Exclude the closing vertex (it duplicates the first)
+  const n = coords.length > 1 ? coords.length - 1 : coords.length;
+  for (let i = 0; i < n; i++) {
+    sumLon += coords[i][0];
+    sumLat += coords[i][1];
+  }
+  return [sumLon / n, sumLat / n];
+}
+
+const POLITICAL_MARKER_LAYER = 'political-marker-icon';
+const POLITICAL_MARKER_SOURCE = 'political-markers';
+
+function updatePoliticalMarkers(
+  map: maplibregl.Map,
+  districts: PoliticalDistrict[],
+  geojsonFeatures: GeoJSON.Feature[],
+  subLayer: 'bezirke' | 'bundestag' | 'landesparlament',
+  nameField: string,
+  isDark: boolean,
+) {
+  // Clean up existing marker layer
+  if (map.getLayer(POLITICAL_MARKER_LAYER)) map.removeLayer(POLITICAL_MARKER_LAYER);
+  if (map.getSource(POLITICAL_MARKER_SOURCE)) map.removeSource(POLITICAL_MARKER_SOURCE);
+
+  if (!districts.length || !geojsonFeatures.length) return;
+
+  // Build name → majority party color map
+  const colorMap = new Map<string, string>();
+  const uniqueColors = new Set<string>();
+  for (const d of districts) {
+    const party = getMajorityParty(d.representatives);
+    const color = party ? getPartyColor(party) : '#808080';
+    colorMap.set(d.name.toLowerCase(), color);
+    uniqueColors.add(color);
+  }
+
+  // Register icons for all party colors used
+  registerPoliticalIcons(map, subLayer, [...uniqueColors], isDark);
+
+  const points: GeoJSON.Feature[] = [];
+
+  for (const f of geojsonFeatures) {
+    const name = f.properties?.[nameField] as string | undefined;
+    if (!name) continue;
+
+    const geom = f.geometry;
+    let centroid: [number, number];
+    if (geom.type === 'Polygon') {
+      centroid = polygonCentroid((geom as GeoJSON.Polygon).coordinates[0]);
+    } else if (geom.type === 'MultiPolygon') {
+      // Use the largest ring
+      const coords = (geom as GeoJSON.MultiPolygon).coordinates;
+      let best = coords[0][0];
+      for (const poly of coords) {
+        if (poly[0].length > best.length) best = poly[0];
+      }
+      centroid = polygonCentroid(best);
+    } else {
+      continue;
+    }
+
+    const color = colorMap.get(name.toLowerCase()) ?? '#808080';
+    const iconId = `political-icon-${color.replace('#', '')}`;
+
+    points.push({
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: centroid },
+      properties: { name, iconId, color },
+    });
+  }
+
+  if (!points.length) return;
+
+  map.addSource(POLITICAL_MARKER_SOURCE, {
+    type: 'geojson',
+    data: { type: 'FeatureCollection', features: points },
+  });
+
+  map.addLayer({
+    id: POLITICAL_MARKER_LAYER,
+    type: 'symbol',
+    source: POLITICAL_MARKER_SOURCE,
+    layout: {
+      'icon-image': ['get', 'iconId'],
+      'icon-size': 0.85,
+      'icon-allow-overlap': true,
+      'icon-anchor': 'center',
+    },
+  });
+
+  // Register hover/click popups for markers
+  registerPopupHandlers(map, POLITICAL_MARKER_LAYER, (e) => {
+    if (!e.features?.length) return null;
+    const name = e.features[0].properties?.name as string | undefined;
+    if (!name) return null;
+    const coords = (e.features[0].geometry as GeoJSON.Point).coordinates.slice() as [number, number];
+    const html = buildPoliticalPopupHtml(name, districts);
+    return { html, lngLat: coords };
+  }, { maxWidth: '320px' });
+}
+
+function removePoliticalMarkers(map: maplibregl.Map) {
+  if (map.getLayer(POLITICAL_MARKER_LAYER)) map.removeLayer(POLITICAL_MARKER_LAYER);
+  if (map.getSource(POLITICAL_MARKER_SOURCE)) map.removeSource(POLITICAL_MARKER_SOURCE);
 }
 
 // --- Shared popup helpers ---------------------------------------------------
@@ -1348,6 +1495,7 @@ export function CityMap() {
   const constructionActive = activeLayers.has('construction');
   const roadsActive = trafficActive || constructionActive;
   const weatherActive = activeLayers.has('weather');
+  const rentMapActive = activeLayers.has('rent-map') && city.id === 'berlin';
   const waterLevelsActive = activeLayers.has('water-levels');
   const { data: bezirkeData } = usePolitical(city.id, 'bezirke');
   const { data: bundestagData } = usePolitical(city.id, 'bundestag');
@@ -1399,6 +1547,8 @@ export function CityMap() {
   roadsActiveRef.current = roadsActive;
   const weatherActiveRef = useRef(weatherActive);
   weatherActiveRef.current = weatherActive;
+  const rentMapActiveRef = useRef(rentMapActive);
+  rentMapActiveRef.current = rentMapActive;
   const waterLevelsActiveRef = useRef(waterLevelsActive);
   waterLevelsActiveRef.current = waterLevelsActive;
   const politicalActiveRef = useRef(politicalActive);
@@ -1447,6 +1597,7 @@ export function CityMap() {
       updateAqGridLayer(map, aqGridItemsRef.current, isDarkRef.current);
       updateWaterLevelMarkers(map, waterLevelItemsRef.current, isDarkRef.current);
       setWeatherOverlay(map, weatherActiveRef.current);
+      setRentMapOverlay(map, rentMapActiveRef.current);
 
       // Collapse the attribution control (MapLibre opens it by default)
       containerRef.current
@@ -1529,6 +1680,7 @@ export function CityMap() {
       updateAqGridLayer(map, aqGridItemsRef.current, isDark);
       updateWaterLevelMarkers(map, waterLevelItemsRef.current, isDark);
       setWeatherOverlay(map, weatherActiveRef.current);
+      setRentMapOverlay(map, rentMapActiveRef.current);
     });
   }, [isDark, city.id]);
 
@@ -1544,6 +1696,19 @@ export function CityMap() {
     map.once('idle', apply);
     return () => { map.off('idle', apply); };
   }, [weatherActive]);
+
+  // Show/hide Berlin Wohnlagenkarte (rent map) overlay when layer is toggled
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const apply = () => setRentMapOverlay(map, rentMapActive);
+    if (map.isStyleLoaded()) {
+      apply();
+      return;
+    }
+    map.once('idle', apply);
+    return () => { map.off('idle', apply); };
+  }, [rentMapActive]);
 
   // Update transit markers when alerts or layer toggle changes
   useEffect(() => {
@@ -1577,21 +1742,15 @@ export function CityMap() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [warningItems]);
 
-  // Update pharmacy markers
+  // Update emergency markers (pharmacies + AEDs) — combined into a single effect
+  // to ensure both update atomically when the emergency layer toggles on.
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !map.isStyleLoaded()) return;
     updatePharmacyMarkers(map, pharmacyItems, isDarkRef.current);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pharmacyItems]);
-
-  // Update AED markers
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !map.isStyleLoaded()) return;
     updateAedMarkers(map, aedItems, isDarkRef.current);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [aedItems]);
+  }, [emergencyActive, emergencySubLayers, pharmacyList, aedList]);
 
   // Update traffic incident layers
   useEffect(() => {
@@ -1661,6 +1820,7 @@ export function CityMap() {
   const politicalDataRef = useRef(politicalData);
   politicalDataRef.current = politicalData;
   const activeNameFieldRef = useRef('name');
+  const politicalGeoFeaturesRef = useRef<GeoJSON.Feature[]>([]);
 
   // Effect 1: swap GeoJSON source when political layer changes
   useEffect(() => {
@@ -1668,7 +1828,9 @@ export function CityMap() {
     if (!map || !map.isStyleLoaded()) return;
 
     if (!politicalActive) {
-      // Political off — restore default Bezirke GeoJSON
+      // Political off — restore default Bezirke GeoJSON and remove markers
+      removePoliticalMarkers(map);
+      politicalGeoFeaturesRef.current = [];
       addDistrictLayer(map, cityIdRef.current, isDarkRef.current);
       activeNameFieldRef.current = DISTRICT_URLS[cityIdRef.current]?.nameField ?? 'name';
       return;
@@ -1688,7 +1850,8 @@ export function CityMap() {
         const geojson: GeoJSON.FeatureCollection = await res.json();
         if (controller.signal.aborted) return;
 
-        // Remove existing layers/source
+        // Remove existing layers/source (including markers)
+        removePoliticalMarkers(map);
         for (const id of ['district-label', 'district-line', 'district-fill']) {
           if (map.getLayer(id)) map.removeLayer(id);
         }
@@ -1732,10 +1895,14 @@ export function CityMap() {
           },
         });
 
-        // Apply party colors if data is already available
+        // Store GeoJSON features for marker creation
+        politicalGeoFeaturesRef.current = geojson.features;
+
+        // Apply party colors + markers if data is already available
         const freshData = politicalDataRef.current;
         if (freshData) {
           applyPoliticalStyling(map, freshData, isDarkRef.current, resolved.nameField);
+          updatePoliticalMarkers(map, freshData, geojson.features, politicalLayer as 'bezirke' | 'bundestag' | 'landesparlament', resolved.nameField, isDarkRef.current);
         }
       } catch (e: unknown) {
         if (e instanceof Error && e.name === 'AbortError') return;
@@ -1747,11 +1914,14 @@ export function CityMap() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [politicalActive, politicalLayer]);
 
-  // Effect 2: apply party colors when political data arrives/changes
+  // Effect 2: apply party colors + markers when political data arrives/changes
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !map.isStyleLoaded() || !politicalActive || !politicalData) return;
     applyPoliticalStyling(map, politicalData, isDarkRef.current, activeNameFieldRef.current);
+    if (politicalGeoFeaturesRef.current.length) {
+      updatePoliticalMarkers(map, politicalData, politicalGeoFeaturesRef.current, politicalLayer, activeNameFieldRef.current, isDarkRef.current);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [politicalData]);
 
