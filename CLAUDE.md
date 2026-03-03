@@ -76,5 +76,6 @@ npm run db:studio      # Open Drizzle Studio (DB browser)
 ## Repository
 
 - **Remote:** https://github.com/OdinMB/city-monitor
+- **URL:** https://citymonitor.app
 - **Main branch:** main
 - **License:** AGPL-3.0-or-later (dual copyright — see LICENSE)
