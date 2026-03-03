@@ -13,6 +13,7 @@ interface TileProps {
   span?: TileSpan;
   height?: TileHeight;
   expandable?: boolean;
+  defaultExpanded?: boolean;
   children: ReactNode | ((expanded: boolean, setExpanded: (v: boolean) => void) => ReactNode);
   className?: string;
 }
@@ -30,8 +31,8 @@ const SPAN_CLASSES: Record<TileSpan, string> = {
   full: 'col-span-full',
 };
 
-export function Tile({ title, span = 1, height = 'auto', expandable, children, className }: TileProps) {
-  const [expanded, setExpanded] = useState(false);
+export function Tile({ title, span = 1, height = 'auto', expandable, defaultExpanded, children, className }: TileProps) {
+  const [expanded, setExpanded] = useState(defaultExpanded ?? false);
 
   return (
     <div

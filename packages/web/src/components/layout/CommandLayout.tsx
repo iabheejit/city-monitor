@@ -6,6 +6,7 @@
 import { lazy, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Sidebar } from '../sidebar/Sidebar.js';
+import { MobileLayerDrawer } from '../sidebar/MobileLayerDrawer.js';
 import { NinaBanner } from '../alerts/NinaBanner.js';
 import { DashboardGrid } from './DashboardGrid.js';
 import { Tile } from './Tile.js';
@@ -24,16 +25,19 @@ const CityMap = lazy(() =>
 
 export function CommandLayout() {
   const { t } = useTranslation();
+  const isDesktop = typeof window !== 'undefined'
+    && window.matchMedia('(min-width: 640px)').matches;
 
   return (
     <>
       {/* Upper zone: sidebar + map filling viewport height */}
       <div className="flex h-[50vh] lg:h-[calc(100vh-37px)]">
         <Sidebar />
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 relative">
           <Suspense fallback={<div className="w-full h-full flex items-center justify-center"><Skeleton lines={4} /></div>}>
             <CityMap />
           </Suspense>
+          <MobileLayerDrawer />
         </div>
       </div>
 
@@ -43,10 +47,10 @@ export function CommandLayout() {
           <NinaBanner />
         </div>
         <DashboardGrid>
-          <Tile title={t('panel.weather.title')} span={1} expandable>
+          <Tile title={t('panel.weather.title')} span={1} expandable defaultExpanded={isDesktop}>
             {(expanded) => <WeatherStrip expanded={expanded} />}
           </Tile>
-          <Tile title={t('panel.airQuality.title')} span={1} expandable>
+          <Tile title={t('panel.airQuality.title')} span={1} expandable defaultExpanded={isDesktop}>
             {(expanded) => <AirQualityStrip expanded={expanded} />}
           </Tile>
           <Tile title={t('panel.news.briefing')} span={2}>

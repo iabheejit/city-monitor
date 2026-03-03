@@ -65,7 +65,7 @@ async function ingestCityWeather(city: CityConfig, cache: Cache, db: Db | null):
     + `&hourly=temperature_2m,precipitation_probability,weather_code`
     + `&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,sunrise,sunset`
     + `&timezone=${encodeURIComponent(city.timezone)}`
-    + `&forecast_days=5`;
+    + `&forecast_days=7`;
 
   const response = await log.fetch(url, {
     signal: AbortSignal.timeout(WEATHER_TIMEOUT_MS),
@@ -82,7 +82,7 @@ async function ingestCityWeather(city: CityConfig, cache: Cache, db: Db | null):
     try {
       const alerts = await fetchDwdAlerts(city);
       data.alerts = alerts;
-    } catch (err) {
+    } catch (_err) {
       log.warn(`${city.id}: DWD alerts failed`);
     }
   }
@@ -102,7 +102,7 @@ async function ingestCityWeather(city: CityConfig, cache: Cache, db: Db | null):
   // Fetch air quality alongside weather
   try {
     await ingestCityAirQuality(city, cache);
-  } catch (err) {
+  } catch (_err) {
     log.warn(`${city.id}: air quality failed`);
   }
 }
@@ -140,7 +140,7 @@ interface AirQualityResponse {
   };
 }
 
-async function ingestCityAirQuality(city: CityConfig, cache: Cache): Promise<void> {
+export async function ingestCityAirQuality(city: CityConfig, cache: Cache): Promise<void> {
   const { lat, lon } = city.dataSources.weather;
 
   const url = `https://air-quality-api.open-meteo.com/v1/air-quality`
