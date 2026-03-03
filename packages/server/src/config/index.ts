@@ -12,17 +12,23 @@ const ALL_CITIES: Record<string, CityConfig> = {
   hamburg,
 };
 
-export function getActiveCities(): CityConfig[] {
-  const activeIds = (process.env.ACTIVE_CITIES || 'berlin')
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean);
+function activeIds(): Set<string> {
+  return new Set(
+    (process.env.ACTIVE_CITIES || 'berlin')
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean),
+  );
+}
 
-  return activeIds
+export function getActiveCities(): CityConfig[] {
+  const ids = activeIds();
+  return [...ids]
     .map((id) => ALL_CITIES[id])
     .filter((c): c is CityConfig => c !== undefined);
 }
 
+/** Returns a city config only if the city is active. */
 export function getCityConfig(cityId: string): CityConfig | undefined {
-  return ALL_CITIES[cityId];
+  return activeIds().has(cityId) ? ALL_CITIES[cityId] : undefined;
 }

@@ -33,14 +33,15 @@ describe('App', () => {
     expect(screen.getByText('Briefing')).toBeDefined();
   });
 
-  it('renders Hamburg dashboard at /hamburg', async () => {
+  it('redirects /hamburg to /berlin (Hamburg disabled)', async () => {
     render(
       <MemoryRouter initialEntries={['/hamburg']}>
         <App />
       </MemoryRouter>,
     );
+    // Hamburg is not active, so it redirects to / → /berlin
     await waitFor(() => {
-      expect(screen.getByText('HAMBURG')).toBeDefined();
+      expect(screen.getByText('BERLIN')).toBeDefined();
     });
   });
 

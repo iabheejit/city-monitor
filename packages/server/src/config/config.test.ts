@@ -40,7 +40,14 @@ describe('City config', () => {
     expect(config!.dataSources.weather.provider).toBe('open-meteo');
   });
 
-  it('getCityConfig returns Hamburg config', () => {
+  it('getCityConfig returns undefined for inactive city', () => {
+    // Hamburg is defined but not in ACTIVE_CITIES
+    const config = getCityConfig('hamburg');
+    expect(config).toBeUndefined();
+  });
+
+  it('getCityConfig returns Hamburg config when active', () => {
+    vi.stubEnv('ACTIVE_CITIES', 'berlin,hamburg');
     const config = getCityConfig('hamburg');
     expect(config).toBeDefined();
     expect(config!.id).toBe('hamburg');
@@ -48,7 +55,8 @@ describe('City config', () => {
     expect(config!.theme.accent).toBe('#004B93');
   });
 
-  it('Hamburg config has feeds and data sources', () => {
+  it('Hamburg config has feeds and data sources when active', () => {
+    vi.stubEnv('ACTIVE_CITIES', 'berlin,hamburg');
     const config = getCityConfig('hamburg');
     expect(config!.feeds.length).toBeGreaterThan(0);
     expect(config!.dataSources.weather.provider).toBe('open-meteo');
