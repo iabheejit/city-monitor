@@ -7,7 +7,7 @@ import type { CityConfig, FeedConfig } from '@city-monitor/shared';
 import type { Cache } from '../lib/cache.js';
 import type { Db } from '../db/index.js';
 import { saveNewsItems, type PersistedNewsItem } from '../db/writes.js';
-import { loadNewsItems } from '../db/reads.js';
+import { loadAllNewsAssessments } from '../db/reads.js';
 import { parseFeed } from '../lib/rss-parser.js';
 import { hashString } from '../lib/hash.js';
 import { getActiveCities } from '../config/index.js';
@@ -230,7 +230,7 @@ async function loadPriorAssessments(
   if (!db) return map;
 
   try {
-    const rows = await loadNewsItems(db, cityId);
+    const rows = await loadAllNewsAssessments(db, cityId);
     if (rows) {
       for (const row of rows) {
         // Only reuse assessments that have the new importance field;
@@ -311,8 +311,8 @@ export function applyDropLogic(items: PersistedNewsItem[]): NewsItem[] {
   return items
     .filter((item) => {
       const a = item.assessment;
-      if (!a) return true;
-      if (a.relevant_to_city === false) return false;
+      if (!a) return false;
+      if (a.relevant_to_city !== true) return false;
       return true;
     })
     .map(({ assessment, ...rest }) => ({

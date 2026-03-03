@@ -16,7 +16,7 @@ vi.mock('../db/reads.js', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../db/reads.js')>();
   return {
     ...actual,
-    loadNewsItems: vi.fn().mockResolvedValue(null),
+    loadAllNewsAssessments: vi.fn().mockResolvedValue(null),
   };
 });
 
@@ -58,7 +58,7 @@ describe('ingest-feeds', () => {
     vi.clearAllMocks();
   });
 
-  it('fetches feeds and writes NewsDigest to cache', async () => {
+  it('fetches feeds and writes NewsDigest to cache (unassessed items dropped)', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response(mockFeedXml, { status: 200 }),
     );
@@ -69,7 +69,8 @@ describe('ingest-feeds', () => {
 
     const digest = cache.get<NewsDigest>('berlin:news:digest');
     expect(digest).toBeTruthy();
-    expect(digest!.items.length).toBe(3);
+    // LLM returns null → no assessment → all items dropped
+    expect(digest!.items.length).toBe(0);
     expect(digest!.updatedAt).toBeTruthy();
   });
 
@@ -95,14 +96,14 @@ describe('ingest-feeds — DB assessment reuse', () => {
 
   it('skips LLM filter for items already assessed in DB', async () => {
     const { filterAndGeolocateNews } = await import('../lib/openai.js');
-    const { loadNewsItems } = await import('../db/reads.js');
+    const { loadAllNewsAssessments } = await import('../db/reads.js');
 
     const hash1 = hashString('https://example.com/article-1' + 'BVG-Streik legt Berliner Nahverkehr lahm');
     const hash2 = hashString('https://example.com/article-2' + 'Neuer Radweg am Alexanderplatz eröffnet');
     const hash3 = hashString('https://example.com/article-3' + 'Bundesliga: Bayern München besiegt Dortmund');
 
     // All 3 items already in DB with assessments
-    vi.mocked(loadNewsItems).mockResolvedValue([
+    vi.mocked(loadAllNewsAssessments).mockResolvedValue([
       {
         id: hash1,
         title: 'BVG-Streik legt Berliner Nahverkehr lahm',
@@ -163,12 +164,12 @@ describe('ingest-feeds — DB assessment reuse', () => {
 
   it('sends only new items through LLM filter when some are already in DB', async () => {
     const { filterAndGeolocateNews } = await import('../lib/openai.js');
-    const { loadNewsItems } = await import('../db/reads.js');
+    const { loadAllNewsAssessments } = await import('../db/reads.js');
 
     const hash1 = hashString('https://example.com/article-1' + 'BVG-Streik legt Berliner Nahverkehr lahm');
 
     // Only item 1 in DB; items 2 and 3 are new
-    vi.mocked(loadNewsItems).mockResolvedValue([
+    vi.mocked(loadAllNewsAssessments).mockResolvedValue([
       {
         id: hash1,
         title: 'BVG-Streik legt Berliner Nahverkehr lahm',
@@ -208,9 +209,9 @@ describe('ingest-feeds — DB assessment reuse', () => {
 
   it('persists assessed items to DB after ingestion', async () => {
     const { saveNewsItems } = await import('../db/writes.js');
-    const { loadNewsItems } = await import('../db/reads.js');
+    const { loadAllNewsAssessments } = await import('../db/reads.js');
 
-    vi.mocked(loadNewsItems).mockResolvedValue(null);
+    vi.mocked(loadAllNewsAssessments).mockResolvedValue(null);
 
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response(mockFeedXml, { status: 200 }),
@@ -229,14 +230,14 @@ describe('ingest-feeds — DB assessment reuse', () => {
   });
 
   it('drops irrelevant items from digest using assessment data from DB', async () => {
-    const { loadNewsItems } = await import('../db/reads.js');
+    const { loadAllNewsAssessments } = await import('../db/reads.js');
 
     const hash1 = hashString('https://example.com/article-1' + 'BVG-Streik legt Berliner Nahverkehr lahm');
     const hash2 = hashString('https://example.com/article-2' + 'Neuer Radweg am Alexanderplatz eröffnet');
     const hash3 = hashString('https://example.com/article-3' + 'Bundesliga: Bayern München besiegt Dortmund');
 
     // Item 3 is assessed as irrelevant → should be dropped from digest
-    vi.mocked(loadNewsItems).mockResolvedValue([
+    vi.mocked(loadAllNewsAssessments).mockResolvedValue([
       {
         id: hash1,
         title: 'BVG-Streik legt Berliner Nahverkehr lahm',
@@ -290,7 +291,7 @@ describe('ingest-feeds — DB assessment reuse', () => {
     expect(digest.items.every((i) => !i.title.includes('Bundesliga'))).toBe(true);
   });
 
-  it('works without DB (cache-only mode)', async () => {
+  it('works without DB (cache-only mode, unassessed items dropped)', async () => {
     // Reset LLM mock to default (return null = no assessment) since prior tests override it
     const { filterAndGeolocateNews } = await import('../lib/openai.js');
     vi.mocked(filterAndGeolocateNews).mockResolvedValue(null);
@@ -305,6 +306,7 @@ describe('ingest-feeds — DB assessment reuse', () => {
 
     const digest = cache.get<NewsDigest>('berlin:news:digest');
     expect(digest).toBeTruthy();
-    expect(digest!.items.length).toBe(3);
+    // No DB, LLM returns null → no assessment → all items dropped
+    expect(digest!.items.length).toBe(0);
   });
 });
