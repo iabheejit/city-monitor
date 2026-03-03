@@ -105,6 +105,10 @@
     "daysAgo": "{{count}} gün önce"
   },
   "sidebar": {
+    "viewMode": {
+      "single": "Tekli",
+      "multi": "Çoklu"
+    },
     "layers": {
       "label": "Katmanlar",
       "transit": "Ulaşım",

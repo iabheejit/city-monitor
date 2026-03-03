@@ -42,6 +42,8 @@ function LayerBadge({ icon, color, active }: { icon: IconNode; color: string; ac
 
 export function DataLayerToggles() {
   const { t } = useTranslation();
+  const singleView = useCommandCenter((s) => s.singleView);
+  const toggleSingleView = useCommandCenter((s) => s.toggleSingleView);
   const activeLayers = useCommandCenter((s) => s.activeLayers);
   const toggleLayer = useCommandCenter((s) => s.toggleLayer);
   const politicalLayer = useCommandCenter((s) => s.politicalLayer);
@@ -49,6 +51,21 @@ export function DataLayerToggles() {
 
   return (
     <div>
+      <div className="flex items-center justify-end mb-2">
+        <button
+          onClick={toggleSingleView}
+          aria-pressed={singleView}
+          className="flex items-center gap-1.5 text-[11px] text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 cursor-pointer transition-colors"
+        >
+          <span className={singleView ? 'text-gray-700 dark:text-gray-200 font-medium' : ''}>
+            {t('sidebar.viewMode.single')}
+          </span>
+          <span className="text-gray-300 dark:text-gray-600">/</span>
+          <span className={!singleView ? 'text-gray-700 dark:text-gray-200 font-medium' : ''}>
+            {t('sidebar.viewMode.multi')}
+          </span>
+        </button>
+      </div>
       <div className="space-y-0.5">
         {LAYER_META.map(({ layer, icon, color }) => {
           const active = activeLayers.has(layer);

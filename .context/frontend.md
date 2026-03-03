@@ -29,7 +29,7 @@ App
             Shell
               TopBar (city name link, weather, language switcher, theme toggle)
               CommandLayout
-                Sidebar (time range selector, data layer icon toggles) — hidden < lg
+                Sidebar (single/multi view toggle, data layer icon toggles) — hidden < lg
                 CityMap (full viewport height, transit markers)
                 DashboardGrid
                   Tile(span=1, expandable) → WeatherStrip (current + hourly/daily)

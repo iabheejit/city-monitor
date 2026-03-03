@@ -105,6 +105,10 @@
     "daysAgo": "منذ {{count}} يوم"
   },
   "sidebar": {
+    "viewMode": {
+      "single": "فردي",
+      "multi": "متعدد"
+    },
     "layers": {
       "label": "الطبقات",
       "transit": "المواصلات",

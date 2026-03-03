@@ -105,6 +105,10 @@
     "daysAgo": "vor {{count}} T."
   },
   "sidebar": {
+    "viewMode": {
+      "single": "Einzeln",
+      "multi": "Multi"
+    },
     "layers": {
       "label": "Ebenen",
       "transit": "Nahverkehr",

@@ -105,6 +105,10 @@
     "daysAgo": "{{count}}d ago"
   },
   "sidebar": {
+    "viewMode": {
+      "single": "Single",
+      "multi": "Multi"
+    },
     "layers": {
       "label": "Layers",
       "transit": "Transit",
