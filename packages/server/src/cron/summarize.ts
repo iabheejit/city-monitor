@@ -24,7 +24,7 @@ export interface NewsSummary {
 }
 
 const SUMMARY_TTL = 86400; // 24 hours
-const TOP_HEADLINES = 10;
+const TOP_HEADLINES = 25;
 
 export function createSummarization(cache: Cache, db: Db | null = null) {
   return async function summarizeNews(): Promise<void> {
@@ -54,9 +54,9 @@ async function summarizeCityNews(
   const digest = cache.get<NewsDigest>(`${cityId}:news:digest`);
   if (!digest || digest.items.length === 0) return;
 
-  // Take top headlines (tier 1+2, most important, most recent)
+  // Take most recent stories with importance > 0.5 (up to 25)
   const topItems = digest.items
-    .filter((item) => item.tier <= 2 && (item.importance ?? 0) >= 0.3)
+    .filter((item) => (item.importance ?? 0) > 0.5)
     .slice(0, TOP_HEADLINES);
 
   if (topItems.length === 0) return;
@@ -73,14 +73,14 @@ async function summarizeCityNews(
   const existing = cache.get<NewsSummary & { headlineHash: string }>(`${cityId}:news:summary`);
   if (existing && existing.headlineHash === headlineHash) return;
 
-  const headlines = topItems.map((item) => item.title);
-  const result = await summarizeHeadlines(cityName, headlines, lang);
+  const items = topItems.map((item) => ({ title: item.title, description: item.description }));
+  const result = await summarizeHeadlines(cityName, items, lang);
   if (!result) return;
 
   const summary: NewsSummary & { headlineHash: string } = {
     briefing: result.summary,
     generatedAt: new Date().toISOString(),
-    headlineCount: headlines.length,
+    headlineCount: items.length,
     cached: result.cached,
     headlineHash,
   };
@@ -96,5 +96,5 @@ async function summarizeCityNews(
     }
   }
 
-  log.info(`${cityId}: summary generated (${headlines.length} headlines)`);
+  log.info(`${cityId}: summary generated (${items.length} headlines)`);
 }

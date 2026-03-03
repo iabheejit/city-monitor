@@ -2,13 +2,20 @@
  * Copyright (C) 2026 Odin Mühlenbein
  * SPDX-License-Identifier: AGPL-3.0-or-later
  *
- * OpenAI client for news summarization, relevance filtering, and geolocation.
+ * LLM client for news summarization, relevance filtering, and geolocation.
+ * Uses LangChain's ChatOpenAI with Zod-validated structured output.
  */
 
-import OpenAI from 'openai';
+import { ChatOpenAI } from '@langchain/openai';
+import { AIMessage, SystemMessage, HumanMessage } from '@langchain/core/messages';
+import { z } from 'zod';
 import { createLogger } from './logger.js';
 
 const log = createLogger('openai');
+
+// ---------------------------------------------------------------------------
+// Usage tracking
+// ---------------------------------------------------------------------------
 
 interface UsageEntry {
   input: number;
@@ -18,67 +25,68 @@ interface UsageEntry {
 
 const usage: Record<string, UsageEntry> = {};
 
-let client: OpenAI | null = null;
+function trackUsage(cityKey: string, input: number, output: number): void {
+  if (!usage[cityKey]) usage[cityKey] = { input: 0, output: 0, calls: 0 };
+  usage[cityKey].input += input;
+  usage[cityKey].output += output;
+  usage[cityKey].calls += 1;
+}
+
+// ---------------------------------------------------------------------------
+// Configuration
+// ---------------------------------------------------------------------------
 
 export function isConfigured(): boolean {
   return !!process.env.OPENAI_API_KEY;
 }
 
-function getClient(): OpenAI | null {
-  if (!isConfigured()) return null;
-  if (!client) {
-    client = new OpenAI();
-  }
-  return client;
+function getModel(modelName: string): ChatOpenAI {
+  return new ChatOpenAI({ model: modelName });
 }
+
+// ---------------------------------------------------------------------------
+// Briefing summarization
+// ---------------------------------------------------------------------------
+
+const BriefingSchema = z.object({
+  briefing: z.string().describe('The editorial briefing text (two paragraphs)'),
+});
 
 export async function summarizeHeadlines(
   cityName: string,
-  headlines: string[],
+  items: Array<{ title: string; description?: string }>,
   lang: string,
 ): Promise<{ summary: string; cached: boolean; inputTokens: number; outputTokens: number } | null> {
-  const openai = getClient();
-  if (!openai) return null;
+  if (!isConfigured()) return null;
 
   const language = lang === 'de' ? 'German' : 'English';
+  const model = process.env.OPENAI_MODEL || 'gpt-5-mini';
 
   try {
-    log.info(`summarizing ${headlines.length} headlines for ${cityName}…`);
+    log.info(`summarizing ${items.length} headlines for ${cityName}…`);
     const start = performance.now();
 
-    const response = await openai.chat.completions.create({
-      model: process.env.OPENAI_MODEL || 'gpt-5-mini',
-      reasoning_effort: 'low',
-      messages: [
-        {
-          role: 'system',
-          content: `You are a local news editor writing a brief daily digest for ${cityName}. From the headlines below, write 4-5 bullet points (use "- " prefix) covering the most important local developments. Focus on what directly affects daily life in ${cityName} — transit, weather, safety, local politics. Aim for ~80 words total. Write in ${language}. If nothing is locally relevant, respond with a single dash: -`,
-        },
-        {
-          role: 'user',
-          content: headlines.map((h, i) => `${i + 1}. ${h}`).join('\n'),
-        },
-      ],
-    });
+    const structured = getModel(model).withStructuredOutput(BriefingSchema, { includeRaw: true });
+
+    const itemList = items
+      .map((item, i) => `${i + 1}. ${item.title}${item.description ? ` — ${item.description.slice(0, 120)}` : ''}`)
+      .join('\n');
+
+    const result = await structured.invoke([
+      new SystemMessage(`You are a local news editor writing a brief daily digest for ${cityName}. Write exactly two short paragraphs in an editorial voice that weave together the most important local developments from the stories below. Don't just list headlines — synthesize, contextualize, and highlight what matters most for daily life in ${cityName} (transit, safety, local politics, weather). Aim for ~120 words total. Write in ${language}. If nothing is locally relevant, respond with a single dash: -`),
+      new HumanMessage(itemList),
+    ]);
 
     const ms = Math.round(performance.now() - start);
-    const inTok = response.usage?.prompt_tokens ?? 0;
-    const outTok = response.usage?.completion_tokens ?? 0;
+    const raw = result.raw as AIMessage;
+    const inTok = raw.usage_metadata?.input_tokens ?? 0;
+    const outTok = raw.usage_metadata?.output_tokens ?? 0;
     log.info(`${cityName}: done in ${ms}ms (${inTok}in/${outTok}out tokens)`);
 
-    const summary = response.choices[0]?.message?.content?.trim() ?? '';
-
-    // Track usage
-    const cityKey = cityName.toLowerCase();
-    if (!usage[cityKey]) {
-      usage[cityKey] = { input: 0, output: 0, calls: 0 };
-    }
-    usage[cityKey].input += inTok;
-    usage[cityKey].output += outTok;
-    usage[cityKey].calls += 1;
+    trackUsage(cityName.toLowerCase(), inTok, outTok);
 
     return {
-      summary,
+      summary: result.parsed.briefing,
       cached: false,
       inputTokens: inTok,
       outputTokens: outTok,
@@ -88,6 +96,10 @@ export async function summarizeHeadlines(
     return null;
   }
 }
+
+// ---------------------------------------------------------------------------
+// News relevance filtering + geolocation
+// ---------------------------------------------------------------------------
 
 export interface FilteredItem {
   index: number;
@@ -99,13 +111,15 @@ export interface FilteredItem {
   locationLabel?: string;
 }
 
-interface LlmFilterResult {
-  index: number;
-  relevant_to_city: boolean;
-  category: string;
-  importance: number;
-  locationLabel?: string;
-}
+const FilterResultSchema = z.object({
+  items: z.array(z.object({
+    index: z.number(),
+    relevant_to_city: z.boolean(),
+    category: z.string(),
+    importance: z.number(),
+    locationLabel: z.string().optional(),
+  })),
+});
 
 const VALID_CATEGORIES = new Set(['local', 'politics', 'transit', 'culture', 'crime', 'weather', 'economy', 'sports']);
 
@@ -114,8 +128,7 @@ export async function filterAndGeolocateNews(
   cityName: string,
   items: Array<{ title: string; description?: string; sourceName: string }>,
 ): Promise<FilteredItem[] | null> {
-  const openai = getClient();
-  if (!openai || items.length === 0) return null;
+  if (!isConfigured() || items.length === 0) return null;
 
   const filterModel = process.env.OPENAI_FILTER_MODEL || 'gpt-5-nano';
 
@@ -123,76 +136,71 @@ export async function filterAndGeolocateNews(
     log.info(`filtering ${items.length} items for ${cityName}…`);
     const start = performance.now();
 
+    const structured = getModel(filterModel).withStructuredOutput(FilterResultSchema, { includeRaw: true });
+
     const itemList = items
       .map((item, i) => `${i}. [${item.sourceName}] ${item.title}${item.description ? ` — ${item.description.slice(0, 100)}` : ''}`)
       .join('\n');
 
-    const response = await openai.chat.completions.create({
-      model: filterModel,
-      response_format: { type: 'json_object' },
-      messages: [
-        {
-          role: 'system',
-          content: `You are a local news editor for ${cityName}. For each headline below, determine:
+    const result = await structured.invoke([
+      new SystemMessage(`You are a local news editor for ${cityName}. For each headline below, determine:
 
 1. **relevant_to_city** (true/false): Is this specifically about ${cityName} or its immediate region? National/international news = false UNLESS it has a concrete local angle.
-2. **category**: Classify into exactly one of: local, politics, transit, culture, crime, economy, sports. Use "local" as fallback if unclear.
+2. **category**: Classify into exactly one of: local, politics, transit, culture, crime, weather, economy, sports. Use "local" as fallback if unclear.
 3. **importance** (0.0–1.0): How significant is this news for people living in ${cityName}?
    - 0.0–0.2: Routine filler — minor openings, generic announcements, press releases with no public impact
    - 0.3–0.4: Mildly noteworthy — small infrastructure changes, minor cultural events, routine policy updates
    - 0.5–0.6: Significant — major transit disruptions, notable crime incidents, political decisions with real impact
    - 0.7–0.8: Very important — large emergencies, major policy changes, events affecting large parts of the city
    - 0.9–1.0: Critical/breaking — city-wide emergencies, disasters, events requiring immediate public attention
-4. **locationLabel** (string, try hard): Extract or infer the most specific location in ${cityName} relevant to this news item. Look for: explicit street names, landmarks, neighborhoods, districts, transit stations, buildings, parks. If the headline mentions an organization or institution based in ${cityName}, use their known address or neighborhood. If the news source name implies a district (e.g., "Kreuzberg Blog"), use it. Only omit if truly no location can be reasonably inferred.
-
-Respond ONLY with JSON: {"items":[{"index":0,"relevant_to_city":true,"category":"transit","importance":0.6,"locationLabel":"Alexanderplatz, Mitte"},...]}`
-        },
-        { role: 'user', content: itemList },
-      ],
-    });
+4. **locationLabel** (string, try hard): Extract or infer the most specific location in ${cityName} relevant to this news item. Look for: explicit street names, landmarks, neighborhoods, districts, transit stations, buildings, parks. If the headline mentions an organization or institution based in ${cityName}, use their known address or neighborhood (e.g. "Senat" → "Rotes Rathaus, Mitte", "BVG" → "Holzmarktstraße, Mitte"). If the news source name implies a district (e.g., "Kreuzberg Blog"), use that district. IMPORTANT: Never return just "${cityName}" or the bare city name as the location — that is useless for mapping. Always go at least to district/neighborhood level (e.g. "Mitte", "Kreuzberg", "Altona"). Omit the field entirely if you truly cannot determine any specific area within the city.`),
+      new HumanMessage(itemList),
+    ]);
 
     const ms = Math.round(performance.now() - start);
-    const inTok = response.usage?.prompt_tokens ?? 0;
-    const outTok = response.usage?.completion_tokens ?? 0;
+    const raw = result.raw as AIMessage;
+    const inTok = raw.usage_metadata?.input_tokens ?? 0;
+    const outTok = raw.usage_metadata?.output_tokens ?? 0;
     log.info(`${cityName} filter: done in ${ms}ms (${inTok}in/${outTok}out tokens)`);
 
-    // Track usage
-    const cityKey = cityId;
-    if (!usage[cityKey]) usage[cityKey] = { input: 0, output: 0, calls: 0 };
-    usage[cityKey].input += inTok;
-    usage[cityKey].output += outTok;
-    usage[cityKey].calls += 1;
+    trackUsage(cityId, inTok, outTok);
 
-    const content = response.choices[0]?.message?.content?.trim() ?? '';
-    const parsed = JSON.parse(content) as { items: LlmFilterResult[] };
-    const llmItems = parsed.items ?? [];
+    const llmItems = result.parsed.items;
 
     // Resolve location names to coordinates via Nominatim
     const { geocode } = await import('./geocode.js');
+    const cityLower = cityName.toLowerCase();
     const results: FilteredItem[] = [];
     for (const item of llmItems) {
       const category = VALID_CATEGORIES.has(item.category) ? item.category : 'local';
-      const importance = typeof item.importance === 'number'
-        ? Math.max(0, Math.min(1, item.importance))
-        : 0.3;
+      const importance = Math.max(0, Math.min(1, item.importance));
 
-      const result: FilteredItem = {
-        index: item.index,
-        relevant_to_city: !!item.relevant_to_city,
-        category,
-        importance,
-        locationLabel: item.locationLabel,
-      };
-
-      if (item.locationLabel) {
-        const geo = await geocode(item.locationLabel, cityName);
-        if (geo) {
-          result.lat = geo.lat;
-          result.lon = geo.lon;
+      // Discard bare city name labels — they resolve to city center and are useless
+      let label = item.locationLabel;
+      if (label) {
+        const lower = label.toLowerCase().trim();
+        if (lower === cityLower || lower.startsWith(cityLower + ',') || lower.startsWith(cityLower + ' (')) {
+          label = undefined;
         }
       }
 
-      results.push(result);
+      const filtered: FilteredItem = {
+        index: item.index,
+        relevant_to_city: item.relevant_to_city,
+        category,
+        importance,
+        locationLabel: label,
+      };
+
+      if (label) {
+        const geo = await geocode(label, cityName);
+        if (geo) {
+          filtered.lat = geo.lat;
+          filtered.lon = geo.lon;
+        }
+      }
+
+      results.push(filtered);
     }
 
     return results;
@@ -202,6 +210,10 @@ Respond ONLY with JSON: {"items":[{"index":0,"relevant_to_city":true,"category":
   }
 }
 
+// ---------------------------------------------------------------------------
+// Safety report geolocation
+// ---------------------------------------------------------------------------
+
 export interface GeolocatedReport {
   index: number;
   lat?: number;
@@ -209,13 +221,19 @@ export interface GeolocatedReport {
   locationLabel?: string;
 }
 
+const GeoResultSchema = z.object({
+  items: z.array(z.object({
+    index: z.number(),
+    locationLabel: z.string().optional(),
+  })),
+});
+
 export async function geolocateReports(
   cityId: string,
   cityName: string,
   reports: Array<{ title: string; description?: string }>,
 ): Promise<GeolocatedReport[] | null> {
-  const openai = getClient();
-  if (!openai || reports.length === 0) return null;
+  if (!isConfigured() || reports.length === 0) return null;
 
   const filterModel = process.env.OPENAI_FILTER_MODEL || 'gpt-5-nano';
 
@@ -223,56 +241,55 @@ export async function geolocateReports(
     log.info(`geolocating ${reports.length} reports for ${cityName}…`);
     const start = performance.now();
 
+    const structured = getModel(filterModel).withStructuredOutput(GeoResultSchema, { includeRaw: true });
+
     const reportList = reports
       .map((r, i) => `${i}. ${r.title}${r.description ? ` — ${r.description.slice(0, 150)}` : ''}`)
       .join('\n');
 
-    const response = await openai.chat.completions.create({
-      model: filterModel,
-      response_format: { type: 'json_object' },
-      messages: [
-        {
-          role: 'system',
-          content: `You are a location extractor for ${cityName}. For each police report, extract the most specific location name mentioned (street, intersection, landmark, neighborhood). Do NOT generate coordinates — only extract the location text. If no location is identifiable, return null for locationLabel.
-Respond ONLY with JSON: {"items":[{"index":0,"locationLabel":"Alexanderplatz, Mitte"},...]}`
-        },
-        { role: 'user', content: reportList },
-      ],
-    });
+    const result = await structured.invoke([
+      new SystemMessage(`You are a location extractor for ${cityName}. For each police report, extract the most specific location name mentioned (street, intersection, landmark, neighborhood). Do NOT generate coordinates — only extract the location text. If no location is identifiable, omit the locationLabel field.`),
+      new HumanMessage(reportList),
+    ]);
 
     const ms = Math.round(performance.now() - start);
-    const inTok = response.usage?.prompt_tokens ?? 0;
-    const outTok = response.usage?.completion_tokens ?? 0;
+    const raw = result.raw as AIMessage;
+    const inTok = raw.usage_metadata?.input_tokens ?? 0;
+    const outTok = raw.usage_metadata?.output_tokens ?? 0;
     log.info(`${cityName} geocode: done in ${ms}ms (${inTok}in/${outTok}out tokens)`);
 
-    const cityKey = cityId;
-    if (!usage[cityKey]) usage[cityKey] = { input: 0, output: 0, calls: 0 };
-    usage[cityKey].input += inTok;
-    usage[cityKey].output += outTok;
-    usage[cityKey].calls += 1;
+    trackUsage(cityId, inTok, outTok);
 
-    const content = response.choices[0]?.message?.content?.trim() ?? '';
-    const parsed = JSON.parse(content) as { items: Array<{ index: number; locationLabel?: string }> };
-    const llmItems = parsed.items ?? [];
+    const llmItems = result.parsed.items;
 
     // Resolve location names to coordinates via Nominatim
     const { geocode } = await import('./geocode.js');
+    const cityLower = cityName.toLowerCase();
     const results: GeolocatedReport[] = [];
     for (const item of llmItems) {
-      const result: GeolocatedReport = {
-        index: item.index,
-        locationLabel: item.locationLabel,
-      };
-
-      if (item.locationLabel) {
-        const geo = await geocode(item.locationLabel, cityName);
-        if (geo) {
-          result.lat = geo.lat;
-          result.lon = geo.lon;
+      // Discard bare city name labels — they resolve to city center and are useless
+      let label = item.locationLabel;
+      if (label) {
+        const lower = label.toLowerCase().trim();
+        if (lower === cityLower || lower.startsWith(cityLower + ',') || lower.startsWith(cityLower + ' (')) {
+          label = undefined;
         }
       }
 
-      results.push(result);
+      const geoResult: GeolocatedReport = {
+        index: item.index,
+        locationLabel: label,
+      };
+
+      if (label) {
+        const geo = await geocode(label, cityName);
+        if (geo) {
+          geoResult.lat = geo.lat;
+          geoResult.lon = geo.lon;
+        }
+      }
+
+      results.push(geoResult);
     }
 
     return results;
@@ -281,6 +298,10 @@ Respond ONLY with JSON: {"items":[{"index":0,"locationLabel":"Alexanderplatz, Mi
     return null;
   }
 }
+
+// ---------------------------------------------------------------------------
+// Usage stats (exposed via /health endpoint)
+// ---------------------------------------------------------------------------
 
 export function getUsageStats(): Record<string, UsageEntry & { estimatedCostUsd: number }> {
   const result: Record<string, UsageEntry & { estimatedCostUsd: number }> = {};

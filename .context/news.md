@@ -32,18 +32,19 @@ Supports RSS 2.0 and Atom formats. Returns normalized `FeedItem[]` with title, u
 
 ### Data Flow
 
-1. **Summarization** (`packages/server/src/cron/summarize.ts`) — Runs every 15 minutes (at :05, :20, :35, :50). Skipped if `OPENAI_API_KEY` not set. Takes top 10 headlines (tier <= 2, importance >= 0.3) from cached news digest. Hashes the top 5 headlines to detect changes — skips API call if headlines unchanged since last summary. Writes to cache key `{cityId}:news:summary` (TTL 86400s / 24h) and persists to Postgres with token counts.
+1. **Summarization** (`packages/server/src/cron/summarize.ts`) — Runs every 15 minutes (at :05, :20, :35, :50). Skipped if `OPENAI_API_KEY` not set. Takes up to 25 most recent items with importance > 0.5 from cached news digest. Passes titles + descriptions for richer context. Hashes the top 5 headlines to detect changes — skips API call if headlines unchanged since last summary. Writes to cache key `{cityId}:news:summary` (TTL 86400s / 24h) and persists to Postgres with token counts.
 
 2. **API** (`packages/server/src/routes/news.ts`) — `GET /api/:city/news/summary` returns cached summary, falls back to Postgres, then empty structure.
 
 3. **Frontend** — Uses `useNewsSummary()` hook (refetch 15 min). Displays briefing text with generation timestamp.
 
-### OpenAI Integration (`packages/server/src/lib/openai.ts`)
+### LLM Integration (`packages/server/src/lib/openai.ts`)
 
-- **Client:** Official `openai` npm package
-- **Model:** `gpt-5-mini` (configurable via `OPENAI_MODEL` env var)
-- **Reasoning:** `low` (fast, cheap)
-- **System prompt:** Local news editor for [city], 4-5 bullet points (~80 words), focus on daily-life impact, write in [language]
+- **Client:** LangChain `ChatOpenAI` with Zod-validated structured output (`.withStructuredOutput(zodSchema, { includeRaw: true })`)
+- **Model:** `gpt-5-mini` for summarization (configurable via `OPENAI_MODEL`), `gpt-5-nano` for filtering/geolocation (configurable via `OPENAI_FILTER_MODEL`)
+- **Structured output schemas:** `BriefingSchema` (briefing text), `FilterResultSchema` (index, relevant_to_city, category, importance, locationLabel), `GeoResultSchema` (index, locationLabel)
+- **System prompt:** Local news editor for [city], 6-8 bullet points (~120 words), focus on daily-life impact, write in [language]
+- **Location extraction:** Filter prompt pushes LLM for district/neighborhood-level specificity (not bare city names). Includes examples mapping organizations to known addresses (e.g. "Senat" -> "Rotes Rathaus, Mitte"). Post-processing discards labels that are just the bare city name or "city, country" format before geocoding.
 - **Usage tracking:** In-memory per-city totals (input/output tokens, call count). Exposed via `getUsageStats()` on the health endpoint.
 - **Cost estimate:** gpt-5-mini at $1.00/1M input, $4.00/1M output
 - **Timing:** Logs duration + token counts per call via logger

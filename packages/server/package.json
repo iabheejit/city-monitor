@@ -17,13 +17,14 @@
   },
   "dependencies": {
     "@city-monitor/shared": "*",
+    "@langchain/openai": "^1.2.11",
     "cors": "^2.8.5",
     "drizzle-orm": "^0.39",
     "express": "^5",
     "fast-xml-parser": "^5.4.1",
     "node-cron": "^3.0.3",
-    "openai": "^6.25.0",
-    "postgres": "^3.4"
+    "postgres": "^3.4",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",
