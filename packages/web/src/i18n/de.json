@@ -131,7 +131,22 @@
       "title": "Sozialatlas 2023",
       "unemployment": "Arbeitslosigkeit (SGB II)",
       "welfare": "Transferleistungen",
-      "empty": "Keine Daten verfügbar"
+      "empty": "Keine Daten verfügbar",
+      "dataYear": "Daten: {{year}}"
+    },
+    "wastewater": {
+      "title": "Abwasser",
+      "empty": "Keine Daten verfügbar",
+      "fluA": "Grippe A",
+      "fluB": "Grippe B",
+      "rsv": "RSV",
+      "sampleDate": "Probe: {{date}}",
+      "level": {
+        "none": "Keins",
+        "low": "Niedrig",
+        "moderate": "Mittel",
+        "high": "Hoch"
+      }
     },
     "waterLevels": {
       "title": "Pegelstände",
@@ -146,7 +161,21 @@
       "stationsHigh": "{{count}} Station(en) erhöht",
       "level": "Pegel",
       "meanWater": "MW",
-      "tidal": "Tide"
+      "tidal": "Tide",
+      "vsNormal": "gg. {{diff}} normal",
+      "empty": "Keine Pegeldaten"
+    },
+    "bathing": {
+      "title": "Badegewässer",
+      "empty": "Keine Badedaten",
+      "best": "Beste Badestellen",
+      "warnings": "Warnungen",
+      "offSeason": "Außerhalb der Saison",
+      "quality": {
+        "good": "Gut",
+        "warning": "Warnung",
+        "poor": "Schlecht"
+      }
     }
   },
   "category": {
@@ -191,7 +220,7 @@
       "emergencies": "Notfall",
       "traffic": "Verkehr",
       "construction": "Baustellen",
-      "water-levels": "Pegelstände",
+      "water": "Wasser",
       "social-atlas": "Sozialatlas 2023",
       "rent-map": "Mietspiegelkarte",
       "political": "Vertretung"
@@ -199,6 +228,10 @@
     "emergencies": {
       "pharmacies": "Apotheken",
       "aeds": "Defibrillatoren"
+    },
+    "water": {
+      "levels": "Pegelstände",
+      "bathing": "Badegewässer"
     },
     "political": {
       "bezirke": "Bezirke",
@@ -216,9 +249,11 @@
     "dismiss": "Ausblenden"
   },
   "support": {
-    "title": "Unterstützung",
-    "message": "Kostenlos, keine Werbung, kein Tracking.",
-    "cta": "Unterstütze uns, damit das so bleibt"
+    "title": "Unterstütze uns",
+    "cost": "Kosten",
+    "ads": "Werbung",
+    "tracking": "Tracking",
+    "cta": "damit das so bleibt"
   },
   "footer": {
     "sourceCode": "Quellcode",

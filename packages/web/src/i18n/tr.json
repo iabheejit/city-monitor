@@ -131,7 +131,22 @@
       "title": "Sosyal Atlas 2023",
       "unemployment": "İşsizlik (SGB II)",
       "welfare": "Sosyal yardım alanlar",
-      "empty": "Veri mevcut değil"
+      "empty": "Veri mevcut değil",
+      "dataYear": "Veri: {{year}}"
+    },
+    "wastewater": {
+      "title": "Atık Su",
+      "empty": "Veri mevcut değil",
+      "fluA": "Grip A",
+      "fluB": "Grip B",
+      "rsv": "RSV",
+      "sampleDate": "Örnek: {{date}}",
+      "level": {
+        "none": "Yok",
+        "low": "Düşük",
+        "moderate": "Orta",
+        "high": "Yüksek"
+      }
     },
     "waterLevels": {
       "title": "Su Seviyeleri",
@@ -146,7 +161,21 @@
       "stationsHigh": "{{count}} istasyon yüksek",
       "level": "Seviye",
       "meanWater": "MW",
-      "tidal": "Gelgit"
+      "tidal": "Gelgit",
+      "vsNormal": "normal: {{diff}}",
+      "empty": "Seviye verisi yok"
+    },
+    "bathing": {
+      "title": "Yüzme Suyu",
+      "empty": "Yüzme verisi yok",
+      "best": "En iyi noktalar",
+      "warnings": "Uyarılar",
+      "offSeason": "Sezon dışı",
+      "quality": {
+        "good": "İyi",
+        "warning": "Uyarı",
+        "poor": "Kötü"
+      }
     }
   },
   "category": {
@@ -191,7 +220,7 @@
       "emergencies": "Acil Durum",
       "traffic": "Trafik",
       "construction": "Yol Çalışmaları",
-      "water-levels": "Su Seviyeleri",
+      "water": "Su",
       "social-atlas": "Sosyal Atlas 2023",
       "rent-map": "Kira Haritası",
       "political": "Temsil"
@@ -199,6 +228,10 @@
     "emergencies": {
       "pharmacies": "Eczaneler",
       "aeds": "Defibrilatörler"
+    },
+    "water": {
+      "levels": "Su Seviyeleri",
+      "bathing": "Yüzme Suyu"
     },
     "political": {
       "bezirke": "Bezirke",
@@ -216,9 +249,11 @@
     "dismiss": "Kapat"
   },
   "support": {
-    "title": "Destek",
-    "message": "Ücretsiz, reklamsız, takipsiz.",
-    "cta": "Böyle kalması için bizi destekleyin"
+    "title": "Bizi Destekle",
+    "cost": "Maliyet",
+    "ads": "Reklam",
+    "tracking": "Takip",
+    "cta": "böyle kalsın diye"
   },
   "footer": {
     "sourceCode": "Kaynak Kodu",

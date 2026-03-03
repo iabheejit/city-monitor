@@ -131,7 +131,8 @@
       "title": "Social Atlas 2023",
       "unemployment": "Unemployment (SGB II)",
       "welfare": "Welfare recipients",
-      "empty": "No data available"
+      "empty": "No data available",
+      "dataYear": "Data: {{year}}"
     },
     "waterLevels": {
       "title": "Water Levels",
@@ -146,7 +147,35 @@
       "stationsHigh": "{{count}} station(s) elevated",
       "level": "Level",
       "meanWater": "MW",
-      "tidal": "Tidal"
+      "tidal": "Tidal",
+      "vsNormal": "vs. {{diff}} normal",
+      "empty": "No water level data"
+    },
+    "wastewater": {
+      "title": "Wastewater",
+      "empty": "No data available",
+      "fluA": "Flu A",
+      "fluB": "Flu B",
+      "rsv": "RSV",
+      "sampleDate": "Sample: {{date}}",
+      "level": {
+        "none": "None",
+        "low": "Low",
+        "moderate": "Moderate",
+        "high": "High"
+      }
+    },
+    "bathing": {
+      "title": "Bathing Water",
+      "empty": "No bathing data",
+      "best": "Best spots",
+      "warnings": "Warnings",
+      "offSeason": "Off-season",
+      "quality": {
+        "good": "Good",
+        "warning": "Warning",
+        "poor": "Poor"
+      }
     }
   },
   "category": {
@@ -191,7 +220,7 @@
       "emergencies": "Emergencies",
       "traffic": "Traffic",
       "construction": "Roadworks",
-      "water-levels": "Water Levels",
+      "water": "Water",
       "social-atlas": "Social Atlas 2023",
       "rent-map": "Rent Map",
       "political": "Representation"
@@ -199,6 +228,10 @@
     "emergencies": {
       "pharmacies": "Pharmacies",
       "aeds": "AEDs"
+    },
+    "water": {
+      "levels": "Water Levels",
+      "bathing": "Bathing Water"
     },
     "political": {
       "bezirke": "Districts",
@@ -216,9 +249,11 @@
     "dismiss": "Dismiss"
   },
   "support": {
-    "title": "Support",
-    "message": "Free, no ads, no tracking.",
-    "cta": "Support us to keep it that way"
+    "title": "Support Us",
+    "cost": "Cost",
+    "ads": "Ads",
+    "tracking": "Tracking",
+    "cta": "to keep it that way"
   },
   "footer": {
     "sourceCode": "Source Code",

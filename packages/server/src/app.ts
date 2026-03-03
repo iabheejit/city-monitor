@@ -23,9 +23,12 @@ import { createPoliticalRouter } from './routes/political.js';
 import { createWeatherTilesRouter } from './routes/weather-tiles.js';
 import { createConstructionRouter } from './routes/construction.js';
 import { createAedsRouter } from './routes/aeds.js';
+import { createSocialAtlasRouter } from './routes/social-atlas.js';
 import { createAppointmentsRouter } from './routes/appointments.js';
 import { createWaterLevelsRouter } from './routes/water-levels.js';
 import { createBudgetRouter } from './routes/budget.js';
+import { createBathingRouter } from './routes/bathing.js';
+import { createWastewaterRouter } from './routes/wastewater.js';
 import { createFeedIngestion } from './cron/ingest-feeds.js';
 import { createWeatherIngestion } from './cron/ingest-weather.js';
 import { createSummarization } from './cron/summarize.js';
@@ -40,9 +43,12 @@ import { createPoliticalIngestion, preCacheBezirke } from './cron/ingest-politic
 import { createAirQualityGridIngestion } from './cron/ingest-air-quality-grid.js';
 import { createConstructionIngestion } from './cron/ingest-construction.js';
 import { createAedIngestion } from './cron/ingest-aeds.js';
+import { createSocialAtlasIngestion } from './cron/ingest-social-atlas.js';
 import { createWaterLevelIngestion } from './cron/ingest-water-levels.js';
 import { createBudgetIngestion } from './cron/ingest-budget.js';
 import { createAppointmentIngestion } from './cron/ingest-appointments.js';
+import { createBathingIngestion } from './cron/ingest-bathing.js';
+import { createWastewaterIngestion } from './cron/ingest-wastewater.js';
 import { initGeocodeDb } from './lib/geocode.js';
 
 export async function createApp(options?: { skipScheduler?: boolean }) {
@@ -74,9 +80,12 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
   const ingestAqGrid = createAirQualityGridIngestion(cache, db);
   const ingestConstruction = createConstructionIngestion(cache);
   const ingestAeds = createAedIngestion(cache);
+  const ingestSocialAtlas = createSocialAtlasIngestion(cache);
   const ingestWaterLevels = createWaterLevelIngestion(cache, db);
   const ingestBudget = createBudgetIngestion(cache);
   const ingestAppointments = createAppointmentIngestion(cache);
+  const ingestBathing = createBathingIngestion(cache);
+  const ingestWastewater = createWastewaterIngestion(cache);
 
   const retainData = db ? createDataRetention(db) : async () => {};
 
@@ -94,9 +103,12 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
     { name: 'ingest-aq-grid', schedule: '*/30 * * * *', handler: ingestAqGrid, runOnStart: true },
     { name: 'ingest-construction', schedule: '*/30 * * * *', handler: ingestConstruction, runOnStart: true },
     { name: 'ingest-aeds', schedule: '0 0 * * *', handler: ingestAeds, runOnStart: true },
+    { name: 'ingest-social-atlas', schedule: '0 5 * * 0', handler: ingestSocialAtlas, runOnStart: true },
     { name: 'ingest-water-levels', schedule: '*/15 * * * *', handler: ingestWaterLevels, runOnStart: true },
     { name: 'ingest-budget', schedule: '0 6 * * *', handler: ingestBudget, runOnStart: true },
     { name: 'ingest-appointments', schedule: '0 */6 * * *', handler: ingestAppointments, runOnStart: true },
+    { name: 'ingest-bathing', schedule: '0 6 * * *', handler: ingestBathing, runOnStart: true },
+    { name: 'ingest-wastewater', schedule: '0 6 * * *', handler: ingestWastewater, runOnStart: true },
     { name: 'data-retention', schedule: '0 3 * * *', handler: retainData },
   ];
 
@@ -120,10 +132,13 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
   app.use('/api', cacheFor(120), createTrafficRouter(cache));
   app.use('/api', cacheFor(900), createConstructionRouter(cache));
   app.use('/api', cacheFor(43200), createAedsRouter(cache));
+  app.use('/api', cacheFor(43200), createSocialAtlasRouter(cache));
   app.use('/api', cacheFor(300), createWaterLevelsRouter(cache, db));
   app.use('/api', cacheFor(3600), createPoliticalRouter(cache));
   app.use('/api', cacheFor(3600), createBudgetRouter(cache));
   app.use('/api', cacheFor(3600), createAppointmentsRouter(cache));
+  app.use('/api', cacheFor(43200), createBathingRouter(cache));
+  app.use('/api', cacheFor(43200), createWastewaterRouter(cache));
   app.use('/api', cacheFor(600), createWeatherTilesRouter());
 
   return { app, cache, db, scheduler };

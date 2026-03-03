@@ -131,7 +131,22 @@
       "title": "الأطلس الاجتماعي 2023",
       "unemployment": "البطالة (SGB II)",
       "welfare": "متلقو الإعانات",
-      "empty": "لا تتوفر بيانات"
+      "empty": "لا تتوفر بيانات",
+      "dataYear": "بيانات: {{year}}"
+    },
+    "wastewater": {
+      "title": "مياه الصرف",
+      "empty": "لا تتوفر بيانات",
+      "fluA": "إنفلونزا أ",
+      "fluB": "إنفلونزا ب",
+      "rsv": "RSV",
+      "sampleDate": "عينة: {{date}}",
+      "level": {
+        "none": "لا شيء",
+        "low": "منخفض",
+        "moderate": "متوسط",
+        "high": "مرتفع"
+      }
     },
     "waterLevels": {
       "title": "مناسيب المياه",
@@ -146,7 +161,21 @@
       "stationsHigh": "{{count}} محطة مرتفعة",
       "level": "المنسوب",
       "meanWater": "MW",
-      "tidal": "مد وجزر"
+      "tidal": "مد وجزر",
+      "vsNormal": "مقابل {{diff}} طبيعي",
+      "empty": "لا توجد بيانات مناسيب"
+    },
+    "bathing": {
+      "title": "مياه السباحة",
+      "empty": "لا توجد بيانات سباحة",
+      "best": "أفضل المواقع",
+      "warnings": "تحذيرات",
+      "offSeason": "خارج الموسم",
+      "quality": {
+        "good": "جيد",
+        "warning": "تحذير",
+        "poor": "سيئ"
+      }
     }
   },
   "category": {
@@ -191,7 +220,7 @@
       "emergencies": "طوارئ",
       "traffic": "حركة المرور",
       "construction": "أعمال الطرق",
-      "water-levels": "مناسيب المياه",
+      "water": "المياه",
       "social-atlas": "الأطلس الاجتماعي 2023",
       "rent-map": "خريطة الإيجار",
       "political": "تمثيل"
@@ -199,6 +228,10 @@
     "emergencies": {
       "pharmacies": "صيدليات",
       "aeds": "أجهزة إزالة الرجفان"
+    },
+    "water": {
+      "levels": "مناسيب المياه",
+      "bathing": "مياه السباحة"
     },
     "political": {
       "bezirke": "الأحياء",
@@ -216,9 +249,11 @@
     "dismiss": "إخفاء"
   },
   "support": {
-    "title": "الدعم",
-    "message": "مجاني، بدون إعلانات، بدون تتبع.",
-    "cta": "ادعمنا للحفاظ على ذلك"
+    "title": "ادعمنا",
+    "cost": "التكلفة",
+    "ads": "إعلانات",
+    "tracking": "تتبع",
+    "cta": "للحفاظ على ذلك"
   },
   "footer": {
     "sourceCode": "الكود المصدري",

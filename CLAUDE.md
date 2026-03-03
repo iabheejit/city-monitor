@@ -45,7 +45,9 @@ Adding a city = adding a config file (server + web) + registering in `ALL_CITIES
 - [`.context/i18n.md`](.context/i18n.md) — react-i18next setup, 4 languages (DE/EN/TR/AR), translation key structure, language detection, testing setup.
 - [`.context/deployment.md`](.context/deployment.md) — Render.com blueprint (render.yaml), GitHub Actions CI, environment variables, domain setup, monitoring.
 - [`.context/geocoding.md`](.context/geocoding.md) — Nominatim-first geocoding with LocationIQ fallback, rate limiting strategy, API usage, callers.
-- [`.context/water-levels.md`](.context/water-levels.md) — PEGELONLINE river gauge ingestion, state derivation logic, gauge bar UI. Water level data must use existing state derivation (MHW check → stateMnwMhw mapping) and the shared WaterLevelStation type.
+- [`.context/water-levels.md`](.context/water-levels.md) — Water parent layer with two sub-layers: PEGELONLINE river gauges (state derivation, gauge bar UI) and LAGeSo bathing water quality (CSV ingestion, quality mapping, seasonal badges). New water features must follow the sub-layer pattern (same as emergencies) and use the shared types.
+- [`.context/social-atlas.md`](.context/social-atlas.md) — MSS 2023 WFS integration for Berlin social/economic choropleth map overlay and dashboard tile. Social atlas data uses biennial MSS WFS (cache-only, no DB), population-weighted summary stats, and lazy GeoJSON fetch for the map layer.
+- [`.context/wastewater.md`](.context/wastewater.md) — Lageso Berlin wastewater viral load monitoring (Influenza A/B, RSV) from CSV open data. Wastewater data uses a cache-only pattern with weekly CSV ingestion, trend computation (latest vs previous week), and a Berlin-only dashboard tile.
 - [`.context/new-data-sources.md`](.context/new-data-sources.md) — Research on potential Berlin data sources (fire dept, utilities, emergency doctors, hospitals, water levels, AEDs, crisis hotlines, construction). Priority ranking and API details for future development.
 
 ## Key Conventions

@@ -205,6 +205,25 @@ export interface AedLocation {
   access?: string;
 }
 
+// Bathing water quality (LAGeSo Berlin)
+export interface BathingSpot {
+  id: string;
+  name: string;
+  district: string;
+  waterBody: string;
+  lat: number;
+  lon: number;
+  measuredAt: string;
+  waterTemp: number | null;
+  visibility: number | null;
+  quality: 'good' | 'warning' | 'poor';
+  algae: string | null;
+  advisory: string | null;
+  classification: string | null;
+  detailUrl: string;
+  inSeason: boolean;
+}
+
 // Water levels (PEGELONLINE)
 export interface WaterLevelStation {
   uuid: string;
@@ -300,4 +319,20 @@ export interface SocialAtlasSummary {
   areasLowStatus: number;    // count where statusIndex >= 3
   totalAreas: number;
   dataYear: string;
+}
+
+// Wastewater monitoring (Lageso Berlin)
+export interface WastewaterPathogen {
+  name: string;
+  value: number;           // avg gene copies/L across plants (latest week)
+  previousValue: number;   // avg gene copies/L (previous week)
+  trend: 'rising' | 'falling' | 'stable' | 'new' | 'gone';
+  level: 'none' | 'low' | 'moderate' | 'high';
+  history: number[];       // last 12 weeks, oldest first
+}
+
+export interface WastewaterSummary {
+  sampleDate: string;
+  pathogens: WastewaterPathogen[];
+  plantCount: number;
 }

@@ -24,9 +24,11 @@ import { useConstruction } from '../../hooks/useConstruction.js';
 import { usePolitical } from '../../hooks/usePolitical.js';
 import { useAirQualityGrid } from '../../hooks/useAirQualityGrid.js';
 import { useWaterLevels } from '../../hooks/useWaterLevels.js';
+import { useBathing } from '../../hooks/useBathing.js';
+import { useSocialAtlas } from '../../hooks/useSocialAtlas.js';
 import { useCommandCenter } from '../../hooks/useCommandCenter.js';
-import type { TransitAlert, NewsItem, SafetyReport, NinaWarning, EmergencyPharmacy, TrafficIncident, ConstructionSite, PoliticalDistrict, AirQualityGridPoint, AedLocation, WaterLevelStation } from '../../lib/api.js';
-import { SEVERITY_COLORS, NEWS_CATEGORY_COLORS, AQI_LEVEL_COLORS, CONSTRUCTION_SUBTYPE_COLORS, WATER_STATE_COLORS, registerAllMapIcons, registerPoliticalIcons } from '../../lib/map-icons.js';
+import type { TransitAlert, NewsItem, SafetyReport, NinaWarning, EmergencyPharmacy, TrafficIncident, ConstructionSite, PoliticalDistrict, AirQualityGridPoint, AedLocation, BathingSpot, WaterLevelStation, SocialAtlasFeatureProps } from '../../lib/api.js';
+import { SEVERITY_COLORS, NEWS_CATEGORY_COLORS, AQI_LEVEL_COLORS, CONSTRUCTION_SUBTYPE_COLORS, WATER_STATE_COLORS, BATHING_QUALITY_COLORS, registerAllMapIcons, registerPoliticalIcons } from '../../lib/map-icons.js';
 import { getAqiLevel } from '../../lib/aqi.js';
 import { getPartyColor, getMajorityParty } from '../../lib/party-colors.js';
 
@@ -114,8 +116,10 @@ function simplifyMap(map: maplibregl.Map) {
       !layer.id.startsWith('construction-') &&
       !layer.id.startsWith('aq-') &&
       !layer.id.startsWith('wl-') &&
+      !layer.id.startsWith('bathing-') &&
       !layer.id.startsWith('weather-') &&
-      !layer.id.startsWith('rent-map-')
+      !layer.id.startsWith('rent-map-') &&
+      !layer.id.startsWith('social-atlas-')
     ) {
       map.setLayoutProperty(layer.id, 'visibility', 'none');
     }
@@ -837,6 +841,94 @@ function warningsToGeoJSON(warnings: NinaWarning[]): GeoJSON.FeatureCollection {
   return { type: 'FeatureCollection', features };
 }
 
+// Social Atlas 2023 choropleth — 536 Planungsräume colored by composite status index
+const SOCIAL_ATLAS_COLORS: Record<number, string> = {
+  1: '#22c55e', // hoch (high social status) — green
+  2: '#eab308', // mittel — yellow
+  3: '#f97316', // niedrig — orange
+  4: '#ef4444', // sehr niedrig — red
+};
+
+function updateSocialAtlasLayer(map: maplibregl.Map, geojson: GeoJSON.FeatureCollection | null, isDark: boolean) {
+  for (const id of ['social-atlas-fill', 'social-atlas-line']) {
+    if (map.getLayer(id)) map.removeLayer(id);
+  }
+  if (map.getSource('social-atlas-areas')) map.removeSource('social-atlas-areas');
+
+  if (!geojson || geojson.features.length === 0) return;
+
+  map.addSource('social-atlas-areas', { type: 'geojson', data: geojson });
+
+  map.addLayer({
+    id: 'social-atlas-fill',
+    type: 'fill',
+    source: 'social-atlas-areas',
+    paint: {
+      'fill-color': [
+        'match', ['get', 'statusIndex'],
+        1, SOCIAL_ATLAS_COLORS[1],
+        2, SOCIAL_ATLAS_COLORS[2],
+        3, SOCIAL_ATLAS_COLORS[3],
+        4, SOCIAL_ATLAS_COLORS[4],
+        '#9ca3af', // fallback gray
+      ],
+      'fill-opacity': isDark ? 0.35 : 0.4,
+    },
+  });
+
+  map.addLayer({
+    id: 'social-atlas-line',
+    type: 'line',
+    source: 'social-atlas-areas',
+    paint: {
+      'line-color': isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.15)',
+      'line-width': 0.5,
+    },
+  });
+
+  function buildSocialAtlasPopup(p: SocialAtlasFeatureProps): string {
+    const statusColor = SOCIAL_ATLAS_COLORS[p.statusIndex] ?? '#9ca3af';
+    return `<div style="font-size:13px;max-width:300px">
+      <div style="font-weight:600;margin-bottom:6px">${p.plrName}</div>
+      <div style="display:inline-block;padding:2px 8px;border-radius:4px;background:${statusColor};color:#fff;font-size:11px;font-weight:500;margin-bottom:6px">${p.statusLabel}</div>
+      <table style="width:100%;font-size:12px;border-collapse:collapse">
+        <tr><td style="padding:2px 0;opacity:0.7">Unemployment</td><td style="text-align:right;font-weight:500">${p.unemployment?.toFixed(1) ?? '–'}%</td></tr>
+        <tr><td style="padding:2px 0;opacity:0.7">Single-parent HH</td><td style="text-align:right;font-weight:500">${p.singleParent?.toFixed(1) ?? '–'}%</td></tr>
+        <tr><td style="padding:2px 0;opacity:0.7">Welfare recipients</td><td style="text-align:right;font-weight:500">${p.welfare?.toFixed(1) ?? '–'}%</td></tr>
+        <tr><td style="padding:2px 0;opacity:0.7">Child poverty</td><td style="text-align:right;font-weight:500">${p.childPoverty?.toFixed(1) ?? '–'}%</td></tr>
+      </table>
+    </div>`;
+  }
+
+  // Use mousemove (not mouseenter) so the popup updates when moving between
+  // adjacent polygons — mouseenter only fires once per layer, not per feature.
+  let hoveredPlrId: string | null = null;
+
+  map.on('mousemove', 'social-atlas-fill', (e) => {
+    const me = e as MapLayerEvent;
+    if (!me.features?.length) return;
+    const p = me.features[0].properties as unknown as SocialAtlasFeatureProps;
+    if (p.plrId === hoveredPlrId) return; // same area — skip
+    hoveredPlrId = p.plrId;
+    map.getCanvas().style.cursor = 'pointer';
+    showMapPopup(map, [me.lngLat.lng, me.lngLat.lat], buildSocialAtlasPopup(p), { sticky: false });
+  });
+
+  map.on('mouseleave', 'social-atlas-fill', () => {
+    map.getCanvas().style.cursor = '';
+    hoveredPlrId = null;
+    _clearHoverTimer();
+    _hoverTimer = setTimeout(_closeHoverPopup, 300);
+  });
+
+  map.on('click', 'social-atlas-fill', (e) => {
+    const me = e as MapLayerEvent;
+    if (!me.features?.length) return;
+    const p = me.features[0].properties as unknown as SocialAtlasFeatureProps;
+    showMapPopup(map, [me.lngLat.lng, me.lngLat.lat], buildSocialAtlasPopup(p), { sticky: true });
+  });
+}
+
 function updateWarningPolygons(map: maplibregl.Map, warnings: NinaWarning[], _isDark: boolean) {
   const geojson = warningsToGeoJSON(warnings);
 
@@ -1399,6 +1491,97 @@ function updateAedMarkers(map: maplibregl.Map, aeds: AedLocation[], _isDark: boo
   });
 }
 
+function bathingToGeoJSON(spots: BathingSpot[]): GeoJSON.FeatureCollection {
+  return {
+    type: 'FeatureCollection',
+    features: spots
+      .filter((s) => s.lat != null && s.lon != null)
+      .map((s) => ({
+        type: 'Feature' as const,
+        geometry: { type: 'Point' as const, coordinates: [s.lon, s.lat] },
+        properties: {
+          id: s.id,
+          name: s.name,
+          district: s.district,
+          waterBody: s.waterBody,
+          measuredAt: s.measuredAt,
+          waterTemp: s.waterTemp,
+          visibility: s.visibility,
+          quality: s.quality,
+          algae: s.algae,
+          advisory: s.advisory,
+          classification: s.classification,
+          detailUrl: s.detailUrl,
+          inSeason: s.inSeason,
+        },
+      })),
+  };
+}
+
+function updateBathingMarkers(map: maplibregl.Map, spots: BathingSpot[], _isDark: boolean) {
+  const geojson = bathingToGeoJSON(spots);
+
+  for (const id of ['bathing-marker-icon']) {
+    if (map.getLayer(id)) map.removeLayer(id);
+  }
+  if (map.getSource('bathing-markers')) map.removeSource('bathing-markers');
+
+  if (geojson.features.length === 0) return;
+
+  map.addSource('bathing-markers', { type: 'geojson', data: geojson });
+
+  const iconMatch: unknown[] = ['match', ['get', 'quality']];
+  for (const q of Object.keys(BATHING_QUALITY_COLORS)) {
+    iconMatch.push(q, `bathing-icon-${q}`);
+  }
+  iconMatch.push('bathing-icon-good'); // fallback
+
+  map.addLayer({
+    id: 'bathing-marker-icon',
+    type: 'symbol',
+    source: 'bathing-markers',
+    layout: {
+      'icon-image': iconMatch as maplibregl.ExpressionSpecification,
+      'icon-size': 0.9,
+      'icon-allow-overlap': true,
+      'icon-anchor': 'center',
+    },
+  });
+
+  const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  registerPopupHandlers(map, 'bathing-marker-icon', (e) => {
+    if (!e.features?.length) return null;
+    const props = e.features[0].properties!;
+    const coords = (e.features[0].geometry as GeoJSON.Point).coordinates.slice() as [number, number];
+    const qColor = BATHING_QUALITY_COLORS[props.quality as string] ?? BATHING_QUALITY_COLORS.good;
+    const qLabel = (props.quality as string).charAt(0).toUpperCase() + (props.quality as string).slice(1);
+    const seasonBadge = props.inSeason === true || props.inSeason === 'true'
+      ? ''
+      : '<span style="display:inline-block;background:#fef3c7;color:#92400e;font-size:10px;padding:1px 5px;border-radius:4px;margin-left:4px">Off-season</span>';
+    const tempLine = props.waterTemp != null && props.waterTemp !== 'null'
+      ? `<div style="font-size:12px;margin-top:4px">Water temp: <strong>${esc(String(props.waterTemp))}°C</strong></div>` : '';
+    const visLine = props.visibility != null && props.visibility !== 'null'
+      ? `<div style="font-size:12px">Visibility: ${esc(String(props.visibility))}m</div>` : '';
+    const algaeLine = props.algae && props.algae !== 'null'
+      ? `<div style="font-size:11px;color:#d97706;margin-top:4px">⚠ ${esc(String(props.algae))}</div>` : '';
+    const advisoryLine = props.advisory && props.advisory !== 'null'
+      ? `<div style="font-size:11px;opacity:0.7;margin-top:2px">${esc(String(props.advisory))}</div>` : '';
+    const detailUrl = String(props.detailUrl ?? '');
+    const detailLink = detailUrl.startsWith('https://')
+      ? `<a href="${esc(detailUrl)}" target="_blank" rel="noopener" style="display:inline-block;margin-top:6px;font-size:12px;color:#2563eb;text-decoration:none">Details (LAGeSo) ↗</a>`
+      : '';
+    const html = `<div style="font-size:13px;max-width:300px">
+      <div style="font-weight:600;margin-bottom:4px">${esc(String(props.name))}${seasonBadge}</div>
+      <div style="font-size:12px;opacity:0.7">${esc(String(props.waterBody))} · ${esc(String(props.district))}</div>
+      <div style="font-size:12px;margin-top:4px">Quality: <strong style="color:${qColor}">${qLabel}</strong>${props.classification && props.classification !== 'null' ? ` <span style="font-size:11px;opacity:0.6">(EU: ${esc(String(props.classification))})</span>` : ''}</div>
+      ${tempLine}${visLine}${algaeLine}${advisoryLine}
+      <div style="font-size:11px;opacity:0.5;margin-top:4px">Measured: ${esc(String(props.measuredAt))}</div>
+      ${detailLink}
+    </div>`;
+    return { html, lngLat: coords };
+  });
+}
+
 function updateTransitMarkers(map: maplibregl.Map, alerts: TransitAlert[], isDark: boolean) {
   const geojson = alertsToGeoJSON(alerts);
 
@@ -1483,6 +1666,7 @@ export function CityMap() {
   const { data: constructionSites } = useConstruction(city.id);
   const { data: aqGrid } = useAirQualityGrid(city.id);
   const { data: waterLevelData } = useWaterLevels(city.id);
+  const { data: bathingData } = useBathing(city.id);
   const politicalLayer = useCommandCenter((s) => s.politicalLayer);
   const activeLayers = useCommandCenter((s) => s.activeLayers);
   const emergencySubLayers = useCommandCenter((s) => s.emergencySubLayers);
@@ -1492,7 +1676,10 @@ export function CityMap() {
   const roadsActive = trafficActive || constructionActive;
   const weatherActive = activeLayers.has('weather');
   const rentMapActive = activeLayers.has('rent-map') && city.id === 'berlin';
-  const waterLevelsActive = activeLayers.has('water-levels');
+  const socialAtlasActive = activeLayers.has('social-atlas') && city.id === 'berlin';
+  const waterActive = activeLayers.has('water');
+  const waterSubLayers = useCommandCenter((s) => s.waterSubLayers);
+  const { data: socialAtlasData } = useSocialAtlas(city.id, socialAtlasActive);
   const { data: bezirkeData } = usePolitical(city.id, 'bezirke');
   const { data: bundestagData } = usePolitical(city.id, 'bundestag');
   const { data: stateBezirkeData } = usePolitical(city.id, 'state-bezirke');
@@ -1512,7 +1699,9 @@ export function CityMap() {
   const trafficItems = activeLayers.has('traffic') ? (trafficIncidents ?? []) : [];
   const constructionItems = activeLayers.has('construction') ? (constructionSites ?? []) : [];
   const aqGridItems = activeLayers.has('air-quality') ? (aqGrid ?? EMPTY_AQ) : EMPTY_AQ;
-  const waterLevelItems = activeLayers.has('water-levels') ? (waterLevelData?.stations ?? EMPTY_WL) : EMPTY_WL;
+  const waterLevelItems = (waterActive && waterSubLayers.has('levels')) ? (waterLevelData?.stations ?? EMPTY_WL) : EMPTY_WL;
+  const bathingItems = (waterActive && waterSubLayers.has('bathing')) ? (bathingData ?? []) : [];
+  const socialAtlasGeoJson = socialAtlasActive ? (socialAtlasData ?? null) : null;
 
   // Keep current values in refs so the style.load handler always reads fresh values
   const isDarkRef = useRef(isDark);
@@ -1539,14 +1728,18 @@ export function CityMap() {
   aqGridItemsRef.current = aqGridItems;
   const waterLevelItemsRef = useRef(waterLevelItems);
   waterLevelItemsRef.current = waterLevelItems;
+  const bathingItemsRef = useRef(bathingItems);
+  bathingItemsRef.current = bathingItems;
+  const socialAtlasGeoJsonRef = useRef(socialAtlasGeoJson);
+  socialAtlasGeoJsonRef.current = socialAtlasGeoJson;
   const roadsActiveRef = useRef(roadsActive);
   roadsActiveRef.current = roadsActive;
   const weatherActiveRef = useRef(weatherActive);
   weatherActiveRef.current = weatherActive;
   const rentMapActiveRef = useRef(rentMapActive);
   rentMapActiveRef.current = rentMapActive;
-  const waterLevelsActiveRef = useRef(waterLevelsActive);
-  waterLevelsActiveRef.current = waterLevelsActive;
+  const waterActiveRef = useRef(waterActive);
+  waterActiveRef.current = waterActive;
   const politicalActiveRef = useRef(politicalActive);
   politicalActiveRef.current = politicalActive;
   const politicalLayerRef = useRef(politicalLayer);
@@ -1578,7 +1771,7 @@ export function CityMap() {
     map.on('load', () => {
       simplifyMap(map);
       setTrafficRoadVisibility(map, roadsActiveRef.current, isDarkRef.current);
-      setWaterAreaVisibility(map, waterLevelsActiveRef.current, isDarkRef.current);
+      setWaterAreaVisibility(map, waterActiveRef.current, isDarkRef.current);
       registerAllMapIcons(map, isDarkRef.current);
       addDistrictLayer(map, cityIdRef.current, isDarkRef.current);
       setupDistrictHover(map);
@@ -1592,6 +1785,8 @@ export function CityMap() {
       updateConstructionLayers(map, constructionItemsRef.current, isDarkRef.current);
       updateAqGridLayer(map, aqGridItemsRef.current, isDarkRef.current);
       updateWaterLevelMarkers(map, waterLevelItemsRef.current, isDarkRef.current);
+      updateBathingMarkers(map, bathingItemsRef.current, isDarkRef.current);
+      updateSocialAtlasLayer(map, socialAtlasGeoJsonRef.current, isDarkRef.current);
       setWeatherOverlay(map, weatherActiveRef.current);
       setRentMapOverlay(map, rentMapActiveRef.current);
 
@@ -1624,7 +1819,7 @@ export function CityMap() {
     map.once('styledata', () => {
       simplifyMap(map);
       setTrafficRoadVisibility(map, roadsActiveRef.current, isDark);
-      setWaterAreaVisibility(map, waterLevelsActiveRef.current, isDark);
+      setWaterAreaVisibility(map, waterActiveRef.current, isDark);
       registerAllMapIcons(map, isDark);
 
       // Restore the correct political/district GeoJSON after style swap
@@ -1675,6 +1870,8 @@ export function CityMap() {
       updateConstructionLayers(map, constructionItemsRef.current, isDark);
       updateAqGridLayer(map, aqGridItemsRef.current, isDark);
       updateWaterLevelMarkers(map, waterLevelItemsRef.current, isDark);
+      updateBathingMarkers(map, bathingItemsRef.current, isDark);
+      updateSocialAtlasLayer(map, socialAtlasGeoJsonRef.current, isDark);
       setWeatherOverlay(map, weatherActiveRef.current);
       setRentMapOverlay(map, rentMapActiveRef.current);
     });
@@ -1805,14 +2002,14 @@ export function CityMap() {
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
-    const apply = () => setWaterAreaVisibility(map, waterLevelsActive, isDarkRef.current);
+    const apply = () => setWaterAreaVisibility(map, waterActive, isDarkRef.current);
     if (map.isStyleLoaded()) {
       apply();
       return;
     }
     map.once('idle', apply);
     return () => { map.off('idle', apply); };
-  }, [waterLevelsActive]);
+  }, [waterActive]);
 
   // Update air quality grid circles
   useEffect(() => {
@@ -1835,6 +2032,28 @@ export function CityMap() {
     return () => { map.off('idle', apply); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [waterLevelItems]);
+
+  // Update bathing water markers
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const apply = () => updateBathingMarkers(map, bathingItems, isDarkRef.current);
+    if (map.isStyleLoaded()) { apply(); return; }
+    map.once('idle', apply);
+    return () => { map.off('idle', apply); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bathingItems]);
+
+  // Update social atlas choropleth (lazy — geojson only available when layer is toggled on)
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const apply = () => updateSocialAtlasLayer(map, socialAtlasGeoJson, isDarkRef.current);
+    if (map.isStyleLoaded()) { apply(); return; }
+    map.once('idle', apply);
+    return () => { map.off('idle', apply); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [socialAtlasGeoJson]);
 
   // Political layer: swap GeoJSON source + apply/reset styling
   const politicalData = politicalLayer === 'bundestag'

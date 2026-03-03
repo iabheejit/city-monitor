@@ -27,6 +27,8 @@ export interface BootstrapData {
   waterLevels: WaterLevelData | null;
   budget: BudgetSummary | null;
   appointments: BuergeramtData | null;
+  socialAtlasSummary: SocialAtlasSummary | null;
+  wastewater: WastewaterSummary | null;
 }
 
 export interface NewsDigest {
@@ -159,8 +161,8 @@ export interface EmergencyPharmacy {
   distance?: number;
 }
 
-export type { AirQualityGridPoint, ConstructionSite, WaterLevelData, WaterLevelStation, AedLocation, BudgetSummary, BudgetAreaSummary, BudgetCategoryAmount, BuergeramtData, BuergeramtService } from '@city-monitor/shared';
-import type { AirQualityGridPoint, ConstructionSite, WaterLevelData, AedLocation, BudgetSummary, BuergeramtData } from '@city-monitor/shared';
+export type { AirQualityGridPoint, ConstructionSite, WaterLevelData, WaterLevelStation, AedLocation, BathingSpot, BudgetSummary, BudgetAreaSummary, BudgetCategoryAmount, BuergeramtData, BuergeramtService, SocialAtlasFeatureProps, SocialAtlasSummary, WastewaterSummary, WastewaterPathogen } from '@city-monitor/shared';
+import type { AirQualityGridPoint, ConstructionSite, WaterLevelData, AedLocation, BathingSpot, BudgetSummary, BuergeramtData, SocialAtlasSummary, WastewaterSummary } from '@city-monitor/shared';
 
 export const api = {
   getBootstrap: (city: string) => fetchJson<BootstrapData>(`${BASE}/${city}/bootstrap`),
@@ -177,8 +179,12 @@ export const api = {
   getTraffic: (city: string) => fetchJson<TrafficIncident[]>(`${BASE}/${city}/traffic`),
   getConstruction: (city: string) => fetchJson<ConstructionSite[]>(`${BASE}/${city}/construction`),
   getAeds: (city: string) => fetchJson<AedLocation[]>(`${BASE}/${city}/aeds`),
+  getBathing: (city: string) => fetchJson<BathingSpot[]>(`${BASE}/${city}/bathing`),
   getWaterLevels: (city: string) => fetchJson<WaterLevelData>(`${BASE}/${city}/water-levels`),
   getPolitical: (city: string, level: 'bundestag' | 'state' | 'bezirke' | 'state-bezirke') => fetchJson<PoliticalDistrict[]>(`${BASE}/${city}/political/${level}`),
   getBudget: (city: string) => fetchJson<BudgetSummary | null>(`${BASE}/${city}/budget`),
   getAppointments: (city: string) => fetchJson<BuergeramtData>(`${BASE}/${city}/appointments`),
+  getSocialAtlas: (city: string) => fetchJson<GeoJSON.FeatureCollection | null>(`${BASE}/${city}/social-atlas`),
+  getSocialAtlasSummary: (city: string) => fetchJson<SocialAtlasSummary | null>(`${BASE}/${city}/social-atlas/summary`),
+  getWastewater: (city: string) => fetchJson<WastewaterSummary | null>(`${BASE}/${city}/wastewater`),
 };

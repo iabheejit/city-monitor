@@ -5,8 +5,8 @@
 
 import { createElement, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { TrainFront, Wind, Newspaper, ShieldAlert, TriangleAlert, HeartPulse, Pill, Car, Construction, Landmark, Building2, Building, CloudRain, Droplets, Home } from 'lucide';
-import { useCommandCenter, type DataLayer, type PoliticalLayer, type EmergencySubLayer } from '../../hooks/useCommandCenter.js';
+import { TrainFront, Wind, Newspaper, ShieldAlert, TriangleAlert, HeartPulse, Pill, Car, Construction, Landmark, Building2, Building, CloudRain, Droplets, Waves, Home, BarChart3 } from 'lucide';
+import { useCommandCenter, type DataLayer, type PoliticalLayer, type EmergencySubLayer, type WaterSubLayer } from '../../hooks/useCommandCenter.js';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import type { IconNode } from '../../lib/map-icons.js';
 
@@ -20,7 +20,8 @@ const LAYER_META: { layer: DataLayer; icon: IconNode; color: string; cities?: st
   { layer: 'emergencies', icon: HeartPulse as IconNode, color: '#ef4444' },
   { layer: 'traffic', icon: Car as IconNode, color: '#8b5cf6' },
   { layer: 'construction', icon: Construction as IconNode, color: '#d97706' },
-  { layer: 'water-levels', icon: Droplets as IconNode, color: '#3b82f6' },
+  { layer: 'water', icon: Droplets as IconNode, color: '#3b82f6' },
+  { layer: 'social-atlas', icon: BarChart3 as IconNode, color: '#8b5cf6', cities: ['berlin'] },
   { layer: 'rent-map', icon: Home as IconNode, color: '#10b981', cities: ['berlin'] },
   { layer: 'political', icon: Landmark as IconNode, color: '#64748b' },
 ];
@@ -30,6 +31,11 @@ const INACTIVE_COLOR = '#9ca3af';
 const EMERGENCY_SUB_META: { key: EmergencySubLayer; icon: IconNode; color: string }[] = [
   { key: 'pharmacies', icon: Pill as IconNode, color: '#22c55e' },
   { key: 'aeds', icon: HeartPulse as IconNode, color: '#ef4444' },
+];
+
+const WATER_SUB_META: { key: WaterSubLayer; icon: IconNode; color: string }[] = [
+  { key: 'levels', icon: Droplets as IconNode, color: '#3b82f6' },
+  { key: 'bathing', icon: Waves as IconNode, color: '#06b6d4' },
 ];
 
 const POLITICAL_SUB_META: { key: PoliticalLayer; icon: IconNode; color: string }[] = [
@@ -83,6 +89,8 @@ export function DataLayerToggles() {
   const setPoliticalLayer = useCommandCenter((s) => s.setPoliticalLayer);
   const emergencySubLayers = useCommandCenter((s) => s.emergencySubLayers);
   const toggleEmergencySubLayer = useCommandCenter((s) => s.toggleEmergencySubLayer);
+  const waterSubLayers = useCommandCenter((s) => s.waterSubLayers);
+  const toggleWaterSubLayer = useCommandCenter((s) => s.toggleWaterSubLayer);
 
   return (
     <div>
@@ -115,6 +123,17 @@ export function DataLayerToggles() {
                 active={emergencySubLayers.has(key)}
                 label={t(`sidebar.emergencies.${key}`)}
                 onClick={() => toggleEmergencySubLayer(key)}
+              />
+            ));
+          } else if (layer === 'water' && active) {
+            subItems = WATER_SUB_META.map(({ key, icon: subIcon, color: subColor }) => (
+              <SubLayerItem
+                key={key}
+                icon={subIcon}
+                color={subColor}
+                active={waterSubLayers.has(key)}
+                label={t(`sidebar.water.${key}`)}
+                onClick={() => toggleWaterSubLayer(key)}
               />
             ));
           } else if (layer === 'political' && active) {

@@ -5,29 +5,34 @@
 
 import { create } from 'zustand';
 
-export type DataLayer = 'transit' | 'weather' | 'news' | 'safety' | 'warnings' | 'air-quality' | 'emergencies' | 'traffic' | 'construction' | 'water-levels' | 'political' | 'rent-map';
+export type DataLayer = 'transit' | 'weather' | 'news' | 'safety' | 'warnings' | 'air-quality' | 'emergencies' | 'traffic' | 'construction' | 'water' | 'social-atlas' | 'political' | 'rent-map';
 export type PoliticalLayer = 'bezirke' | 'bundestag' | 'landesparlament';
 export type EmergencySubLayer = 'pharmacies' | 'aeds';
+export type WaterSubLayer = 'levels' | 'bathing';
 
 interface CommandCenterState {
   singleView: boolean;
   activeLayers: Set<DataLayer>;
   politicalLayer: PoliticalLayer;
   emergencySubLayers: Set<EmergencySubLayer>;
+  waterSubLayers: Set<WaterSubLayer>;
   toggleSingleView: () => void;
   toggleLayer: (layer: DataLayer) => void;
   setPoliticalLayer: (layer: PoliticalLayer) => void;
   toggleEmergencySubLayer: (sub: EmergencySubLayer) => void;
+  toggleWaterSubLayer: (sub: WaterSubLayer) => void;
 }
 
 const DEFAULT_LAYERS: Set<DataLayer> = new Set(['transit']);
 const ALL_EMERGENCY_SUBS: Set<EmergencySubLayer> = new Set(['pharmacies', 'aeds']);
+const ALL_WATER_SUBS: Set<WaterSubLayer> = new Set(['levels', 'bathing']);
 
 export const useCommandCenter = create<CommandCenterState>((set) => ({
   singleView: true,
   activeLayers: new Set(DEFAULT_LAYERS),
   politicalLayer: 'bezirke',
   emergencySubLayers: new Set(ALL_EMERGENCY_SUBS),
+  waterSubLayers: new Set(ALL_WATER_SUBS),
   toggleSingleView: () =>
     set((state) => {
       const singleView = !state.singleView;
@@ -65,5 +70,15 @@ export const useCommandCenter = create<CommandCenterState>((set) => ({
         next.add(sub);
       }
       return { emergencySubLayers: next };
+    }),
+  toggleWaterSubLayer: (sub) =>
+    set((state) => {
+      const next = new Set(state.waterSubLayers);
+      if (next.has(sub)) {
+        if (next.size > 1) next.delete(sub);
+      } else {
+        next.add(sub);
+      }
+      return { waterSubLayers: next };
     }),
 }));

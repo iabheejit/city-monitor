@@ -1,4 +1,4 @@
-# Water Levels
+# Water
 
 ## Data Source
 
@@ -42,10 +42,45 @@ The cron job (`ingest-water-levels.ts`) maps API data to a state enum:
 - **Hook**: `useWaterLevels(cityId)` — 15-min refetch, 5-min stale, bootstrap-seeded
 - **Dashboard tile**: `WaterLevelStrip` — gauge bars showing current level within MNW-MHW range, color-coded by state (blue=low, green=normal, amber=high, red=very_high, gray=unknown), tidal badge
 - **Map markers**: Droplets icon colored by state, label showing current level in cm, popup with name/waterBody/level/state
-- **Sidebar toggle**: `water-levels` layer in DataLayerToggles with Droplets icon
-- **i18n**: Keys under `panel.waterLevels.*` and `sidebar.layers.water-levels` in all 4 languages
+- **Sidebar toggle**: `water` parent layer with sub-layers `levels` and `bathing` (same pattern as emergencies with pharmacies/AEDs)
+- **i18n**: Keys under `panel.waterLevels.*`, `sidebar.layers.water`, and `sidebar.water.*` in all 4 languages
 
 ## Tests
 
 - `ingest-water-levels.test.ts` — 7 unit tests covering fetch, transformation, state mapping, API failure, URL construction, config name usage
 - `water-levels.test.ts` — 3 route tests covering empty cache, cached data, unknown city
+
+---
+
+# Bathing Water Quality
+
+## Data Source
+
+**LAGeSo** (Berlin State Office for Health and Social Affairs) — public CSV with no auth required.
+
+- CSV URL: `https://data.lageso.de/baden/0_letzte/letzte.csv`
+- Semicolon-delimited, 32 columns per row, German date format (DD.MM.YYYY)
+- ~39 bathing spots in Berlin with coordinates, quality ratings, water temperature, visibility, algae warnings, EU classification
+- Quality mapping: `Farb_ID` column — 1/11→good, 3/13→warning, 5→poor (11/13 are forecast variants from early warning system)
+
+## Server Pipeline
+
+1. **Cron** (`0 6 * * *`, daily at 6 AM): `createBathingIngestion(cache)` fetches CSV, parses to `BathingSpot[]`, writes to cache (key: `{cityId}:bathing:spots`, TTL: 86400s/24h). Cache-only, no DB table
+2. **Route** (`GET /api/:city/bathing`): Cache read, empty array fallback. 12h Cache-Control
+3. **Season flag**: `inSeason` boolean computed server-side (May 15 – Sep 15). Data available year-round but UI shows off-season badge
+
+## Shared Types (`shared/types.ts`)
+
+- `BathingSpot` — id, name, district, waterBody, lat, lon, measuredAt, waterTemp, visibility, quality (`good`|`warning`|`poor`), algae, advisory, classification, detailUrl, inSeason
+
+## Frontend
+
+- **Hook**: `useBathing(cityId)` — 24h refetch, 12h stale
+- **Map markers**: Waves icon colored by quality (green=good, amber=warning, red=poor), popup with name, water body, district, quality badge, temp, visibility, algae warning, advisory, off-season badge, LAGeSo detail link. HTML-escaped popup content
+- **Sidebar toggle**: `bathing` sub-layer under the `water` parent layer
+- **i18n**: Keys under `sidebar.water.bathing` in all 4 languages
+
+## Tests
+
+- `ingest-bathing.test.ts` — 12 unit tests covering CSV parsing, field mapping, quality mapping, null handling, `<` prefix parsing, fetch failure, empty CSV, TTL, inSeason, coordinate filtering, German date parsing
+- `bathing.test.ts` — 3 route tests covering empty cache, cached data, unknown city

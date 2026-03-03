@@ -6,7 +6,7 @@
  * Draws crisp SVG-based icons onto ImageData via Path2D (synchronous).
  */
 
-import { TrainFront, Newspaper, ShieldAlert, Pill, HeartPulse, Wind, Construction, Droplets } from 'lucide';
+import { TrainFront, Newspaper, ShieldAlert, Pill, HeartPulse, Wind, Construction, Droplets, Waves, Landmark, Building2, Building } from 'lucide';
 import type maplibregl from 'maplibre-gl';
 
 export type IconNode = [tag: string, attrs: Record<string, string | number>][];
@@ -49,6 +49,18 @@ export const WATER_STATE_COLORS: Record<string, string> = {
   high: '#f59e0b',
   very_high: '#ef4444',
   unknown: '#9ca3af',
+};
+
+export const BATHING_QUALITY_COLORS: Record<string, string> = {
+  good: '#22c55e',
+  warning: '#f59e0b',
+  poor: '#ef4444',
+};
+
+export const POLITICAL_ICONS: Record<string, IconNode> = {
+  bezirke: Landmark as IconNode,
+  bundestag: Building2 as IconNode,
+  landesparlament: Building as IconNode,
 };
 
 const ICON_SIZE = 36;
@@ -209,5 +221,31 @@ export function registerAllMapIcons(map: maplibregl.Map, isDark: boolean) {
     const id = `wl-icon-${state}`;
     if (map.hasImage(id)) map.removeImage(id);
     map.addImage(id, createMapIcon(Droplets as IconNode, color, stroke));
+  }
+
+  // Bathing water: Waves × 3 quality colors
+  for (const [quality, color] of Object.entries(BATHING_QUALITY_COLORS)) {
+    const id = `bathing-icon-${quality}`;
+    if (map.hasImage(id)) map.removeImage(id);
+    map.addImage(id, createMapIcon(Waves as IconNode, color, stroke));
+  }
+}
+
+/**
+ * Register political marker icons for the given sub-layer and party colors.
+ * Creates one image per unique party color: `political-icon-{color}`.
+ */
+export function registerPoliticalIcons(
+  map: maplibregl.Map,
+  subLayer: 'bezirke' | 'bundestag' | 'landesparlament',
+  partyColors: string[],
+  isDark: boolean,
+) {
+  const stroke = isDark ? '#1f2937' : '#ffffff';
+  const iconNode = POLITICAL_ICONS[subLayer];
+  for (const color of partyColors) {
+    const id = `political-icon-${color.replace('#', '')}`;
+    if (map.hasImage(id)) map.removeImage(id);
+    map.addImage(id, createMapIcon(iconNode, color, stroke));
   }
 }
