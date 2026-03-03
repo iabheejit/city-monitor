@@ -44,6 +44,7 @@ export function Tile({ title, span = 1, height = 'auto', expandable, defaultExpa
           className="w-full px-4 py-3 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between cursor-pointer select-none appearance-none bg-transparent text-left"
           onClick={() => setExpanded((v) => !v)}
           aria-expanded={expanded}
+          aria-label={`${title} — ${expanded ? 'collapse' : 'expand'}`}
         >
           <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
             {title}

@@ -28,9 +28,9 @@ function AqiScale({ aqi, t }: { aqi: number; t: (k: string) => string }) {
   const pct = Math.min(Math.max(aqi / SCALE_MAX, 0), 1) * 100;
 
   return (
-    <div className="space-y-1">
+    <div className="space-y-1" role="img" aria-label={`AQI ${aqi} — ${t(`panel.airQuality.level.${getAqiLevel(aqi).label}`)}`}>
       <div className="relative">
-        <div className="flex h-2 rounded-full overflow-hidden">
+        <div className="flex h-2 rounded-full overflow-hidden" aria-hidden="true">
           {SCALE_SEGMENTS.map((s) => (
             <div key={s.key} className="flex-1" style={{ backgroundColor: s.color }} />
           ))}

@@ -14,7 +14,7 @@ export function Footer() {
 
   return (
     <footer className="px-4 py-3 text-xs text-gray-400 border-t border-gray-200 dark:border-gray-800 flex justify-between gap-4">
-      <div className="flex flex-col sm:flex-row gap-1 sm:gap-4">
+      <nav aria-label="Footer" className="flex flex-col sm:flex-row gap-1 sm:gap-4">
         <a href="https://github.com/OdinMB/city-monitor" target="_blank" rel="noopener noreferrer" className="hover:underline">
           {t('footer.sourceCode')}
         </a>
@@ -25,8 +25,8 @@ export function Footer() {
         <a href="https://ko-fi.com/OdinMB" target="_blank" rel="noopener noreferrer" className="hover:underline">
           {t('support.title')}
         </a>
-      </div>
-      <div className="flex flex-col sm:flex-row gap-1 sm:gap-4 text-right sm:text-left">
+      </nav>
+      <nav aria-label="Legal" className="flex flex-col sm:flex-row gap-1 sm:gap-4 text-right sm:text-left">
         {city && (
           <Link to={`/${city.id}/sources`} className="hover:underline">
             {t('footer.sources')}
@@ -41,7 +41,7 @@ export function Footer() {
         <Link to="/no-ads-no-tracking" className="hover:underline">
           {t('footer.noTracking')}
         </Link>
-      </div>
+      </nav>
     </footer>
   );
 }
