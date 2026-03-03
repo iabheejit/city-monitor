@@ -1,48 +1,40 @@
 /**
- * In-memory cache with TTL, in-flight coalescing, and negative caching.
- *
- * Adapted from World Monitor (AGPL-3.0)
- * Original: server/_shared/redis.ts
- * Copyright (C) 2024-2026 Elie Habib
- *
- * Modifications:
- * - Replaced Redis with in-memory Map (Postgres is now the persistent store)
- * - Removed Vercel-specific env key prefixing
- * - Made cache synchronous for get/set/delete (memory-only)
- * - Kept in-flight coalescing and negative caching patterns
+ * Copyright (C) 2026 Odin Mühlenbein
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-const NEG_SENTINEL = Symbol('NEG_SENTINEL');
-
-interface CacheEntry {
-  data: unknown;
-  expiresAt: number;
+interface Entry {
+  value: unknown;
+  expiry: number;
 }
 
+/**
+ * Creates an in-memory cache with TTL expiration, request deduplication,
+ * and negative caching for null results.
+ */
 export function createCache() {
-  const store = new Map<string, CacheEntry>();
-  const inflight = new Map<string, Promise<unknown>>();
+  const entries = new Map<string, Entry>();
+  const pending = new Map<string, Promise<unknown>>();
 
-  function get<T>(key: string): T | null {
-    const entry = store.get(key);
-    if (!entry) return null;
-    if (Date.now() > entry.expiresAt) {
-      store.delete(key);
-      return null;
-    }
-    if (entry.data === NEG_SENTINEL) return null;
-    return entry.data as T;
+  function isValid(e: Entry | undefined): e is Entry {
+    return e !== undefined && e.expiry > Date.now();
   }
 
-  function set(key: string, data: unknown, ttlSeconds: number): void {
-    store.set(key, {
-      data,
-      expiresAt: Date.now() + ttlSeconds * 1000,
-    });
+  function get<T>(key: string): T | null {
+    const e = entries.get(key);
+    if (!isValid(e)) {
+      if (e) entries.delete(key);
+      return null;
+    }
+    return e.value as T;
+  }
+
+  function set(key: string, value: unknown, ttlSeconds: number): void {
+    entries.set(key, { value, expiry: Date.now() + ttlSeconds * 1000 });
   }
 
   function del(key: string): void {
-    store.delete(key);
+    entries.delete(key);
   }
 
   async function fetch<T>(
@@ -51,52 +43,46 @@ export function createCache() {
     fetcher: () => Promise<T | null>,
     negativeTtlSeconds = 120,
   ): Promise<T | null> {
-    // Check cache first
-    const entry = store.get(key);
-    if (entry && Date.now() <= entry.expiresAt) {
-      if (entry.data === NEG_SENTINEL) return null;
-      return entry.data as T;
-    }
+    const cached = get<T>(key);
+    if (cached !== null) return cached;
 
-    // Coalesce concurrent requests for the same key
-    const existing = inflight.get(key);
-    if (existing) return existing as Promise<T | null>;
+    // If the entry is still valid but holds null, it's a negative cache hit
+    const e = entries.get(key);
+    if (isValid(e) && e.value === null) return null;
 
-    const promise = fetcher()
+    // Deduplicate concurrent fetches for the same key
+    const inflight = pending.get(key);
+    if (inflight) return inflight as Promise<T | null>;
+
+    const task = fetcher()
       .then((result) => {
-        if (result != null) {
-          set(key, result, ttlSeconds);
-        } else {
-          set(key, NEG_SENTINEL, negativeTtlSeconds);
-        }
+        set(key, result, result !== null ? ttlSeconds : negativeTtlSeconds);
         return result;
       })
       .finally(() => {
-        inflight.delete(key);
+        pending.delete(key);
       });
 
-    inflight.set(key, promise);
-    return promise;
+    pending.set(key, task);
+    return task;
   }
 
   function getBatch(keys: string[]): Record<string, unknown> {
-    const result: Record<string, unknown> = {};
-    for (const key of keys) {
-      const value = get(key);
-      if (value !== null) {
-        result[key] = value;
-      }
+    const out: Record<string, unknown> = {};
+    for (const k of keys) {
+      const v = get(k);
+      if (v !== null) out[k] = v;
     }
-    return result;
+    return out;
   }
 
   function size(): number {
-    return store.size;
+    return entries.size;
   }
 
   function clear(): void {
-    store.clear();
-    inflight.clear();
+    entries.clear();
+    pending.clear();
   }
 
   return { get, set, delete: del, fetch, getBatch, size, clear };
