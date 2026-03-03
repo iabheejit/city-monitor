@@ -1,16 +1,6 @@
 /**
- * Feed ingestion cron job.
- *
- * Adapted from World Monitor (AGPL-3.0)
- * Original: server/worldmonitor/news/v1/list-feed-digest.ts
- * Copyright (C) 2024-2026 Elie Habib
- *
- * Modifications:
- * - City-scoped instead of global variant-based
- * - Uses fast-xml-parser instead of regex parsing
- * - Persists items to Postgres with LLM assessments
- * - Only filters genuinely new items through LLM on each run
- * - Simplified concurrency model (batch of 10 vs 20)
+ * Copyright (C) 2026 Odin Mühlenbein
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
 import type { CityConfig, FeedConfig } from '@city-monitor/shared';
@@ -27,9 +17,12 @@ import { filterAndGeolocateNews } from '../lib/openai.js';
 
 const log = createLogger('ingest-feeds');
 
-const FEED_TIMEOUT_MS = 8_000;
-const OVERALL_DEADLINE_MS = 25_000;
-const BATCH_CONCURRENCY = 10;
+/** Per-feed HTTP timeout. */
+const PER_FEED_TIMEOUT = 10_000;
+/** Hard ceiling for the entire ingestion cycle per city. */
+const CITY_DEADLINE = 30_000;
+/** Max feeds fetched concurrently. */
+const CONCURRENCY = 8;
 
 export interface NewsItem {
   id: string;
@@ -64,143 +57,192 @@ export function createFeedIngestion(cache: Cache, db: Db | null = null) {
   };
 }
 
+// ---------------------------------------------------------------------------
+// City-level orchestration
+// ---------------------------------------------------------------------------
+
 async function ingestCityFeeds(city: CityConfig, cache: Cache, db: Db | null): Promise<void> {
-  const deadline = Date.now() + OVERALL_DEADLINE_MS;
-  const allItems: NewsItem[] = [];
+  const cutoff = Date.now() + CITY_DEADLINE;
 
-  // Fetch feeds in batches
-  for (let i = 0; i < city.feeds.length; i += BATCH_CONCURRENCY) {
-    if (Date.now() > deadline) break;
-    const batch = city.feeds.slice(i, i + BATCH_CONCURRENCY);
-    const results = await Promise.allSettled(
-      batch.map((feed) => fetchAndParseFeed(feed, cache, deadline)),
-    );
+  // 1. Fetch all feeds concurrently (capped) and dedup inline
+  const collected = await fetchAllFeeds(city.feeds, cache, cutoff);
 
-    for (const result of results) {
-      if (result.status === 'fulfilled' && result.value) {
-        allItems.push(...result.value);
-      }
-    }
-  }
+  // 2. Sort: highest-priority tier first, then newest
+  collected.sort((a, b) =>
+    a.tier !== b.tier
+      ? a.tier - b.tier
+      : new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime(),
+  );
 
-  // Deduplicate by hash
-  const seen = new Set<string>();
-  const deduped = allItems.filter((item) => {
-    const hash = hashString(item.url + item.title);
-    if (seen.has(hash)) return false;
-    seen.add(hash);
-    return true;
-  });
+  // 3. Load prior assessments from DB so we don't re-filter known items
+  const prior = await loadPriorAssessments(db, city.id);
 
-  // Sort by tier (lower = higher priority), then recency
-  deduped.sort((a, b) => {
-    if (a.tier !== b.tier) return a.tier - b.tier;
-    return new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime();
-  });
+  // 4. Partition into already-assessed vs new
+  const known: PersistedNewsItem[] = [];
+  const fresh: NewsItem[] = [];
 
-  // Load existing assessments from DB to avoid re-filtering known items
-  const existingAssessments = new Map<string, { relevant: boolean; confidence: number; location?: NewsItem['location'] }>();
-  if (db) {
-    try {
-      const existing = await loadNewsItems(db, city.id);
-      if (existing) {
-        for (const item of existing) {
-          if (item.assessment?.relevant != null) {
-            existingAssessments.set(item.id, {
-              relevant: item.assessment.relevant,
-              confidence: item.assessment.confidence ?? 0,
-              location: item.location,
-            });
-          }
-        }
-      }
-    } catch {
-      // DB read failed — filter everything fresh
-    }
-  }
-
-  // Partition into known (have DB assessment) and new (need LLM filter)
-  const knownItems: PersistedNewsItem[] = [];
-  const newItems: NewsItem[] = [];
-
-  for (const item of deduped) {
-    const stored = existingAssessments.get(item.id);
+  for (const item of collected) {
+    const stored = prior.get(item.id);
     if (stored) {
-      knownItems.push({
+      known.push({
         ...item,
         location: stored.location ?? item.location,
         assessment: { relevant: stored.relevant, confidence: stored.confidence },
       });
     } else {
-      newItems.push(item);
+      fresh.push(item);
     }
   }
 
-  // LLM-based relevance filtering + geolocation (only for new items)
-  const assessedNewItems = await applyLlmFilter(city, newItems);
+  // 5. Run LLM relevance filter on new items only
+  const assessed = await applyLlmFilter(city, fresh);
 
-  // Merge all items and apply drop logic
-  const allAssessed: PersistedNewsItem[] = [
-    ...knownItems,
-    ...assessedNewItems,
-  ];
+  // 6. Merge, re-sort, filter irrelevant
+  const merged: PersistedNewsItem[] = [...known, ...assessed];
+  merged.sort((a, b) =>
+    a.tier !== b.tier
+      ? a.tier - b.tier
+      : new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime(),
+  );
+  const visible = applyDropLogic(merged);
 
-  // Re-sort after merge
-  allAssessed.sort((a, b) => {
-    if (a.tier !== b.tier) return a.tier - b.tier;
-    return new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime();
-  });
-
-  // Apply relevance drop logic to all items
-  const filtered = applyDropLogic(allAssessed);
-
-  // Build digest
+  // 7. Build category buckets
   const categories: Record<string, NewsItem[]> = {};
-  for (const item of filtered) {
-    if (!categories[item.category]) {
-      categories[item.category] = [];
-    }
-    categories[item.category]!.push(item);
+  for (const item of visible) {
+    (categories[item.category] ??= []).push(item);
   }
 
-  const digest: NewsDigest = {
-    items: filtered,
-    categories,
-    updatedAt: new Date().toISOString(),
-  };
+  const digest: NewsDigest = { items: visible, categories, updatedAt: new Date().toISOString() };
 
-  // Write to cache
+  // 8. Write to cache
   cache.set(`${city.id}:news:digest`, digest, 900);
   for (const [cat, items] of Object.entries(categories)) {
     cache.set(`${city.id}:news:${cat}`, items, 900);
   }
 
-  // Persist all items (including assessments) to DB
+  // 9. Persist to DB
   if (db) {
     try {
-      await saveNewsItems(db, city.id, allAssessed);
+      await saveNewsItems(db, city.id, merged);
     } catch (err) {
       log.error(`${city.id} DB write failed`, err);
     }
   }
 
-  const skippedCount = knownItems.length;
-  const newCount = newItems.length;
-  log.info(`${city.id}: ${filtered.length} articles (${skippedCount} from DB, ${newCount} new, ${allAssessed.length - filtered.length} filtered) from ${city.feeds.length} feeds`);
+  log.info(
+    `${city.id}: ${visible.length} articles (${known.length} from DB, ${fresh.length} new, ${merged.length - visible.length} filtered) from ${city.feeds.length} feeds`,
+  );
 }
 
-/**
- * Filters out items the LLM assessed as irrelevant.
- * Shared by ingest-feeds, warm-cache, and the news digest route.
- */
-export function applyDropLogic(items: PersistedNewsItem[]): NewsItem[] {
-  return items.filter((item) => {
-    const a = item.assessment;
-    if (!a) return true;
-    if (a.relevant === false) return false;
-    return true;
-  });
+// ---------------------------------------------------------------------------
+// Feed fetching with concurrent pool + inline dedup
+// ---------------------------------------------------------------------------
+
+async function fetchAllFeeds(
+  feeds: readonly FeedConfig[],
+  cache: Cache,
+  cutoff: number,
+): Promise<NewsItem[]> {
+  const seen = new Map<string, true>();
+  const items: NewsItem[] = [];
+
+  // Process feeds through a concurrent pool of CONCURRENCY workers
+  let cursor = 0;
+
+  async function worker(): Promise<void> {
+    while (cursor < feeds.length && Date.now() < cutoff) {
+      const feed = feeds[cursor++]!;
+      const parsed = await fetchOneFeed(feed, cache, cutoff);
+      if (!parsed) continue;
+
+      for (const item of parsed) {
+        if (!seen.has(item.id)) {
+          seen.set(item.id, true);
+          items.push(item);
+        }
+      }
+    }
+  }
+
+  const workers = Array.from({ length: Math.min(CONCURRENCY, feeds.length) }, () => worker());
+  await Promise.allSettled(workers);
+  return items;
 }
+
+async function fetchOneFeed(
+  feed: FeedConfig,
+  cache: Cache,
+  cutoff: number,
+): Promise<NewsItem[] | null> {
+  const cacheKey = `feed:${hashString(feed.url)}`;
+  const remaining = cutoff - Date.now();
+  if (remaining <= 0) return null;
+  const timeout = Math.min(PER_FEED_TIMEOUT, remaining);
+
+  try {
+    return await cache.fetch<NewsItem[]>(cacheKey, 600, async () => {
+      const res = await log.fetch(feed.url, {
+        signal: AbortSignal.timeout(timeout),
+        headers: { 'User-Agent': 'CityMonitor/1.0' },
+      });
+      if (!res.ok) return null;
+
+      const xml = await res.text();
+      return parseFeed(xml).map((fi): NewsItem => {
+        const cls = classifyHeadline(fi.title, 'berlin');
+        return {
+          id: hashString(fi.url + fi.title),
+          title: fi.title,
+          url: fi.url,
+          publishedAt: fi.publishedAt,
+          sourceName: feed.name,
+          sourceUrl: feed.url,
+          description: fi.description,
+          category: feed.category || cls.category,
+          tier: feed.tier,
+          lang: feed.lang,
+        };
+      });
+    });
+  } catch {
+    log.warn(`failed to fetch ${feed.name}`);
+    return null;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// DB assessment reuse
+// ---------------------------------------------------------------------------
+
+async function loadPriorAssessments(
+  db: Db | null,
+  cityId: string,
+): Promise<Map<string, { relevant: boolean; confidence: number; location?: NewsItem['location'] }>> {
+  const map = new Map<string, { relevant: boolean; confidence: number; location?: NewsItem['location'] }>();
+  if (!db) return map;
+
+  try {
+    const rows = await loadNewsItems(db, cityId);
+    if (rows) {
+      for (const row of rows) {
+        if (row.assessment?.relevant != null) {
+          map.set(row.id, {
+            relevant: row.assessment.relevant,
+            confidence: row.assessment.confidence ?? 0,
+            location: row.location,
+          });
+        }
+      }
+    }
+  } catch {
+    // DB unavailable — proceed without prior assessments
+  }
+  return map;
+}
+
+// ---------------------------------------------------------------------------
+// LLM filtering
+// ---------------------------------------------------------------------------
 
 async function applyLlmFilter(city: CityConfig, items: NewsItem[]): Promise<PersistedNewsItem[]> {
   if (items.length === 0) return [];
@@ -217,7 +259,6 @@ async function applyLlmFilter(city: CityConfig, items: NewsItem[]): Promise<Pers
     );
 
     if (!result) {
-      // Fallback: return all items without assessment when OpenAI is unavailable
       return items.map((item) => ({ ...item }));
     }
 
@@ -228,20 +269,13 @@ async function applyLlmFilter(city: CityConfig, items: NewsItem[]): Promise<Pers
 
       if (verdict) {
         item.assessment = { relevant: verdict.relevant, confidence: verdict.confidence };
-
-        // Attach location if provided
         if (verdict.lat != null && verdict.lon != null) {
-          item.location = {
-            lat: verdict.lat,
-            lon: verdict.lon,
-            label: verdict.locationLabel,
-          };
+          item.location = { lat: verdict.lat, lon: verdict.lon, label: verdict.locationLabel };
         }
       }
 
       assessed.push(item);
     }
-
     return assessed;
   } catch (err) {
     log.error(`${city.id} LLM filter failed, returning items without assessment`, err);
@@ -249,46 +283,19 @@ async function applyLlmFilter(city: CityConfig, items: NewsItem[]): Promise<Pers
   }
 }
 
-async function fetchAndParseFeed(
-  feed: FeedConfig,
-  cache: Cache,
-  deadline: number,
-): Promise<NewsItem[] | null> {
-  const cacheKey = `feed:${hashString(feed.url)}`;
-  const timeout = Math.min(FEED_TIMEOUT_MS, deadline - Date.now());
-  if (timeout <= 0) return null;
+// ---------------------------------------------------------------------------
+// Shared drop logic (used by warm-cache and news route too)
+// ---------------------------------------------------------------------------
 
-  try {
-    // Use cache for raw feed XML (avoid re-fetching within 10 min)
-    const items = await cache.fetch<NewsItem[]>(cacheKey, 600, async () => {
-      const response = await log.fetch(feed.url, {
-        signal: AbortSignal.timeout(timeout),
-        headers: { 'User-Agent': 'CityMonitor/1.0' },
-      });
-      if (!response.ok) return null;
-      const xml = await response.text();
-      const feedItems = parseFeed(xml);
-
-      return feedItems.map((item): NewsItem => {
-        const classification = classifyHeadline(item.title, 'berlin');
-        return {
-          id: hashString(item.url + item.title),
-          title: item.title,
-          url: item.url,
-          publishedAt: item.publishedAt,
-          sourceName: feed.name,
-          sourceUrl: feed.url,
-          description: item.description,
-          category: feed.category || classification.category,
-          tier: feed.tier,
-          lang: feed.lang,
-        };
-      });
-    });
-
-    return items;
-  } catch (_err) {
-    log.warn(`failed to fetch ${feed.name}`);
-    return null;
-  }
+/**
+ * Filters out items the LLM assessed as irrelevant.
+ * Shared by ingest-feeds, warm-cache, and the news digest route.
+ */
+export function applyDropLogic(items: PersistedNewsItem[]): NewsItem[] {
+  return items.filter((item) => {
+    const a = item.assessment;
+    if (!a) return true;
+    if (a.relevant === false) return false;
+    return true;
+  });
 }

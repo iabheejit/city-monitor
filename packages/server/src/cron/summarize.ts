@@ -3,15 +3,6 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  *
  * News summarization cron job.
- *
- * Adapted from World Monitor (AGPL-3.0)
- * Original: server/worldmonitor/news/v1/summarize-article.ts
- * Copyright (C) 2024-2026 Elie Habib
- *
- * Modifications:
- * - City-scoped summarization instead of per-article
- * - Uses headline hash to skip regeneration when headlines unchanged
- * - Writes to in-memory cache (Postgres persistence added later)
  */
 
 import type { Cache } from '../lib/cache.js';

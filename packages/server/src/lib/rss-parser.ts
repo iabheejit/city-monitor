@@ -1,14 +1,8 @@
 /**
+ * Copyright (C) 2026 Odin Mühlenbein
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ *
  * RSS/Atom feed parser using fast-xml-parser.
- *
- * Adapted from World Monitor (AGPL-3.0)
- * Original: server/worldmonitor/news/v1/list-feed-digest.ts
- * Copyright (C) 2024-2026 Elie Habib
- *
- * Modifications:
- * - Replaced regex-based XML parsing with fast-xml-parser
- * - Simplified to handle only RSS 2.0 and Atom formats
- * - Returns normalized FeedItem[] instead of raw parsed data
  */
 
 import { XMLParser } from 'fast-xml-parser';
