@@ -95,7 +95,7 @@ export function CommandLayout() {
           )}
           {cityId === 'berlin' && (
             <Tile title={t('panel.laborMarket.title')} span={1} expandable defaultExpanded={isDesktop}>
-              {(expanded) => <LaborMarketStrip expanded={expanded} />}
+              {() => <LaborMarketStrip />}
             </Tile>
           )}
           {cityId === 'berlin' && (

@@ -59,7 +59,7 @@ describe('TopBar', () => {
 
   it('renders city name in uppercase', () => {
     render(<TopBar />, { wrapper: createWrapper() });
-    expect(screen.getByText('BERLIN')).toBeTruthy();
+    expect(screen.getAllByText('BERLIN').length).toBeGreaterThanOrEqual(1);
   });
 
   it('renders AQI stat with level label when air quality data is available', () => {

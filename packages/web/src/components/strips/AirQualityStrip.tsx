@@ -111,6 +111,16 @@ export function AirQualityStrip({ expanded }: { expanded: boolean }) {
   const { data: gridData } = useAirQualityGrid(cityId);
   const { t } = useTranslation();
 
+  // Filter to WAQI stations (have aqicn.org URL), sort by name for stable order, take 8
+  // Must be above early returns to satisfy Rules of Hooks
+  const stations = useMemo(
+    () => (gridData ?? [])
+      .filter((s) => s.url?.includes('aqicn.org'))
+      .sort((a, b) => a.station.localeCompare(b.station))
+      .slice(0, 8),
+    [gridData],
+  );
+
   if (isLoading) {
     return <Skeleton lines={2} />;
   }
@@ -120,15 +130,6 @@ export function AirQualityStrip({ expanded }: { expanded: boolean }) {
 
   const level = getAqiLevel(data.current.europeanAqi);
   const aqiValue = Math.round(data.current.europeanAqi);
-
-  // Filter to WAQI stations (have aqicn.org URL), sort by name for stable order, take 8
-  const stations = useMemo(
-    () => (gridData ?? [])
-      .filter((s) => s.url?.includes('aqicn.org'))
-      .sort((a, b) => a.station.localeCompare(b.station))
-      .slice(0, 8),
-    [gridData],
-  );
 
   return (
     <>

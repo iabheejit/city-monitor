@@ -16,7 +16,7 @@ describe('App', () => {
       </MemoryRouter>,
     );
     await waitFor(() => {
-      expect(screen.getByText('BERLIN')).toBeDefined();
+      expect(screen.getAllByText('BERLIN').length).toBeGreaterThanOrEqual(1);
     });
   });
 
@@ -27,7 +27,7 @@ describe('App', () => {
       </MemoryRouter>,
     );
     await waitFor(() => {
-      expect(screen.getByText('BERLIN')).toBeDefined();
+      expect(screen.getAllByText('BERLIN').length).toBeGreaterThanOrEqual(1);
     });
     expect(screen.getAllByText('News').length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('Briefing')).toBeDefined();
@@ -41,7 +41,7 @@ describe('App', () => {
     );
     // Hamburg is not active, so it redirects to / → /berlin
     await waitFor(() => {
-      expect(screen.getByText('BERLIN')).toBeDefined();
+      expect(screen.getAllByText('BERLIN').length).toBeGreaterThanOrEqual(1);
     });
   });
 
@@ -53,7 +53,7 @@ describe('App', () => {
     );
     // Should redirect unknown city → / → /berlin
     await waitFor(() => {
-      expect(screen.getByText('BERLIN')).toBeDefined();
+      expect(screen.getAllByText('BERLIN').length).toBeGreaterThanOrEqual(1);
     });
   });
 

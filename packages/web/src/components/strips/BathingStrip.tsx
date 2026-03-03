@@ -61,16 +61,9 @@ export function BathingStrip({ expanded = true }: { expanded?: boolean }) {
   const { data, isLoading, isError, refetch } = useBathing(cityId);
   const { t } = useTranslation();
 
-  if (isLoading) {
-    return <Skeleton lines={3} />;
-  }
-  if (isError) return <StripErrorFallback domain="Bathing" onRetry={refetch} />;
-
-  if (!data || data.length === 0) {
-    return <p className="text-sm text-gray-400 py-2 text-center">{t('panel.bathing.empty')}</p>;
-  }
-
+  // Must be above early returns to satisfy Rules of Hooks
   const { goodDisplay, warnDisplay, goodCount, warnCount, poorCount } = useMemo(() => {
+    if (!data || data.length === 0) return { goodDisplay: [], warnDisplay: [], goodCount: 0, warnCount: 0, poorCount: 0 };
     // Separate by quality
     const flagged = data.filter((s) => s.quality === 'warning' || s.quality === 'poor');
     const good = data
@@ -90,6 +83,15 @@ export function BathingStrip({ expanded = true }: { expanded?: boolean }) {
       poorCount: data.filter((s) => s.quality === 'poor').length,
     };
   }, [data]);
+
+  if (isLoading) {
+    return <Skeleton lines={3} />;
+  }
+  if (isError) return <StripErrorFallback domain="Bathing" onRetry={refetch} />;
+
+  if (!data || data.length === 0) {
+    return <p className="text-sm text-gray-400 py-2 text-center">{t('panel.bathing.empty')}</p>;
+  }
 
   return (
     <div className="space-y-3">
