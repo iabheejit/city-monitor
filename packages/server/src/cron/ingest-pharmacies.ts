@@ -27,13 +27,13 @@ interface AponetPharmacy {
   plz: string;
   ort: string;
   telefon?: string;
-  distanz?: number;
+  distanz?: string;
   startdatum: string;
   enddatum: string;
   startzeit: string;
   endzeit: string;
-  lat?: number;
-  lng?: number;
+  latitude?: string;
+  longitude?: string;
 }
 
 export function createPharmacyIngestion(cache: Cache) {
@@ -98,18 +98,16 @@ async function ingestCityPharmacies(city: CityConfig, cache: Cache): Promise<voi
 
   const raw = data?.results?.apotheken?.apotheke ?? [];
   const pharmacies = raw
-    .filter((p): p is AponetPharmacy & { lat: number; lng: number } =>
-      typeof p.lat === 'number' && typeof p.lng === 'number',
-    )
+    .filter((p) => p.latitude && p.longitude)
     .map((p, i): EmergencyPharmacy => ({
       id: `apo-${city.id}-${i}`,
       name: p.name,
       address: `${p.strasse}, ${p.plz} ${p.ort}`,
       phone: p.telefon || undefined,
-      location: { lat: p.lat, lon: p.lng },
+      location: { lat: parseFloat(p.latitude!), lon: parseFloat(p.longitude!) },
       validFrom: parseDateTimeDE(p.startdatum, p.startzeit),
       validUntil: parseDateTimeDE(p.enddatum, p.endzeit),
-      distance: p.distanz,
+      distance: p.distanz ? parseFloat(p.distanz) : undefined,
     }));
 
   cache.set(`${city.id}:pharmacies:emergency`, pharmacies, 21600);

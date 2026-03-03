@@ -680,6 +680,25 @@ function updateWarningPolygons(map: maplibregl.Map, warnings: NinaWarning[], _is
   });
 }
 
+/** Format "2026-03-03T09:00:00" range into e.g. "Today 09:00 – Tomorrow 09:00" or "3 Mar 09:00 – 4 Mar 09:00" */
+function formatPharmacyDuty(from: string, until: string): string {
+  const fmt = (iso: string): string => {
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return iso;
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);
+    const target = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    const time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    if (target.getTime() === today.getTime()) return `Today ${time}`;
+    if (target.getTime() === tomorrow.getTime()) return `Tomorrow ${time}`;
+    const day = d.getDate();
+    const mon = d.toLocaleString([], { month: 'short' });
+    return `${day} ${mon} ${time}`;
+  };
+  return `${fmt(from)} – ${fmt(until)}`;
+}
+
 function pharmaciesToGeoJSON(pharmacies: EmergencyPharmacy[]): GeoJSON.FeatureCollection {
   const features: GeoJSON.Feature[] = [];
   for (const p of pharmacies) {
@@ -894,11 +913,15 @@ function updatePharmacyMarkers(map: maplibregl.Map, pharmacies: EmergencyPharmac
     if (!e.features?.length) return null;
     const props = e.features[0].properties!;
     const coords = (e.features[0].geometry as GeoJSON.Point).coordinates.slice() as [number, number];
+    const [lon, lat] = coords;
+    const dutyLabel = formatPharmacyDuty(props.validFrom, props.validUntil);
+    const osmUrl = `https://www.openstreetmap.org/directions?route=;${lat},${lon}`;
     const html = `<div style="font-size:13px;max-width:280px">
       <div style="font-weight:600;margin-bottom:4px">${props.name}</div>
       <div style="font-size:12px">${props.address}</div>
       ${props.phone ? `<div style="font-size:12px;margin-top:2px">Tel: ${props.phone}</div>` : ''}
-      <div style="font-size:11px;opacity:0.6;margin-top:4px">${props.validFrom} – ${props.validUntil}</div>
+      <div style="font-size:11px;opacity:0.6;margin-top:4px">${dutyLabel}</div>
+      <a href="${osmUrl}" target="_blank" rel="noopener" style="display:inline-block;margin-top:6px;font-size:12px;color:#2563eb;text-decoration:none">Directions ↗</a>
     </div>`;
     return { html, lngLat: coords };
   });
