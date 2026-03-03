@@ -22,11 +22,8 @@ export function BriefingStrip() {
     : false;
 
   return (
-    <section className="border-b border-gray-200 dark:border-gray-800 px-4 py-4">
+    <>
       <div className="flex items-center gap-2 mb-2">
-        <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-          {t('panel.news.briefing')}
-        </h2>
         {isFresh && (
           <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
         )}
@@ -52,6 +49,6 @@ export function BriefingStrip() {
       ) : (
         <p className="text-sm text-gray-400">{t('panel.news.empty')}</p>
       )}
-    </section>
+    </>
   );
 }

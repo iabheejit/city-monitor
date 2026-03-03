@@ -4,12 +4,12 @@
  */
 
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
-import { api, type CityEvent } from '../lib/api.js';
+import { api, type AirQualityGridPoint } from '../lib/api.js';
 
-export function useEvents(cityId: string) {
-  return useQuery<CityEvent[]>({
-    queryKey: ['events', cityId],
-    queryFn: () => api.getEvents(cityId),
+export function useAirQualityGrid(cityId: string) {
+  return useQuery<AirQualityGridPoint[]>({
+    queryKey: ['air-quality-grid', cityId],
+    queryFn: () => api.getAirQualityGrid(cityId),
     refetchInterval: 30 * 60 * 1000,
     refetchIntervalInBackground: false,
     staleTime: 15 * 60 * 1000,

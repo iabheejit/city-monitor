@@ -22,9 +22,37 @@
   --accent: #004b93;
 }
 
+/* MapLibre popup */
+.maplibregl-popup-content {
+  border-radius: 8px !important;
+  padding: 10px 12px !important;
+  box-shadow: 0 3px 14px rgba(0, 0, 0, 0.15) !important;
+}
+
+.maplibregl-popup-close-button {
+  font-size: 16px;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  color: #9ca3af;
+  right: 4px;
+  top: 4px;
+}
+.maplibregl-popup-close-button:hover {
+  background-color: rgba(0, 0, 0, 0.08);
+  color: #374151;
+}
+
 /* MapLibre popup dark mode */
 .dark .maplibregl-popup-content {
   background: #1f2937;
+  color: #e5e7eb;
+}
+.dark .maplibregl-popup-close-button:hover {
+  background-color: rgba(255, 255, 255, 0.1);
   color: #e5e7eb;
 }
 .dark .maplibregl-popup-tip {
@@ -41,5 +69,12 @@
 }
 .dark .maplibregl-popup-anchor-right .maplibregl-popup-tip {
   border-left-color: #1f2937;
+}
+
+/* Hide map zoom controls on mobile — finger gestures handle zoom */
+@media (max-width: 1023px) {
+  .maplibregl-ctrl-top-right .maplibregl-ctrl-group {
+    display: none;
+  }
 }
 

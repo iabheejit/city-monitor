@@ -11,7 +11,8 @@ import { formatRelativeTime } from '../../lib/format-time.js';
 import { Skeleton } from '../layout/Skeleton.js';
 import type { NewsItem } from '../../lib/api.js';
 
-const ALL_CATEGORIES = ['all', 'local', 'transit', 'politics', 'culture', 'crime', 'weather', 'economy', 'sports'] as const;
+const ALL_CATEGORIES = ['all', 'local', 'transit', 'politics', 'culture', 'crime', 'economy', 'sports'] as const;
+const HIDDEN_CATEGORIES = new Set(['weather']);
 
 const CATEGORY_COLORS: Record<string, string> = {
   local: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
@@ -46,66 +47,61 @@ export function NewsStrip() {
 
   const items = data?.items ?? [];
 
-  const hasActiveCategory = activeCategory === 'all' || items.some((item) => item.category === activeCategory);
-  const resolvedCategory = hasActiveCategory ? activeCategory : 'all';
+  const visibleItems = items.filter((item) => !HIDDEN_CATEGORIES.has(item.category));
 
+  const hasActiveCategory = activeCategory === 'all' || visibleItems.some((item) => item.category === activeCategory);
+  const resolvedCategory = hasActiveCategory ? activeCategory : 'all';
   const filteredItems = resolvedCategory === 'all'
-    ? items.slice(0, MAX_ITEMS)
-    : items.filter((item) => item.category === resolvedCategory).slice(0, MAX_ITEMS);
+    ? visibleItems.slice(0, MAX_ITEMS)
+    : visibleItems.filter((item) => item.category === resolvedCategory).slice(0, MAX_ITEMS);
 
   const availableCategories = ALL_CATEGORIES.filter(
-    (cat) => cat === 'all' || items.some((item) => item.category === cat),
+    (cat) => cat === 'all' || items.some((item) => item.category === cat && !HIDDEN_CATEGORIES.has(cat)),
   );
 
   const categoryCounts: Record<string, number> = {};
   for (const item of items) {
-    categoryCounts[item.category] = (categoryCounts[item.category] ?? 0) + 1;
+    if (!HIDDEN_CATEGORIES.has(item.category)) {
+      categoryCounts[item.category] = (categoryCounts[item.category] ?? 0) + 1;
+    }
   }
 
-  return (
-    <section className="border-b border-gray-200 dark:border-gray-800 px-4 py-4">
-      <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">
-        {t('panel.news.title')}
-      </h2>
+  return isLoading ? (
+    <Skeleton lines={6} />
+  ) : (
+    <>
+      <div role="tablist" className="flex gap-1 overflow-x-auto pb-2 mb-3">
+        {availableCategories.map((cat) => {
+          const count = cat === 'all' ? visibleItems.length : (categoryCounts[cat] ?? 0);
+          return (
+            <button
+              key={cat}
+              role="tab"
+              aria-selected={resolvedCategory === cat}
+              onClick={() => setActiveCategory(cat)}
+              className={`shrink-0 flex items-center gap-1 px-2.5 py-1 text-xs rounded-full transition-colors ${
+                resolvedCategory === cat
+                  ? 'bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900'
+                  : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+              }`}
+            >
+              <span>{cat === 'all' ? t('panel.news.all') : t(`category.${cat}`, cat)}</span>
+              <span className="text-[10px] opacity-50">{count}</span>
+            </button>
+          );
+        })}
+      </div>
 
-      {isLoading ? (
-        <Skeleton lines={6} />
+      {filteredItems.length === 0 ? (
+        <p className="text-sm text-gray-400 py-2 text-center">{t('panel.news.empty')}</p>
       ) : (
-        <>
-          <div role="tablist" className="flex gap-1 overflow-x-auto pb-2 mb-3">
-            {availableCategories.map((cat) => {
-              const count = cat === 'all' ? items.length : (categoryCounts[cat] ?? 0);
-              return (
-                <button
-                  key={cat}
-                  role="tab"
-                  aria-selected={resolvedCategory === cat}
-                  onClick={() => setActiveCategory(cat)}
-                  className={`shrink-0 flex items-center gap-1 px-2.5 py-1 text-xs rounded-full transition-colors ${
-                    resolvedCategory === cat
-                      ? 'bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900'
-                      : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
-                  }`}
-                >
-                  <span>{cat === 'all' ? t('panel.news.all') : t(`category.${cat}`, cat)}</span>
-                  <span className="text-[10px] opacity-50">{count}</span>
-                </button>
-              );
-            })}
-          </div>
-
-          {filteredItems.length === 0 ? (
-            <p className="text-sm text-gray-400 py-2 text-center">{t('panel.news.empty')}</p>
-          ) : (
-            <ul className="divide-y divide-gray-100 dark:divide-gray-800">
-              {filteredItems.map((item) => (
-                <CompactNewsItem key={item.id} item={item} />
-              ))}
-            </ul>
-          )}
-        </>
+        <ul className="divide-y divide-gray-100 dark:divide-gray-800">
+          {filteredItems.map((item) => (
+            <CompactNewsItem key={item.id} item={item} />
+          ))}
+        </ul>
       )}
-    </section>
+    </>
   );
 }
 

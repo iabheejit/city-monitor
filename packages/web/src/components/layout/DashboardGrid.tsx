@@ -5,9 +5,9 @@
 
 import type { ReactNode } from 'react';
 
-export function PanelGrid({ children }: { children: ReactNode }) {
+export function DashboardGrid({ children }: { children: ReactNode }) {
   return (
-    <div className="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-4 p-4 auto-rows-auto">
+    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 p-4">
       {children}
     </div>
   );

@@ -6,10 +6,10 @@
  * Draws crisp SVG-based icons onto ImageData via Path2D (synchronous).
  */
 
-import { TrainFront, Newspaper, ShieldAlert, Pill } from 'lucide';
+import { TrainFront, Newspaper, ShieldAlert, Pill, Wind } from 'lucide';
 import type maplibregl from 'maplibre-gl';
 
-type IconNode = [tag: string, attrs: Record<string, string | number>][];
+export type IconNode = [tag: string, attrs: Record<string, string | number>][];
 
 export const SEVERITY_COLORS: Record<string, string> = {
   high: '#ef4444',
@@ -26,6 +26,15 @@ export const NEWS_CATEGORY_COLORS: Record<string, string> = {
   economy: '#10b981',
   sports: '#f59e0b',
   local: '#6366f1',
+};
+
+export const AQI_LEVEL_COLORS: Record<string, string> = {
+  good: '#50C878',
+  fair: '#FFD700',
+  moderate: '#FF8C00',
+  poor: '#FF4444',
+  veryPoor: '#8B008B',
+  extremelyPoor: '#800000',
 };
 
 const ICON_SIZE = 36;
@@ -161,4 +170,11 @@ export function registerAllMapIcons(map: maplibregl.Map, isDark: boolean) {
   const pharmacyId = 'pharmacy-icon';
   if (map.hasImage(pharmacyId)) map.removeImage(pharmacyId);
   map.addImage(pharmacyId, createMapIcon(Pill as IconNode, '#22c55e', stroke));
+
+  // Air quality: Wind × 6 AQI level colors
+  for (const [level, color] of Object.entries(AQI_LEVEL_COLORS)) {
+    const id = `aq-icon-${level}`;
+    if (map.hasImage(id)) map.removeImage(id);
+    map.addImage(id, createMapIcon(Wind as IconNode, color, stroke));
+  }
 }

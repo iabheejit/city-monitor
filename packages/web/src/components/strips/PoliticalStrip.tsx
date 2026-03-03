@@ -53,20 +53,20 @@ function flatReps(districts: PoliticalDistrict[]): (Representative & { district:
 
 function RepRow({ rep }: { rep: Representative & { district: string } }) {
   return (
-    <div className="flex items-center gap-2 py-1.5 px-2 text-xs">
+    <div className="flex items-center gap-1.5 py-1 px-1.5 text-[11px]">
       <span
-        className="w-2.5 h-2.5 rounded-full shrink-0"
+        className="w-2 h-2 rounded-full shrink-0"
         style={{ backgroundColor: getPartyColor(rep.party) }}
       />
-      <span className="text-gray-800 dark:text-gray-200 font-medium">{rep.name}</span>
-      <span className="text-gray-400 dark:text-gray-500">{rep.party}</span>
-      <span className="text-gray-400 dark:text-gray-500 hidden @xs:inline ml-auto">{rep.district}</span>
+      <span className="text-gray-800 dark:text-gray-200 font-medium truncate">{rep.name}</span>
+      <span className="text-gray-400 dark:text-gray-500 shrink-0">{rep.party}</span>
+      <span className="text-gray-400 dark:text-gray-500 hidden @xs:inline ml-auto truncate">{rep.district}</span>
       {rep.profileUrl && (
         <a
           href={rep.profileUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-blue-500 hover:text-blue-400 ml-auto shrink-0 @xs:ml-2"
+          className="text-blue-500 hover:text-blue-400 ml-auto shrink-0 @xs:ml-1"
         >
           &rarr;
         </a>
@@ -138,7 +138,7 @@ function SeatChart({ districts, seatsLabel }: { districts: PoliticalDistrict[]; 
 
   return (
     <div>
-      <svg viewBox="0 0 200 108" className="w-full max-w-[280px] mx-auto">
+      <svg viewBox="0 0 200 108" className="w-full max-w-[180px] sm:max-w-[240px] mx-auto">
         {arcs.map((a, i) => (
           <path key={i} d={a.d} fill={a.color} opacity={0.85}>
             <title>{a.party}: {a.count}</title>
@@ -155,10 +155,10 @@ function SeatChart({ districts, seatsLabel }: { districts: PoliticalDistrict[]; 
       </svg>
 
       {/* Legend */}
-      <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 mt-2">
+      <div className="flex flex-wrap justify-center gap-x-2.5 gap-y-0.5 mt-1.5">
         {parties.map(([party, count]) => (
-          <span key={party} className="inline-flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400">
-            <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: getPartyColor(party) }} />
+          <span key={party} className="inline-flex items-center gap-1 text-[11px] text-gray-600 dark:text-gray-400">
+            <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: getPartyColor(party) }} />
             {party} ({count})
           </span>
         ))}
@@ -191,15 +191,15 @@ export function PoliticalStrip({ expanded, onExpand }: { expanded: boolean; onEx
   return (
     <>
       {/* View selector */}
-      <div className="flex gap-1 mb-3">
+      <div className="flex gap-0.5 mb-2 bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5">
         {views.map((v) => (
           <button
             key={v.key}
             onClick={() => setView(v.key)}
-            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+            className={`flex-1 px-1.5 py-1 rounded-md text-[11px] font-medium text-center transition-colors ${
               view === v.key
-                ? 'bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'
+                ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
+                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
             }`}
           >
             {v.label}
@@ -217,8 +217,8 @@ export function PoliticalStrip({ expanded, onExpand }: { expanded: boolean; onEx
       ) : (
         /* Bezirke / Bundestag: summary + rep list */
         <>
-          <div className="mb-2">
-            <span className="text-xs text-gray-500 dark:text-gray-400">
+          <div className="mb-1">
+            <span className="text-[11px] text-gray-500 dark:text-gray-400">
               {totalReps}{' '}
               {view === 'bezirke'
                 ? t('panel.political.districtMayors')
