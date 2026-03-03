@@ -112,6 +112,51 @@ describe('createLogger', () => {
       );
     });
 
+    it('sanitizes token query params from logged URLs', async () => {
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, status: 200 }));
+      vi.spyOn(performance, 'now').mockReturnValueOnce(0).mockReturnValueOnce(10);
+
+      const log = createLogger('test');
+      await log.fetch('https://api.waqi.info/map/bounds/?latlng=52,13,53,14&token=secret123');
+
+      expect(console.log).toHaveBeenCalledWith(
+        expect.stringContaining('&token=***'),
+      );
+      expect(console.log).toHaveBeenCalledWith(
+        expect.not.stringContaining('secret123'),
+      );
+    });
+
+    it('sanitizes key query params from logged URLs', async () => {
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, status: 200 }));
+      vi.spyOn(performance, 'now').mockReturnValueOnce(0).mockReturnValueOnce(10);
+
+      const log = createLogger('test');
+      await log.fetch('https://api.tomtom.com/traffic?key=my-secret-key&bbox=1,2,3,4');
+
+      expect(console.log).toHaveBeenCalledWith(
+        expect.stringContaining('?key=***'),
+      );
+      expect(console.log).toHaveBeenCalledWith(
+        expect.not.stringContaining('my-secret-key'),
+      );
+    });
+
+    it('sanitizes bracket-encoded token params from logged URLs', async () => {
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, status: 200 }));
+      vi.spyOn(performance, 'now').mockReturnValueOnce(0).mockReturnValueOnce(10);
+
+      const log = createLogger('test');
+      await log.fetch('https://example.com/api?param%5Btoken%5D=secret-value&other=ok');
+
+      expect(console.log).toHaveBeenCalledWith(
+        expect.stringContaining('param%5Btoken%5D=***'),
+      );
+      expect(console.log).toHaveBeenCalledWith(
+        expect.not.stringContaining('secret-value'),
+      );
+    });
+
     it('passes init options through to fetch', async () => {
       const mockFetch = vi.fn().mockResolvedValue({ ok: true, status: 200 });
       vi.stubGlobal('fetch', mockFetch);

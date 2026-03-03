@@ -9,7 +9,10 @@ import {
   weatherSnapshots,
   transitDisruptions,
   safetyReports,
+  newsItems,
   aiSummaries,
+  airQualityGrid,
+  politicalDistricts,
 } from '../db/schema.js';
 import { createLogger } from '../lib/logger.js';
 
@@ -22,7 +25,10 @@ const DAY_MS = 86_400_000;
  * - weather_snapshots older than 30 days
  * - resolved transit_disruptions older than 48 hours
  * - safety_reports older than 7 days
+ * - news_items older than 7 days
  * - ai_summaries older than 30 days
+ * - air_quality_grid older than 48 hours
+ * - political_districts older than 30 days
  */
 export function createDataRetention(db: Db) {
   return async () => {
@@ -41,8 +47,17 @@ export function createDataRetention(db: Db) {
       await db.delete(safetyReports)
         .where(lt(safetyReports.fetchedAt, new Date(now - 7 * DAY_MS)));
 
+      await db.delete(newsItems)
+        .where(lt(newsItems.fetchedAt, new Date(now - 7 * DAY_MS)));
+
       await db.delete(aiSummaries)
         .where(lt(aiSummaries.generatedAt, new Date(now - 30 * DAY_MS)));
+
+      await db.delete(airQualityGrid)
+        .where(lt(airQualityGrid.fetchedAt, new Date(now - 2 * DAY_MS)));
+
+      await db.delete(politicalDistricts)
+        .where(lt(politicalDistricts.fetchedAt, new Date(now - 30 * DAY_MS)));
 
       log.info('data retention complete');
     } catch (err) {

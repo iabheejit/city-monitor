@@ -168,7 +168,7 @@ export async function geocode(
         geocodeCache.set(cacheKey, result);
         return result;
       }
-    } catch (err) {
+    } catch (_err) {
       log.warn(`DB lookup failed for "${cacheKey}"`);
     }
   }
@@ -203,13 +203,13 @@ export async function geocode(
 
     // Persist successful results to DB (failed lookups stay in-process only)
     if (result && _db) {
-      saveGeocodeLookup(_db, cacheKey, result, provider).catch((err) => {
+      saveGeocodeLookup(_db, cacheKey, result, provider).catch((_err) => {
         log.warn(`DB write failed for "${cacheKey}"`);
       });
     }
 
     return result;
-  } catch (err) {
+  } catch (_err) {
     log.warn(`geocode failed for "${query}"`);
     // Don't cache — transient errors should be retried on next call
     return null;

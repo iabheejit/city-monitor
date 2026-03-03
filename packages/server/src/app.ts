@@ -30,7 +30,7 @@ import { createNinaIngestion } from './cron/ingest-nina.js';
 import { createDataRetention } from './cron/data-retention.js';
 import { createPharmacyIngestion } from './cron/ingest-pharmacies.js';
 import { createTrafficIngestion } from './cron/ingest-traffic.js';
-import { createPoliticalIngestion } from './cron/ingest-political.js';
+import { createPoliticalIngestion, preCacheBezirke } from './cron/ingest-political.js';
 import { createAirQualityGridIngestion } from './cron/ingest-air-quality-grid.js';
 import { initGeocodeDb } from './lib/geocode.js';
 
@@ -47,6 +47,9 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
     await warmCache(db, cache);
   }
 
+  // Pre-cache hardcoded political data so it's available before cron jobs finish
+  preCacheBezirke(cache);
+
   const ingestFeeds = createFeedIngestion(cache, db);
   const ingestWeather = createWeatherIngestion(cache, db);
   const summarizeNews = createSummarization(cache, db);
@@ -56,14 +59,14 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
   const ingestNina = createNinaIngestion(cache, db);
   const ingestPharmacies = createPharmacyIngestion(cache);
   const ingestTraffic = createTrafficIngestion(cache);
-  const ingestPolitical = createPoliticalIngestion(cache);
-  const ingestAqGrid = createAirQualityGridIngestion(cache);
+  const ingestPolitical = createPoliticalIngestion(cache, db);
+  const ingestAqGrid = createAirQualityGridIngestion(cache, db);
 
   const retainData = db ? createDataRetention(db) : async () => {};
 
   const jobs: ScheduledJob[] = [
     { name: 'ingest-feeds', schedule: '*/10 * * * *', handler: ingestFeeds, runOnStart: true },
-    { name: 'summarize-news', schedule: '5,20,35,50 * * * *', handler: summarizeNews, runOnStart: true },
+    { name: 'summarize-news', schedule: '5,20,35,50 * * * *', handler: summarizeNews, runOnStart: true, dependsOn: ['ingest-feeds'] },
     { name: 'ingest-weather', schedule: '*/30 * * * *', handler: ingestWeather, runOnStart: true },
     { name: 'ingest-transit', schedule: '*/15 * * * *', handler: ingestTransit, runOnStart: true },
     { name: 'ingest-events', schedule: '0 */6 * * *', handler: ingestEvents, runOnStart: true },
@@ -84,17 +87,17 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
   const cacheFor = (seconds: number): express.RequestHandler =>
     (_req, res, next) => { res.set('Cache-Control', `public, max-age=${seconds}`); next(); };
 
-  app.use('/api', createHealthRouter(cache, scheduler as any));
+  app.use('/api', createHealthRouter(cache, scheduler));
   app.use('/api', cacheFor(300), createNewsRouter(cache, db));
   app.use('/api', cacheFor(300), createWeatherRouter(cache, db));
   app.use('/api', cacheFor(120), createTransitRouter(cache, db));
   app.use('/api', cacheFor(1800), createEventsRouter(cache, db));
   app.use('/api', cacheFor(300), createSafetyRouter(cache, db));
   app.use('/api', cacheFor(120), createNinaRouter(cache, db));
-  app.use('/api', cacheFor(600), createAirQualityRouter(cache));
+  app.use('/api', cacheFor(600), createAirQualityRouter(cache, db));
   app.use('/api', cacheFor(3600), createPharmaciesRouter(cache));
   app.use('/api', cacheFor(120), createTrafficRouter(cache));
-  app.use('/api', cacheFor(86400), createPoliticalRouter(cache));
+  app.use('/api', cacheFor(3600), createPoliticalRouter(cache));
 
   return { app, cache, db, scheduler };
 }

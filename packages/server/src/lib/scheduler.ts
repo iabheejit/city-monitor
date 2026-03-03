@@ -13,6 +13,8 @@ export interface ScheduledJob {
   schedule: string;
   handler: () => Promise<void>;
   runOnStart?: boolean;
+  /** Names of jobs that must complete before this job's startup run. */
+  dependsOn?: string[];
 }
 
 export interface JobInfo {
@@ -46,20 +48,10 @@ export function createScheduler(jobs: ScheduledJob[]) {
     tasks.push(task);
   }
 
-  // Run startup jobs sequentially (in definition order) so later jobs
-  // can depend on data produced by earlier ones (e.g. summarize needs feeds).
-  (async () => {
-    for (const job of jobs) {
-      if (!job.runOnStart) continue;
-      try {
-        await job.handler();
-        const info = jobInfos.find((j) => j.name === job.name);
-        if (info) info.lastRun = new Date();
-      } catch (err) {
-        log.error(`${job.name} (startup) failed`, err);
-      }
-    }
-  })();
+  // Run startup jobs in parallel, respecting dependsOn ordering.
+  // Jobs with no unmet dependencies start immediately; dependent jobs
+  // start as soon as all their dependencies have completed (or failed).
+  runStartupJobs(jobs, jobInfos);
 
   function getJobs(): JobInfo[] {
     return jobInfos;
@@ -72,6 +64,51 @@ export function createScheduler(jobs: ScheduledJob[]) {
   }
 
   return { getJobs, stop };
+}
+
+function runStartupJobs(jobs: ScheduledJob[], jobInfos: JobInfo[]): void {
+  const startupJobs = jobs.filter((j) => j.runOnStart);
+  if (startupJobs.length === 0) return;
+
+  const resolvers = new Map<string, () => void>();
+
+  // Create a promise for each startup job that resolves when it completes
+  const completionPromises = new Map<string, Promise<void>>();
+  for (const job of startupJobs) {
+    completionPromises.set(job.name, new Promise<void>((resolve) => {
+      resolvers.set(job.name, resolve);
+    }));
+  }
+
+  for (const job of startupJobs) {
+    for (const dep of job.dependsOn ?? []) {
+      if (!completionPromises.has(dep)) {
+        log.warn(`${job.name}: dependency "${dep}" is not a runOnStart job — ignored`);
+      }
+    }
+  }
+
+  function depsReady(job: ScheduledJob): Promise<unknown[]> {
+    const deps = (job.dependsOn ?? [])
+      .filter((name) => completionPromises.has(name));
+    return Promise.all(deps.map((name) => completionPromises.get(name)!));
+  }
+
+  // Launch all jobs — each waits for its own dependencies first
+  for (const job of startupJobs) {
+    (async () => {
+      await depsReady(job);
+      try {
+        await job.handler();
+        const info = jobInfos.find((j) => j.name === job.name);
+        if (info) info.lastRun = new Date();
+      } catch (err) {
+        log.error(`${job.name} (startup) failed`, err);
+      } finally {
+        resolvers.get(job.name)?.();
+      }
+    })();
+  }
 }
 
 export type Scheduler = ReturnType<typeof createScheduler>;

@@ -10,8 +10,17 @@ export interface Logger {
   fetch(url: string, init?: RequestInit): Promise<Response>;
 }
 
+// Matches: token=, key=, apikey=, api_key=, api_token=, and bracket-encoded
+// variants like something%5Btoken%5D= or something[key]=
+const SENSITIVE_PARAMS = /([?&](?:[^=]*(?:%5B|\[)(?:token|key)(?:%5D|\])|token|key|apikey|api_key|api[-_]?token)=)[^&]*/gi;
+
+function sanitizeUrl(url: string): string {
+  return url.replace(SENSITIVE_PARAMS, '$1***');
+}
+
 function truncateUrl(url: string, maxLen = 80): string {
-  return url.length > maxLen ? url.slice(0, maxLen) + '…' : url;
+  const safe = sanitizeUrl(url);
+  return safe.length > maxLen ? safe.slice(0, maxLen) + '…' : safe;
 }
 
 export function createLogger(tag: string): Logger {
