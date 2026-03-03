@@ -14,7 +14,7 @@ import type { Db } from './index.js';
  *    then select().from().where() → rows
  */
 function createMockDb(rows: Record<string, unknown>[] = []) {
-  const maxDate = new Date('2026-03-02T12:00:00Z');
+  const maxDate = new Date(); // Must be recent to pass staleness guards
 
   function makeChain(resolveWith: unknown) {
     const chain: Record<string, ReturnType<typeof vi.fn>> = {};
