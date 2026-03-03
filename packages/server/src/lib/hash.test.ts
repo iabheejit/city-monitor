@@ -6,7 +6,7 @@
 import { describe, it, expect } from 'vitest';
 import { hashString } from './hash.js';
 
-describe('hashString (FNV-1a)', () => {
+describe('hashString', () => {
   it('produces consistent output for the same input', () => {
     expect(hashString('hello')).toBe(hashString('hello'));
   });
@@ -21,8 +21,14 @@ describe('hashString (FNV-1a)', () => {
     expect(result.length).toBeGreaterThan(0);
   });
 
-  it('returns a base-36 string', () => {
+  it('returns a 12-char hex string', () => {
     const result = hashString('test');
-    expect(result).toMatch(/^[0-9a-z]+$/);
+    expect(result).toMatch(/^[0-9a-f]{12}$/);
+  });
+
+  it('returns different hashes for similar inputs', () => {
+    const a = hashString('https://example.com/article-1Title A');
+    const b = hashString('https://example.com/article-1Title B');
+    expect(a).not.toBe(b);
   });
 });
