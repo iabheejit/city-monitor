@@ -2145,7 +2145,7 @@ export function CityMap() {
     const map = mapRef.current;
     if (!map) return;
     map.setStyle(isDark ? DARK_STYLE : LIGHT_STYLE);
-    map.once('styledata', () => {
+    map.once('style.load', () => {
       simplifyMap(map);
       setTrafficRoadVisibility(map, roadsActiveRef.current, isDark);
       setWaterAreaVisibility(map, waterActiveRef.current, isDark);
