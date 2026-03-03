@@ -1,21 +1,18 @@
-# Batch Implementation Follow-Up (Plans 1-7)
+# AGPL Removal — Batch Implementation Follow-up
 
 ## User Input Needed
 
-1. ~~**Plan 1 — Geocoding approach**~~: RESOLVED — Switched to LLM+Nominatim hybrid. LLM extracts location names, Nominatim resolves to coordinates. New module: `packages/server/src/lib/nominatim.ts`.
-2. **Plan 5 — aponet.de API token**: ACKNOWLEDGED — Uses aponet.de JSON API (TYPO3 `type=1981`) with a public community token. Overridable via `APONET_TOKEN` env var. User understands the risk.
-3. ~~**Plan 6 — TomTom API key required**~~: RESOLVED — User has set `TOMTOM_API_KEY` in `.env`.
-4. ~~**Plan 7 — GeoJSON boundaries**~~: RESOLVED — Plan written at `.plans/08-geojson-boundaries.md` for sourcing and integrating constituency boundary files.
-5. ~~**Plan 7 — Parliament period IDs**~~: RESOLVED — Bundestag period ID now fetched dynamically via `fetchCurrentPeriod()`, same as state parliaments. No more hardcoded period IDs.
+_(None)_
 
 ## DB Migrations
 
-1. ~~**Plans 1+3 — schema changes**~~: RESOLVED — Applied via `db:push` (dev). Schema includes safety_reports lat/lon/location_label columns and nina_warnings table.
+_(None — no schema changes in these plans)_
 
 ## Files to Delete
 
-_(None)_
+1. **`.worldmonitor/` directory** — Reference copy of worldmonitor repo (already gitignored). No longer needed since all derived code has been replaced. Delete to free disk space.
 
 ## Implementation Issues
 
-_(None)_
+1. **`.gitignore` cleanup** — After deleting `.worldmonitor/`, remove the `.worldmonitor` entry from `.gitignore`.
+2. **CLAUDE.md reference** — The project CLAUDE.md still references `.worldmonitor/` as "Reference copy of worldmonitor (gitignored, delete after all milestones)". This line should be removed after the directory is deleted.

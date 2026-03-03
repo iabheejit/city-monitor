@@ -19,12 +19,12 @@ export function Footer() {
         {t('footer.sourceCode')}
       </a>
       <a
-        href="https://github.com/ellie-xyb/worldmonitor"
+        href="https://worldmonitor.io"
         target="_blank"
         rel="noopener noreferrer"
         className="hover:underline"
       >
-        {t('footer.basedOn')}
+        {t('footer.inspiredBy')}
       </a>
       <a
         href="https://openweathermap.org/"

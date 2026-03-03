@@ -2,17 +2,7 @@
  * Copyright (C) 2026 Odin Mühlenbein
  * SPDX-License-Identifier: AGPL-3.0-or-later
  *
- * OpenAI client for news summarization.
- *
- * Adapted from World Monitor (AGPL-3.0)
- * Original: server/worldmonitor/news/v1/summarize-article.ts
- *           server/worldmonitor/news/v1/_shared.ts
- * Copyright (C) 2024-2026 Elie Habib
- *
- * Modifications:
- * - Uses official openai npm package instead of raw fetch
- * - City-scoped prompts instead of global news summarization
- * - Simplified token tracking (per-city daily totals)
+ * OpenAI client for news summarization, relevance filtering, and geolocation.
  */
 
 import OpenAI from 'openai';

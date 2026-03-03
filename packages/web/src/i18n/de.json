@@ -127,6 +127,12 @@
         "121721": "Bewohnerparkausweis"
       }
     },
+    "socialAtlas": {
+      "title": "Sozialatlas 2023",
+      "unemployment": "Arbeitslosigkeit (SGB II)",
+      "welfare": "Transferleistungen",
+      "empty": "Keine Daten verfügbar"
+    },
     "waterLevels": {
       "title": "Pegelstände",
       "state": {
@@ -186,6 +192,7 @@
       "traffic": "Verkehr",
       "construction": "Baustellen",
       "water-levels": "Pegelstände",
+      "social-atlas": "Sozialatlas 2023",
       "rent-map": "Mietspiegelkarte",
       "political": "Vertretung"
     },
@@ -208,9 +215,14 @@
     },
     "dismiss": "Ausblenden"
   },
+  "support": {
+    "title": "Unterstützung",
+    "message": "Kostenlos, keine Werbung, kein Tracking.",
+    "cta": "Unterstütze uns, damit das so bleibt"
+  },
   "footer": {
     "sourceCode": "Quellcode",
-    "basedOn": "Basiert auf World Monitor von Elie Habib",
+    "inspiredBy": "Inspiriert von World Monitor",
     "license": "AGPL-3.0",
     "weatherTiles": "Wetterdaten \u00a9 OpenWeatherMap"
   }

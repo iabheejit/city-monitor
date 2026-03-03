@@ -127,6 +127,12 @@
         "121721": "Parking Permit"
       }
     },
+    "socialAtlas": {
+      "title": "Social Atlas 2023",
+      "unemployment": "Unemployment (SGB II)",
+      "welfare": "Welfare recipients",
+      "empty": "No data available"
+    },
     "waterLevels": {
       "title": "Water Levels",
       "state": {
@@ -186,6 +192,7 @@
       "traffic": "Traffic",
       "construction": "Roadworks",
       "water-levels": "Water Levels",
+      "social-atlas": "Social Atlas 2023",
       "rent-map": "Rent Map",
       "political": "Representation"
     },
@@ -208,9 +215,14 @@
     },
     "dismiss": "Dismiss"
   },
+  "support": {
+    "title": "Support",
+    "message": "Free, no ads, no tracking.",
+    "cta": "Support us to keep it that way"
+  },
   "footer": {
     "sourceCode": "Source Code",
-    "basedOn": "Based on World Monitor by Elie Habib",
+    "inspiredBy": "Inspired by World Monitor",
     "license": "AGPL-3.0",
     "weatherTiles": "Weather data \u00a9 OpenWeatherMap"
   }
