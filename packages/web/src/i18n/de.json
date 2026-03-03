@@ -78,6 +78,29 @@
       "districtMayors": "Bezirksbürgermeister",
       "seats": "Sitze"
     },
+    "budget": {
+      "title": "Stadthaushalt",
+      "city": "Stadt",
+      "districts": "Bezirke",
+      "revenues": "Einnahmen",
+      "expenses": "Ausgaben",
+      "newDebt": "Neuverschuldung",
+      "surplus": "Überschuss",
+      "totalBudget": "Gesamthaushalt",
+      "empty": "Keine Haushaltsdaten verfügbar",
+      "berlinTotal": "Berlin (Gesamt)",
+      "category": {
+        "0": "Allgemeine Dienste",
+        "1": "Bildung & Kultur",
+        "2": "Soziales & Jugend",
+        "3": "Gesundheit & Sport",
+        "4": "Wohnen & Stadtentwicklung",
+        "5": "Landwirtschaft",
+        "6": "Energie & Gewerbe",
+        "7": "Verkehr",
+        "8": "Finanzwirtschaft"
+      }
+    },
     "waterLevels": {
       "title": "Pegelstände",
       "state": {

@@ -78,6 +78,29 @@
       "districtMayors": "ilçe başkanları",
       "seats": "sandalye"
     },
+    "budget": {
+      "title": "Kent Bütçesi",
+      "city": "Kent",
+      "districts": "İlçeler",
+      "revenues": "Gelirler",
+      "expenses": "Giderler",
+      "newDebt": "Yeni borç",
+      "surplus": "Fazla",
+      "totalBudget": "Toplam bütçe",
+      "empty": "Bütçe verisi bulunamadı",
+      "berlinTotal": "Berlin (Toplam)",
+      "category": {
+        "0": "Genel Hizmetler",
+        "1": "Eğitim & Kültür",
+        "2": "Sosyal & Gençlik",
+        "3": "Sağlık & Spor",
+        "4": "Konut & Şehircilik",
+        "5": "Tarım",
+        "6": "Enerji & Ticaret",
+        "7": "Ulaşım",
+        "8": "Maliye"
+      }
+    },
     "waterLevels": {
       "title": "Su Seviyeleri",
       "state": {

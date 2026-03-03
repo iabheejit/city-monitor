@@ -78,6 +78,29 @@
       "districtMayors": "district mayors",
       "seats": "seats"
     },
+    "budget": {
+      "title": "City Budget",
+      "city": "City",
+      "districts": "Districts",
+      "revenues": "Revenues",
+      "expenses": "Expenses",
+      "newDebt": "New debt",
+      "surplus": "Surplus",
+      "totalBudget": "Total budget",
+      "empty": "No budget data available",
+      "berlinTotal": "Berlin (Total)",
+      "category": {
+        "0": "General",
+        "1": "Education & Culture",
+        "2": "Social & Youth",
+        "3": "Health & Sport",
+        "4": "Housing & Urban Dev.",
+        "5": "Agriculture",
+        "6": "Energy & Commerce",
+        "7": "Transport",
+        "8": "Finance"
+      }
+    },
     "waterLevels": {
       "title": "Water Levels",
       "state": {

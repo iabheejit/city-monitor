@@ -66,6 +66,14 @@ export interface CityDataSources {
     provider: 'pegelonline';
     stations: Array<{ uuid: string; name: string; waterBody: string; tidal?: boolean }>;
   };
+  budget?: {
+    provider: 'berlin-doppelhaushalt';
+    csvUrl: string;
+  };
+  appointments?: {
+    provider: 'service-berlin';
+    services: Array<{ id: string; name: string }>;
+  };
 }
 
 // Weather data types (shared between server ingestion and web UI)
@@ -215,6 +223,28 @@ export interface WaterLevelData {
   fetchedAt: string;
 }
 
+// Budget data (Berlin Doppelhaushalt)
+export interface BudgetCategoryAmount {
+  code: number;
+  name: string;
+  amount: number;
+}
+
+export interface BudgetAreaSummary {
+  areaCode: number;
+  areaName: string;
+  revenues: BudgetCategoryAmount[];
+  expenses: BudgetCategoryAmount[];
+  totalRevenue: number;
+  totalExpense: number;
+}
+
+export interface BudgetSummary {
+  year: string;
+  areas: BudgetAreaSummary[];
+  fetchedAt: string;
+}
+
 // NINA civil protection warnings
 export interface NinaWarning {
   id: string;
@@ -229,4 +259,19 @@ export interface NinaWarning {
   description?: string;
   instruction?: string;
   area?: { type: string; geometry: unknown; properties?: unknown };
+}
+
+// Bürgeramt appointment availability (service.berlin.de)
+export interface BuergeramtService {
+  serviceId: string;
+  name: string;
+  earliestDate: string | null;
+  availableDays: number;
+  status: 'available' | 'scarce' | 'none' | 'unknown';
+}
+
+export interface BuergeramtData {
+  services: BuergeramtService[];
+  fetchedAt: string;
+  bookingUrl: string;
 }

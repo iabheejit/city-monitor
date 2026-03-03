@@ -93,5 +93,9 @@ export const berlin: CityConfig = {
         { uuid: '6b595707-8c47-4bc7-a803-dbc327775c26', name: 'Schmöckwitz', waterBody: 'Dahme' },
       ],
     },
+    budget: {
+      provider: 'berlin-doppelhaushalt',
+      csvUrl: 'https://www.berlin.de/sen/finanzen/service/daten/260223_doppelhaushalt_2026_2027.csv',
+    },
   },
 };

@@ -18,6 +18,7 @@ import { AirQualityStrip } from '../strips/AirQualityStrip.js';
 import { WeatherStrip } from '../strips/WeatherStrip.js';
 import { PoliticalStrip } from '../strips/PoliticalStrip.js';
 import { WaterLevelStrip } from '../strips/WaterLevelStrip.js';
+import { BudgetStrip } from '../strips/BudgetStrip.js';
 import { Skeleton } from './Skeleton.js';
 
 const CityMap = lazy(() =>
@@ -68,6 +69,9 @@ export function CommandLayout() {
           </Tile>
           <Tile title={t('panel.waterLevels.title')} span={1}>
             <WaterLevelStrip />
+          </Tile>
+          <Tile title={t('panel.budget.title')} span={2}>
+            <BudgetStrip />
           </Tile>
           <Tile title={t('sidebar.layers.political')} span={2} expandable>
             {(expanded, setExpanded) => <PoliticalStrip expanded={expanded} onExpand={() => setExpanded(true)} />}

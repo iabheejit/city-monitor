@@ -28,6 +28,7 @@ export function useBootstrap(cityId: string) {
     if (data.safety) queryClient.setQueryData(['safety', cityId], data.safety);
     if (data.construction) queryClient.setQueryData(['construction', cityId], data.construction);
     if (data.waterLevels) queryClient.setQueryData(['water-levels', cityId], data.waterLevels);
+    if (data.budget) queryClient.setQueryData(['budget', cityId], data.budget);
   }, [query.data, cityId, queryClient]);
 
   return query;
