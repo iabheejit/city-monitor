@@ -5,6 +5,8 @@
 
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import { createCache } from './lib/cache.js';
 import { createScheduler, type ScheduledJob } from './lib/scheduler.js';
 import { createDb, testConnection } from './db/index.js';
@@ -52,10 +54,22 @@ import { createBathingIngestion } from './cron/ingest-bathing.js';
 import { createWastewaterIngestion } from './cron/ingest-wastewater.js';
 import { createLaborMarketIngestion } from './cron/ingest-labor-market.js';
 import { initGeocodeDb } from './lib/geocode.js';
+import { validateCity } from './lib/validate-city.js';
 
 export async function createApp(options?: { skipScheduler?: boolean }) {
   const app = express();
-  app.use(cors());
+  app.use(helmet());
+
+  const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'https://citymonitor.app')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (process.env.NODE_ENV !== 'production') {
+    allowedOrigins.push('http://localhost:5173');
+  }
+  app.use(cors({ origin: allowedOrigins }));
+
+  app.use(rateLimit({ windowMs: 60_000, max: 100, standardHeaders: true, legacyHeaders: false }));
   app.use(express.json());
 
   const cache = createCache();
@@ -152,6 +166,13 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
   const scheduler = options?.skipScheduler
     ? { getJobs: () => [], stop: () => {} }
     : createScheduler(jobs);
+
+  // Validate :city param on all /:city/* routes
+  app.use('/api/:city', validateCity);
+
+  // Stricter rate limit for bootstrap (heavy payload)
+  const bootstrapLimit = rateLimit({ windowMs: 60_000, max: 10, standardHeaders: true, legacyHeaders: false });
+  app.use('/api/:city/bootstrap', bootstrapLimit);
 
   // Cache-Control per route tier (max-age < cron interval)
   const cacheFor = (seconds: number): express.RequestHandler =>

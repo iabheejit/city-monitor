@@ -14,4 +14,4 @@ _(Files that should be removed after user confirmation)_
 
 ## Implementation Issues
 
-_(Problems encountered during implementation)_
+- **Plan 03 (Security):** Skipped Zod schemas for external API response validation (Open-Meteo, WAQI, VBB, VIZ, PEGELONLINE). This is a defensive hardening measure that touches all 15+ cron files. Consider doing this as a separate follow-up task.
