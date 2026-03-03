@@ -4,7 +4,6 @@
  */
 
 import { useState, useRef, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useTheme } from '../../hooks/useTheme.js';
@@ -55,13 +54,12 @@ export function TopBar() {
   return (
     <header className="flex items-center justify-between px-4 py-1.5 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
       <div className="flex items-center gap-2 min-w-0">
-        <Link
-          to="/"
-          className="text-lg font-bold mr-1 hover:opacity-80 shrink-0"
+        <span
+          className="text-lg font-bold mr-1 shrink-0"
           style={{ color: city.theme.accent }}
         >
           {city.name.toUpperCase()}
-        </Link>
+        </span>
         {current && weatherInfo && (
           <Popover
             open={weatherOpen}

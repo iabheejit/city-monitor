@@ -11,8 +11,7 @@ import { useTheme } from './hooks/useTheme.js';
 import { useBootstrap } from './hooks/useBootstrap.js';
 import { Shell } from './components/layout/Shell.js';
 import { CommandLayout } from './components/layout/CommandLayout.js';
-import { CityPicker } from './components/pages/CityPicker.js';
-import { getCityConfig, getDefaultCityId } from './config/index.js';
+import { getCityConfig } from './config/index.js';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -65,7 +64,7 @@ export function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <Routes>
-        <Route path="/" element={<CityPicker />} />
+        <Route path="/" element={<Navigate to="/berlin" replace />} />
         <Route path="/:cityId" element={<CityRoute />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
