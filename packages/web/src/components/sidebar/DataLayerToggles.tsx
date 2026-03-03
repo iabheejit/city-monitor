@@ -5,8 +5,8 @@
 
 import { createElement, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { TrainFront, Wind, Newspaper, TriangleAlert, HeartPulse, Pill, Car, Construction, Landmark, Building2, Building, CloudRain, Droplets, Waves, Home, BarChart3, Siren } from 'lucide';
-import { useCommandCenter, type DataLayer, type PoliticalLayer, type SocioeconomicLayer, type NewsSubLayer, type EmergencySubLayer, type WaterSubLayer, type TrafficSubLayer } from '../../hooks/useCommandCenter.js';
+import { TrainFront, Wind, Newspaper, TriangleAlert, HeartPulse, Pill, Car, Construction, Landmark, Building2, Building, CloudRain, Droplets, Waves, Home, BarChart3, Siren, Users, UserRound, Globe, Briefcase, Baby, HandCoins, Heart } from 'lucide';
+import { useCommandCenter, type DataLayer, type PoliticalLayer, type SocialLayer, type PopulationLayer, type NewsSubLayer, type EmergencySubLayer, type WaterSubLayer, type TrafficSubLayer } from '../../hooks/useCommandCenter.js';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import type { IconNode } from '../../lib/map-icons.js';
 
@@ -16,9 +16,10 @@ const LAYER_META: { layer: DataLayer; icon: IconNode; color: string; cities?: st
   { layer: 'traffic', icon: Car as IconNode, color: '#8b5cf6' },
   { layer: 'weather', icon: CloudRain as IconNode, color: '#0ea5e9' },
   { layer: 'air-quality', icon: Wind as IconNode, color: '#50C878' },
-  { layer: 'emergencies', icon: HeartPulse as IconNode, color: '#ef4444' },
   { layer: 'water', icon: Droplets as IconNode, color: '#3b82f6' },
-  { layer: 'socioeconomic', icon: BarChart3 as IconNode, color: '#8b5cf6', cities: ['berlin'] },
+  { layer: 'emergencies', icon: HeartPulse as IconNode, color: '#ef4444' },
+  { layer: 'social', icon: BarChart3 as IconNode, color: '#8b5cf6', cities: ['berlin'] },
+  { layer: 'population', icon: Users as IconNode, color: '#3b82f6', cities: ['berlin'] },
   { layer: 'political', icon: Landmark as IconNode, color: '#64748b' },
 ];
 
@@ -45,9 +46,18 @@ const TRAFFIC_SUB_META: { key: TrafficSubLayer; icon: IconNode; color: string }[
   { key: 'roadworks', icon: Construction as IconNode, color: '#d97706' },
 ];
 
-const SOCIOECONOMIC_SUB_META: { key: SocioeconomicLayer; icon: IconNode; color: string }[] = [
-  { key: 'social-atlas', icon: BarChart3 as IconNode, color: '#8b5cf6' },
+const SOCIAL_SUB_META: { key: SocialLayer; icon: IconNode; color: string }[] = [
+  { key: 'unemployment', icon: Briefcase as IconNode, color: '#ef4444' },
+  { key: 'single-parent', icon: Baby as IconNode, color: '#f59e0b' },
+  { key: 'welfare', icon: HandCoins as IconNode, color: '#8b5cf6' },
+  { key: 'child-poverty', icon: Heart as IconNode, color: '#ec4899' },
   { key: 'rent', icon: Home as IconNode, color: '#10b981' },
+];
+
+const POPULATION_SUB_META: { key: PopulationLayer; icon: IconNode; color: string }[] = [
+  { key: 'pop-density', icon: Users as IconNode, color: '#3b82f6' },
+  { key: 'pop-elderly', icon: UserRound as IconNode, color: '#f59e0b' },
+  { key: 'pop-foreign', icon: Globe as IconNode, color: '#06b6d4' },
 ];
 
 const POLITICAL_SUB_META: { key: PoliticalLayer; icon: IconNode; color: string }[] = [
@@ -107,8 +117,10 @@ export function DataLayerToggles() {
   const toggleWaterSubLayer = useCommandCenter((s) => s.toggleWaterSubLayer);
   const trafficSubLayers = useCommandCenter((s) => s.trafficSubLayers);
   const toggleTrafficSubLayer = useCommandCenter((s) => s.toggleTrafficSubLayer);
-  const socioeconomicLayer = useCommandCenter((s) => s.socioeconomicLayer);
-  const setSocioeconomicLayer = useCommandCenter((s) => s.setSocioeconomicLayer);
+  const socialLayer = useCommandCenter((s) => s.socialLayer);
+  const setSocialLayer = useCommandCenter((s) => s.setSocialLayer);
+  const populationLayer = useCommandCenter((s) => s.populationLayer);
+  const setPopulationLayer = useCommandCenter((s) => s.setPopulationLayer);
 
   return (
     <div>
@@ -176,15 +188,26 @@ export function DataLayerToggles() {
                 onClick={() => toggleWaterSubLayer(key)}
               />
             ));
-          } else if (layer === 'socioeconomic' && active) {
-            subItems = SOCIOECONOMIC_SUB_META.map(({ key, icon: subIcon, color: subColor }) => (
+          } else if (layer === 'social' && active) {
+            subItems = SOCIAL_SUB_META.map(({ key, icon: subIcon, color: subColor }) => (
               <SubLayerItem
                 key={key}
                 icon={subIcon}
                 color={subColor}
-                active={socioeconomicLayer === key}
-                label={t(`sidebar.socioeconomic.${key}`)}
-                onClick={() => setSocioeconomicLayer(key)}
+                active={socialLayer === key}
+                label={t(`sidebar.social.${key}`)}
+                onClick={() => setSocialLayer(key)}
+              />
+            ));
+          } else if (layer === 'population' && active) {
+            subItems = POPULATION_SUB_META.map(({ key, icon: subIcon, color: subColor }) => (
+              <SubLayerItem
+                key={key}
+                icon={subIcon}
+                color={subColor}
+                active={populationLayer === key}
+                label={t(`sidebar.population.${key}`)}
+                onClick={() => setPopulationLayer(key)}
               />
             ));
           } else if (layer === 'political' && active) {

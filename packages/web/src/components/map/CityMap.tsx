@@ -27,8 +27,9 @@ import { useAirQualityGrid } from '../../hooks/useAirQualityGrid.js';
 import { useWaterLevels } from '../../hooks/useWaterLevels.js';
 import { useBathing } from '../../hooks/useBathing.js';
 import { useSocialAtlas } from '../../hooks/useSocialAtlas.js';
+import { usePopulation } from '../../hooks/usePopulation.js';
 import { useCommandCenter } from '../../hooks/useCommandCenter.js';
-import type { TransitAlert, NewsItem, SafetyReport, NinaWarning, EmergencyPharmacy, TrafficIncident, ConstructionSite, PoliticalDistrict, AirQualityGridPoint, AedLocation, BathingSpot, WaterLevelStation, SocialAtlasFeatureProps } from '../../lib/api.js';
+import type { TransitAlert, NewsItem, SafetyReport, NinaWarning, EmergencyPharmacy, TrafficIncident, ConstructionSite, PoliticalDistrict, AirQualityGridPoint, AedLocation, BathingSpot, WaterLevelStation, SocialAtlasFeatureProps, PopulationFeatureProps } from '../../lib/api.js';
 import { SEVERITY_COLORS, NEWS_CATEGORY_COLORS, AQI_LEVEL_COLORS, CONSTRUCTION_SUBTYPE_COLORS, WATER_STATE_COLORS, BATHING_QUALITY_COLORS, registerAllMapIcons, registerPoliticalIcons } from '../../lib/map-icons.js';
 import { getAqiLevel } from '../../lib/aqi.js';
 import { getPartyColor, getMajorityParty } from '../../lib/party-colors.js';
@@ -122,7 +123,8 @@ function simplifyMap(map: maplibregl.Map) {
       !layer.id.startsWith('bathing-') &&
       !layer.id.startsWith('weather-') &&
       !layer.id.startsWith('rent-map-') &&
-      !layer.id.startsWith('social-atlas-')
+      !layer.id.startsWith('social-atlas-') &&
+      !layer.id.startsWith('population-')
     ) {
       map.setLayoutProperty(layer.id, 'visibility', 'none');
     }
@@ -697,6 +699,7 @@ function geoCell(lat: number, lon: number): string {
  */
 function filterNewsForMap(items: NewsItem[], fallback: { lat: number; lon: number }): NewsItem[] {
   // Items already filtered by relevant_to_city on the server (applyDropLogic)
+  // Sorted by importance so the most significant items fill slots first
   const byImportance = [...items].sort((a, b) => (b.importance ?? 0) - (a.importance ?? 0));
 
   // Group by category, each group already sorted by importance
@@ -734,6 +737,7 @@ function filterNewsForMap(items: NewsItem[], fallback: { lat: number; lon: numbe
   }
 
   // Phase 3: spatial bonus — add items that fill empty grid cells
+  // Only items above the spatial importance floor qualify
   const coveredCells = new Set<string>();
   for (const item of result) {
     const loc = item.location ?? fallback;
@@ -744,6 +748,7 @@ function filterNewsForMap(items: NewsItem[], fallback: { lat: number; lon: numbe
   for (const item of byImportance) {
     if (bonus >= MAP_NEWS.spatialBonusMax) break;
     if (resultSet.has(item.id)) continue;
+    if ((item.importance ?? 0) < MAP_NEWS.minImportanceSpatial) continue;
     const loc = item.location ?? fallback;
     const cell = geoCell(loc.lat, loc.lon);
     if (coveredCells.has(cell)) continue;
@@ -884,6 +889,33 @@ function computeSpiderPositions(
   return { type: 'FeatureCollection', features: lineFeatures };
 }
 
+/** Expand ALL spider groups at once (for auto-expand mode) */
+function expandAllSpiderGroups(
+  features: GeoJSON.Feature[],
+  state: SpiderState,
+): GeoJSON.FeatureCollection {
+  const lineFeatures: GeoJSON.Feature[] = [];
+  for (const [, indices] of state.groups) {
+    if (indices.length <= 1) continue;
+    const orig = state.origCoords.get(indices[0])!;
+    const radius = SPIDER_BASE_RADIUS + SPIDER_PER_ITEM * indices.length;
+
+    for (let j = 0; j < indices.length; j++) {
+      const feat = features[indices[j]];
+      feat.properties!._isExpanded = 1;
+      const angle = (2 * Math.PI * j) / indices.length - Math.PI / 2;
+      const lon = orig[0] + radius * Math.cos(angle);
+      const lat = orig[1] + radius * Math.sin(angle);
+      (feat.geometry as GeoJSON.Point).coordinates = [lon, lat];
+      lineFeatures.push({
+        type: 'Feature', properties: {},
+        geometry: { type: 'LineString', coordinates: [[orig[0], orig[1]], [lon, lat]] },
+      });
+    }
+  }
+  return { type: 'FeatureCollection', features: lineFeatures };
+}
+
 function updateSpiderSources(
   map: maplibregl.Map,
   features: GeoJSON.Feature[],
@@ -923,8 +955,10 @@ function updateNewsMarkers(map: maplibregl.Map, items: NewsItem[], _isDark: bool
 
   initSpiderState(geojson, _newsSpider);
 
-  // Empty line source (populated on expansion)
-  map.addSource('news-spider-lines', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+  // Auto-expand all stacked groups so individual markers are always visible
+  const spiderLines = expandAllSpiderGroups(geojson.features, _newsSpider);
+
+  map.addSource('news-spider-lines', { type: 'geojson', data: spiderLines });
   map.addLayer({
     id: 'news-spider-lines',
     type: 'line',
@@ -948,72 +982,26 @@ function updateNewsMarkers(map: maplibregl.Map, items: NewsItem[], _isDark: bool
       'icon-image': iconMatch as maplibregl.ExpressionSpecification,
       'icon-size': 0.85,
       'icon-allow-overlap': true,
+      'icon-ignore-placement': true,
       'icon-anchor': 'center',
     },
   });
 
-  // Count badge for stacked groups (hidden when expanded)
-  map.addLayer({
-    id: 'news-marker-count',
-    type: 'symbol',
-    source: 'news-markers',
-    filter: ['all', ['>', ['get', '_groupSize'], 1], ['==', ['get', '_isExpanded'], 0]],
-    layout: {
-      'text-field': ['concat', '+', ['to-string', ['-', ['get', '_groupSize'], 1]]],
-      'text-size': 10,
-      'text-font': ['Open Sans Regular', 'Arial Unicode MS Regular'],
-      'text-offset': [0.9, -0.9],
-      'text-allow-overlap': true,
-    },
-    paint: {
-      'text-color': '#ffffff',
-      'text-halo-color': '#6366f1',
-      'text-halo-width': 1.5,
-    },
-  });
-
-  // Keep a ref to features array for source updates
-  const features = geojson.features;
-  let justExpanded = false;
-
-  // Click: expand group or show popup
-  addSpiderHandler(map, _newsH, 'click', 'news-marker-icon', (e: maplibregl.MapMouseEvent) => {
-    const f = map.queryRenderedFeatures(e.point, { layers: ['news-marker-icon'] });
-    if (!f.length) return;
-    const groupKey = f[0].properties!._groupKey as string;
-    const groupSize = f[0].properties!._groupSize as number;
-
-    if (groupSize > 1 && _newsSpider.expandedKey !== groupKey) {
-      _newsSpider.expandedKey = groupKey;
-      updateSpiderSources(map, features, _newsSpider, 'news-markers', 'news-spider-lines');
-      justExpanded = true;
-      return;
-    }
-    // Individual or already-expanded marker — popup handled below
-  });
-
-  // Hover
+  // Hover popup
   addSpiderHandler(map, _newsH, 'mouseenter', 'news-marker-icon', (e: maplibregl.MapMouseEvent) => {
     map.getCanvas().style.cursor = 'pointer';
     const f = map.queryRenderedFeatures(e.point, { layers: ['news-marker-icon'] });
     if (!f.length) return;
     const props = f[0].properties!;
     const coords = (f[0].geometry as GeoJSON.Point).coordinates.slice() as [number, number];
-    const groupKey = props._groupKey as string;
-    const groupSize = props._groupSize as number;
-
-    if (groupSize > 1 && _newsSpider.expandedKey !== groupKey) {
-      showMapPopup(map, coords, `<div style="font-size:12px;padding:2px 6px">${groupSize} items &middot; click to expand</div>`, { sticky: false });
-    } else {
-      const imp = Number(props.importance) || 0;
-      const html = `<div style="font-size:13px;max-width:280px">
-        <div style="font-weight:600;margin-bottom:4px">${props.title}</div>
-        <div style="opacity:0.6;font-size:11px">${props.sourceName} · ${props.categoryLabel}${imp ? ` · ${Math.round(imp * 100)}%` : ''}</div>
-        ${props.locationLabel ? `<div style="font-size:11px;margin-top:2px">📍 ${props.locationLabel}</div>` : ''}
-        <a href="${props.url}" target="_blank" rel="noopener" style="font-size:11px;color:#3b82f6">Read more →</a>
-      </div>`;
-      showMapPopup(map, coords, html, { sticky: false });
-    }
+    const imp = Number(props.importance) || 0;
+    const html = `<div style="font-size:13px;max-width:280px">
+      <div style="font-weight:600;margin-bottom:4px">${props.title}</div>
+      <div style="opacity:0.6;font-size:11px">${props.sourceName} · ${props.categoryLabel}${imp ? ` · ${Math.round(imp * 100)}%` : ''}</div>
+      ${props.locationLabel ? `<div style="font-size:11px;margin-top:2px">📍 ${props.locationLabel}</div>` : ''}
+      <a href="${props.url}" target="_blank" rel="noopener" style="font-size:11px;color:#3b82f6">Read more →</a>
+    </div>`;
+    showMapPopup(map, coords, html, { sticky: false });
   });
 
   addSpiderHandler(map, _newsH, 'mouseleave', 'news-marker-icon', () => {
@@ -1022,15 +1010,11 @@ function updateNewsMarkers(map: maplibregl.Map, items: NewsItem[], _isDark: bool
     _hoverTimer = setTimeout(_closeHoverPopup, 300);
   });
 
-  // Sticky popup on click (only if not expanding)
+  // Sticky popup on click
   addSpiderHandler(map, _newsH, 'click', 'news-marker-icon', (e: maplibregl.MapMouseEvent) => {
-    if (justExpanded) { justExpanded = false; return; }
     const f = map.queryRenderedFeatures(e.point, { layers: ['news-marker-icon'] });
     if (!f.length) return;
     const props = f[0].properties!;
-    const groupSize = props._groupSize as number;
-    const groupKey = props._groupKey as string;
-    if (groupSize > 1 && _newsSpider.expandedKey !== groupKey) return; // handled by expand
     const coords = (f[0].geometry as GeoJSON.Point).coordinates.slice() as [number, number];
     const imp = Number(props.importance) || 0;
     const html = `<div style="font-size:13px;max-width:280px">
@@ -1040,15 +1024,6 @@ function updateNewsMarkers(map: maplibregl.Map, items: NewsItem[], _isDark: bool
       <a href="${props.url}" target="_blank" rel="noopener" style="font-size:11px;color:#3b82f6">Read more →</a>
     </div>`;
     showMapPopup(map, coords, html, { sticky: true });
-  });
-
-  // Collapse on map background click (check both marker layers)
-  addSpiderHandler(map, _newsH, 'click', (e: maplibregl.MapMouseEvent) => {
-    if (!_newsSpider.expandedKey) return;
-    const f = map.queryRenderedFeatures(e.point, { layers: ['news-marker-icon', 'safety-marker-icon'].filter(id => !!map.getLayer(id)) });
-    if (f.length > 0) return; // clicked a marker, not background
-    _newsSpider.expandedKey = null;
-    updateSpiderSources(map, features, _newsSpider, 'news-markers', 'news-spider-lines');
   });
 }
 
@@ -1066,7 +1041,10 @@ function updateSafetyMarkers(map: maplibregl.Map, reports: SafetyReport[], _isDa
 
   initSpiderState(geojson, _safetySpider);
 
-  map.addSource('safety-spider-lines', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+  // Auto-expand all stacked groups
+  const spiderLines = expandAllSpiderGroups(geojson.features, _safetySpider);
+
+  map.addSource('safety-spider-lines', { type: 'geojson', data: spiderLines });
   map.addLayer({
     id: 'safety-spider-lines',
     type: 'line',
@@ -1084,67 +1062,25 @@ function updateSafetyMarkers(map: maplibregl.Map, reports: SafetyReport[], _isDa
       'icon-image': 'safety-icon',
       'icon-size': 0.85,
       'icon-allow-overlap': true,
+      'icon-ignore-placement': true,
       'icon-anchor': 'center',
     },
   });
 
-  // Count badge for stacked groups (hidden when expanded)
-  map.addLayer({
-    id: 'safety-marker-count',
-    type: 'symbol',
-    source: 'safety-markers',
-    filter: ['all', ['>', ['get', '_groupSize'], 1], ['==', ['get', '_isExpanded'], 0]],
-    layout: {
-      'text-field': ['concat', '+', ['to-string', ['-', ['get', '_groupSize'], 1]]],
-      'text-size': 10,
-      'text-font': ['Open Sans Regular', 'Arial Unicode MS Regular'],
-      'text-offset': [0.9, -0.9],
-      'text-allow-overlap': true,
-    },
-    paint: {
-      'text-color': '#ffffff',
-      'text-halo-color': '#ef4444',
-      'text-halo-width': 1.5,
-    },
-  });
-
-  const features = geojson.features;
-  let justExpanded = false;
-
-  addSpiderHandler(map, _safetyH, 'click', 'safety-marker-icon', (e: maplibregl.MapMouseEvent) => {
-    const f = map.queryRenderedFeatures(e.point, { layers: ['safety-marker-icon'] });
-    if (!f.length) return;
-    const groupKey = f[0].properties!._groupKey as string;
-    const groupSize = f[0].properties!._groupSize as number;
-
-    if (groupSize > 1 && _safetySpider.expandedKey !== groupKey) {
-      _safetySpider.expandedKey = groupKey;
-      updateSpiderSources(map, features, _safetySpider, 'safety-markers', 'safety-spider-lines');
-      justExpanded = true;
-      return;
-    }
-  });
-
+  // Hover popup
   addSpiderHandler(map, _safetyH, 'mouseenter', 'safety-marker-icon', (e: maplibregl.MapMouseEvent) => {
     map.getCanvas().style.cursor = 'pointer';
     const f = map.queryRenderedFeatures(e.point, { layers: ['safety-marker-icon'] });
     if (!f.length) return;
     const props = f[0].properties!;
     const coords = (f[0].geometry as GeoJSON.Point).coordinates.slice() as [number, number];
-    const groupKey = props._groupKey as string;
-    const groupSize = props._groupSize as number;
-
-    if (groupSize > 1 && _safetySpider.expandedKey !== groupKey) {
-      showMapPopup(map, coords, `<div style="font-size:12px;padding:2px 6px">${groupSize} reports &middot; click to expand</div>`, { sticky: false });
-    } else {
-      const html = `<div style="font-size:13px;max-width:280px">
-        <div style="font-weight:600;margin-bottom:4px">${props.title}</div>
-        ${props.district ? `<div style="opacity:0.6;font-size:11px">${props.district}</div>` : ''}
-        ${props.locationLabel ? `<div style="font-size:11px;margin-top:2px">📍 ${props.locationLabel}</div>` : ''}
-        <a href="${props.url}" target="_blank" rel="noopener" style="font-size:11px;color:#3b82f6">Details →</a>
-      </div>`;
-      showMapPopup(map, coords, html, { sticky: false });
-    }
+    const html = `<div style="font-size:13px;max-width:280px">
+      <div style="font-weight:600;margin-bottom:4px">${props.title}</div>
+      ${props.district ? `<div style="opacity:0.6;font-size:11px">${props.district}</div>` : ''}
+      ${props.locationLabel ? `<div style="font-size:11px;margin-top:2px">📍 ${props.locationLabel}</div>` : ''}
+      <a href="${props.url}" target="_blank" rel="noopener" style="font-size:11px;color:#3b82f6">Details →</a>
+    </div>`;
+    showMapPopup(map, coords, html, { sticky: false });
   });
 
   addSpiderHandler(map, _safetyH, 'mouseleave', 'safety-marker-icon', () => {
@@ -1153,14 +1089,11 @@ function updateSafetyMarkers(map: maplibregl.Map, reports: SafetyReport[], _isDa
     _hoverTimer = setTimeout(_closeHoverPopup, 300);
   });
 
+  // Sticky popup on click
   addSpiderHandler(map, _safetyH, 'click', 'safety-marker-icon', (e: maplibregl.MapMouseEvent) => {
-    if (justExpanded) { justExpanded = false; return; }
     const f = map.queryRenderedFeatures(e.point, { layers: ['safety-marker-icon'] });
     if (!f.length) return;
     const props = f[0].properties!;
-    const groupSize = props._groupSize as number;
-    const groupKey = props._groupKey as string;
-    if (groupSize > 1 && _safetySpider.expandedKey !== groupKey) return;
     const coords = (f[0].geometry as GeoJSON.Point).coordinates.slice() as [number, number];
     const html = `<div style="font-size:13px;max-width:280px">
       <div style="font-weight:600;margin-bottom:4px">${props.title}</div>
@@ -1169,14 +1102,6 @@ function updateSafetyMarkers(map: maplibregl.Map, reports: SafetyReport[], _isDa
       <a href="${props.url}" target="_blank" rel="noopener" style="font-size:11px;color:#3b82f6">Details →</a>
     </div>`;
     showMapPopup(map, coords, html, { sticky: true });
-  });
-
-  addSpiderHandler(map, _safetyH, 'click', (e: maplibregl.MapMouseEvent) => {
-    if (!_safetySpider.expandedKey) return;
-    const f = map.queryRenderedFeatures(e.point, { layers: ['safety-marker-icon', 'news-marker-icon'].filter(id => !!map.getLayer(id)) });
-    if (f.length > 0) return;
-    _safetySpider.expandedKey = null;
-    updateSpiderSources(map, features, _safetySpider, 'safety-markers', 'safety-spider-lines');
   });
 }
 
@@ -1221,15 +1146,47 @@ function warningsToGeoJSON(warnings: NinaWarning[]): GeoJSON.FeatureCollection {
   return { type: 'FeatureCollection', features };
 }
 
-// Social Atlas 2023 choropleth — 536 Planungsräume colored by composite status index
-const SOCIAL_ATLAS_COLORS: Record<number, string> = {
-  1: '#22c55e', // hoch (high social status) — green
-  2: '#eab308', // mittel — yellow
-  3: '#f97316', // niedrig — orange
-  4: '#ef4444', // sehr niedrig — red
+// Social Atlas 2023 choropleth — 536 Planungsräume colored by selected indicator
+type SocialAtlasMetric = 'unemployment' | 'singleParent' | 'welfare' | 'childPoverty';
+
+const SOCIAL_ATLAS_COLOR_RAMPS: Record<SocialAtlasMetric, { property: string; stops: [number, string][] }> = {
+  unemployment: {
+    property: 'unemployment',
+    stops: [[0, '#dcfce7'], [5, '#86efac'], [10, '#22c55e'], [15, '#16a34a'], [25, '#14532d']],
+  },
+  singleParent: {
+    property: 'singleParent',
+    stops: [[0, '#fef9c3'], [20, '#fde047'], [40, '#eab308'], [60, '#a16207'], [80, '#713f12']],
+  },
+  welfare: {
+    property: 'welfare',
+    stops: [[0, '#ede9fe'], [10, '#c4b5fd'], [20, '#8b5cf6'], [30, '#6d28d9'], [50, '#3b0764']],
+  },
+  childPoverty: {
+    property: 'childPoverty',
+    stops: [[0, '#fce7f3'], [10, '#f9a8d4'], [20, '#ec4899'], [40, '#be185d'], [60, '#831843']],
+  },
 };
 
-function updateSocialAtlasLayer(map: maplibregl.Map, geojson: GeoJSON.FeatureCollection | null, isDark: boolean) {
+// Store social atlas layer event handlers so we can remove them before re-adding
+let _saMouseMove: ((e: maplibregl.MapMouseEvent) => void) | null = null;
+let _saMouseLeave: (() => void) | null = null;
+let _saClick: ((e: maplibregl.MapMouseEvent) => void) | null = null;
+
+function updateSocialAtlasLayer(
+  map: maplibregl.Map,
+  geojson: GeoJSON.FeatureCollection | null,
+  metric: SocialAtlasMetric,
+  isDark: boolean,
+) {
+  // Remove previous event listeners to prevent accumulation
+  if (_saMouseMove) map.off('mousemove', 'social-atlas-fill', _saMouseMove);
+  if (_saMouseLeave) map.off('mouseleave', 'social-atlas-fill', _saMouseLeave);
+  if (_saClick) map.off('click', 'social-atlas-fill', _saClick);
+  _saMouseMove = null;
+  _saMouseLeave = null;
+  _saClick = null;
+
   for (const id of ['social-atlas-fill', 'social-atlas-line']) {
     if (map.getLayer(id)) map.removeLayer(id);
   }
@@ -1237,6 +1194,7 @@ function updateSocialAtlasLayer(map: maplibregl.Map, geojson: GeoJSON.FeatureCol
 
   if (!geojson || geojson.features.length === 0) return;
 
+  const ramp = SOCIAL_ATLAS_COLOR_RAMPS[metric];
   map.addSource('social-atlas-areas', { type: 'geojson', data: geojson });
 
   map.addLayer({
@@ -1245,13 +1203,10 @@ function updateSocialAtlasLayer(map: maplibregl.Map, geojson: GeoJSON.FeatureCol
     source: 'social-atlas-areas',
     paint: {
       'fill-color': [
-        'match', ['get', 'statusIndex'],
-        1, SOCIAL_ATLAS_COLORS[1],
-        2, SOCIAL_ATLAS_COLORS[2],
-        3, SOCIAL_ATLAS_COLORS[3],
-        4, SOCIAL_ATLAS_COLORS[4],
-        '#9ca3af', // fallback gray
-      ],
+        'interpolate', ['linear'],
+        ['get', ramp.property],
+        ...ramp.stops.flatMap(([stop, color]) => [stop, color]),
+      ] as maplibregl.ExpressionSpecification,
       'fill-opacity': isDark ? 0.35 : 0.4,
     },
   });
@@ -1267,10 +1222,8 @@ function updateSocialAtlasLayer(map: maplibregl.Map, geojson: GeoJSON.FeatureCol
   });
 
   function buildSocialAtlasPopup(p: SocialAtlasFeatureProps): string {
-    const statusColor = SOCIAL_ATLAS_COLORS[p.statusIndex] ?? '#9ca3af';
     return `<div style="font-size:13px;max-width:300px">
       <div style="font-weight:600;margin-bottom:6px">${p.plrName}</div>
-      <div style="display:inline-block;padding:2px 8px;border-radius:4px;background:${statusColor};color:#fff;font-size:11px;font-weight:500;margin-bottom:6px">${p.statusLabel}</div>
       <table style="width:100%;font-size:12px;border-collapse:collapse">
         <tr><td style="padding:2px 0;opacity:0.7">Unemployment</td><td style="text-align:right;font-weight:500">${p.unemployment?.toFixed(1) ?? '–'}%</td></tr>
         <tr><td style="padding:2px 0;opacity:0.7">Single-parent HH</td><td style="text-align:right;font-weight:500">${p.singleParent?.toFixed(1) ?? '–'}%</td></tr>
@@ -1280,33 +1233,149 @@ function updateSocialAtlasLayer(map: maplibregl.Map, geojson: GeoJSON.FeatureCol
     </div>`;
   }
 
-  // Use mousemove (not mouseenter) so the popup updates when moving between
-  // adjacent polygons — mouseenter only fires once per layer, not per feature.
   let hoveredPlrId: string | null = null;
 
-  map.on('mousemove', 'social-atlas-fill', (e) => {
+  _saMouseMove = (e) => {
     const me = e as MapLayerEvent;
     if (!me.features?.length) return;
     const p = me.features[0].properties as unknown as SocialAtlasFeatureProps;
-    if (p.plrId === hoveredPlrId) return; // same area — skip
+    if (p.plrId === hoveredPlrId) return;
     hoveredPlrId = p.plrId;
     map.getCanvas().style.cursor = 'pointer';
     showMapPopup(map, [me.lngLat.lng, me.lngLat.lat], buildSocialAtlasPopup(p), { sticky: false });
-  });
+  };
 
-  map.on('mouseleave', 'social-atlas-fill', () => {
+  _saMouseLeave = () => {
     map.getCanvas().style.cursor = '';
     hoveredPlrId = null;
     _clearHoverTimer();
     _hoverTimer = setTimeout(_closeHoverPopup, 300);
-  });
+  };
 
-  map.on('click', 'social-atlas-fill', (e) => {
+  _saClick = (e) => {
     const me = e as MapLayerEvent;
     if (!me.features?.length) return;
     const p = me.features[0].properties as unknown as SocialAtlasFeatureProps;
     showMapPopup(map, [me.lngLat.lng, me.lngLat.lat], buildSocialAtlasPopup(p), { sticky: true });
+  };
+
+  map.on('mousemove', 'social-atlas-fill', _saMouseMove);
+  map.on('mouseleave', 'social-atlas-fill', _saMouseLeave);
+  map.on('click', 'social-atlas-fill', _saClick);
+}
+
+type PopulationMetric = 'density' | 'elderlyPct' | 'foreignPct';
+
+const POPULATION_COLOR_RAMPS: Record<PopulationMetric, { property: string; stops: [number, string][] }> = {
+  density: {
+    property: 'density',
+    stops: [[0, '#dbeafe'], [5000, '#93c5fd'], [10000, '#60a5fa'], [20000, '#3b82f6'], [30000, '#1d4ed8']],
+  },
+  elderlyPct: {
+    property: 'elderlyPct',
+    stops: [[0, '#fef3c7'], [10, '#fcd34d'], [20, '#f59e0b'], [30, '#d97706'], [40, '#92400e']],
+  },
+  foreignPct: {
+    property: 'foreignPct',
+    stops: [[0, '#cffafe'], [10, '#67e8f9'], [20, '#22d3ee'], [30, '#06b6d4'], [50, '#0e7490']],
+  },
+};
+
+// Store population layer event handlers so we can remove them before re-adding
+let _popMouseMove: ((e: maplibregl.MapMouseEvent) => void) | null = null;
+let _popMouseLeave: (() => void) | null = null;
+let _popClick: ((e: maplibregl.MapMouseEvent) => void) | null = null;
+
+function updatePopulationLayer(
+  map: maplibregl.Map,
+  geojson: GeoJSON.FeatureCollection | null,
+  metric: PopulationMetric,
+  isDark: boolean,
+) {
+  // Remove previous event listeners to prevent accumulation
+  if (_popMouseMove) map.off('mousemove', 'population-fill', _popMouseMove);
+  if (_popMouseLeave) map.off('mouseleave', 'population-fill', _popMouseLeave);
+  if (_popClick) map.off('click', 'population-fill', _popClick);
+  _popMouseMove = null;
+  _popMouseLeave = null;
+  _popClick = null;
+
+  for (const id of ['population-fill', 'population-line']) {
+    if (map.getLayer(id)) map.removeLayer(id);
+  }
+  if (map.getSource('population-areas')) map.removeSource('population-areas');
+
+  if (!geojson || geojson.features.length === 0) return;
+
+  const ramp = POPULATION_COLOR_RAMPS[metric];
+  map.addSource('population-areas', { type: 'geojson', data: geojson });
+
+  map.addLayer({
+    id: 'population-fill',
+    type: 'fill',
+    source: 'population-areas',
+    paint: {
+      'fill-color': [
+        'interpolate', ['linear'],
+        ['get', ramp.property],
+        ...ramp.stops.flatMap(([stop, color]) => [stop, color]),
+      ] as maplibregl.ExpressionSpecification,
+      'fill-opacity': isDark ? 0.35 : 0.4,
+    },
   });
+
+  map.addLayer({
+    id: 'population-line',
+    type: 'line',
+    source: 'population-areas',
+    paint: {
+      'line-color': isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.15)',
+      'line-width': 0.5,
+    },
+  });
+
+  function buildPopulationPopup(p: PopulationFeatureProps): string {
+    return `<div style="font-size:13px;max-width:300px">
+      <div style="font-weight:600;margin-bottom:6px">${p.plrName}</div>
+      <table style="width:100%;font-size:12px;border-collapse:collapse">
+        <tr><td style="padding:2px 0;opacity:0.7">Population</td><td style="text-align:right;font-weight:500">${p.population?.toLocaleString() ?? '–'}</td></tr>
+        <tr><td style="padding:2px 0;opacity:0.7">Density</td><td style="text-align:right;font-weight:500">${p.density?.toLocaleString() ?? '–'}/km²</td></tr>
+        <tr><td style="padding:2px 0;opacity:0.7">Foreign pop.</td><td style="text-align:right;font-weight:500">${p.foreignPct?.toFixed(1) ?? '–'}%</td></tr>
+        <tr><td style="padding:2px 0;opacity:0.7">Aged 65+</td><td style="text-align:right;font-weight:500">${p.elderlyPct?.toFixed(1) ?? '–'}%</td></tr>
+        <tr><td style="padding:2px 0;opacity:0.7">Under 18</td><td style="text-align:right;font-weight:500">${p.youthPct?.toFixed(1) ?? '–'}%</td></tr>
+      </table>
+    </div>`;
+  }
+
+  let hoveredPlrId: string | null = null;
+
+  _popMouseMove = (e) => {
+    const me = e as MapLayerEvent;
+    if (!me.features?.length) return;
+    const p = me.features[0].properties as unknown as PopulationFeatureProps;
+    if (p.plrId === hoveredPlrId) return;
+    hoveredPlrId = p.plrId;
+    map.getCanvas().style.cursor = 'pointer';
+    showMapPopup(map, [me.lngLat.lng, me.lngLat.lat], buildPopulationPopup(p), { sticky: false });
+  };
+
+  _popMouseLeave = () => {
+    map.getCanvas().style.cursor = '';
+    hoveredPlrId = null;
+    _clearHoverTimer();
+    _hoverTimer = setTimeout(_closeHoverPopup, 300);
+  };
+
+  _popClick = (e) => {
+    const me = e as MapLayerEvent;
+    if (!me.features?.length) return;
+    const p = me.features[0].properties as unknown as PopulationFeatureProps;
+    showMapPopup(map, [me.lngLat.lng, me.lngLat.lat], buildPopulationPopup(p), { sticky: true });
+  };
+
+  map.on('mousemove', 'population-fill', _popMouseMove);
+  map.on('mouseleave', 'population-fill', _popMouseLeave);
+  map.on('click', 'population-fill', _popClick);
 }
 
 function updateWarningPolygons(map: maplibregl.Map, warnings: NinaWarning[], _isDark: boolean) {
@@ -2072,13 +2141,25 @@ export function CityMap() {
   const constructionActive = activeLayers.has('traffic') && trafficSubLayers.has('roadworks');
   const roadsActive = trafficActive || constructionActive;
   const weatherActive = activeLayers.has('weather');
-  const socioeconomicLayer = useCommandCenter((s) => s.socioeconomicLayer);
-  const socioeconomicActive = activeLayers.has('socioeconomic') && city.id === 'berlin';
-  const rentMapActive = socioeconomicActive && socioeconomicLayer === 'rent';
-  const socialAtlasActive = socioeconomicActive && socioeconomicLayer === 'social-atlas';
+  const socialLayer = useCommandCenter((s) => s.socialLayer);
+  const socialActive = activeLayers.has('social') && city.id === 'berlin';
+  const rentMapActive = socialActive && socialLayer === 'rent';
+  const socialAtlasActive = socialActive && socialLayer !== 'rent';
+  const socialAtlasMetric: SocialAtlasMetric =
+    socialLayer === 'single-parent' ? 'singleParent'
+    : socialLayer === 'welfare' ? 'welfare'
+    : socialLayer === 'child-poverty' ? 'childPoverty'
+    : 'unemployment';
+  const populationLayerSel = useCommandCenter((s) => s.populationLayer);
+  const populationActive = activeLayers.has('population') && city.id === 'berlin';
+  const populationMetric: PopulationMetric =
+    populationLayerSel === 'pop-elderly' ? 'elderlyPct'
+    : populationLayerSel === 'pop-foreign' ? 'foreignPct'
+    : 'density';
   const waterActive = activeLayers.has('water');
   const waterSubLayers = useCommandCenter((s) => s.waterSubLayers);
   const { data: socialAtlasData } = useSocialAtlas(city.id, socialAtlasActive);
+  const { data: populationData } = usePopulation(city.id, populationActive);
   const { data: bezirkeData } = usePolitical(city.id, 'bezirke');
   const { data: bundestagData } = usePolitical(city.id, 'bundestag');
   const { data: stateBezirkeData } = usePolitical(city.id, 'state-bezirke');
@@ -2115,6 +2196,7 @@ export function CityMap() {
   const waterLevelItems = (waterActive && waterSubLayers.has('levels')) ? (waterLevelData?.stations ?? EMPTY_WL) : EMPTY_WL;
   const bathingItems = (waterActive && waterSubLayers.has('bathing')) ? (bathingData ?? []) : [];
   const socialAtlasGeoJson = socialAtlasActive ? (socialAtlasData ?? null) : null;
+  const populationGeoJson = populationActive ? (populationData ?? null) : null;
 
   // Keep current values in refs so the style.load handler always reads fresh values
   const isDarkRef = useRef(isDark);
@@ -2149,6 +2231,12 @@ export function CityMap() {
   bathingItemsRef.current = bathingItems;
   const socialAtlasGeoJsonRef = useRef(socialAtlasGeoJson);
   socialAtlasGeoJsonRef.current = socialAtlasGeoJson;
+  const socialAtlasMetricRef = useRef(socialAtlasMetric);
+  socialAtlasMetricRef.current = socialAtlasMetric;
+  const populationGeoJsonRef = useRef(populationGeoJson);
+  populationGeoJsonRef.current = populationGeoJson;
+  const populationMetricRef = useRef(populationMetric);
+  populationMetricRef.current = populationMetric;
   const roadsActiveRef = useRef(roadsActive);
   roadsActiveRef.current = roadsActive;
   const weatherActiveRef = useRef(weatherActive);
@@ -2203,7 +2291,8 @@ export function CityMap() {
       updateAqGridLayer(map, aqGridItemsRef.current, isDarkRef.current);
       updateWaterLevelMarkers(map, waterLevelItemsRef.current, isDarkRef.current);
       updateBathingMarkers(map, bathingItemsRef.current, isDarkRef.current);
-      updateSocialAtlasLayer(map, socialAtlasGeoJsonRef.current, isDarkRef.current);
+      updateSocialAtlasLayer(map, socialAtlasGeoJsonRef.current, socialAtlasMetricRef.current, isDarkRef.current);
+      updatePopulationLayer(map, populationGeoJsonRef.current, populationMetricRef.current, isDarkRef.current);
       setWeatherOverlay(map, weatherActiveRef.current);
       setRentMapOverlay(map, rentMapActiveRef.current);
 
@@ -2294,7 +2383,8 @@ export function CityMap() {
       updateAqGridLayer(map, aqGridItemsRef.current, isDark);
       updateWaterLevelMarkers(map, waterLevelItemsRef.current, isDark);
       updateBathingMarkers(map, bathingItemsRef.current, isDark);
-      updateSocialAtlasLayer(map, socialAtlasGeoJsonRef.current, isDark);
+      updateSocialAtlasLayer(map, socialAtlasGeoJsonRef.current, socialAtlasMetricRef.current, isDark);
+      updatePopulationLayer(map, populationGeoJsonRef.current, populationMetricRef.current, isDark);
       setWeatherOverlay(map, weatherActiveRef.current);
       setRentMapOverlay(map, rentMapActiveRef.current);
     });
@@ -2471,12 +2561,23 @@ export function CityMap() {
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
-    const apply = () => updateSocialAtlasLayer(map, socialAtlasGeoJson, isDarkRef.current);
+    const apply = () => updateSocialAtlasLayer(map, socialAtlasGeoJson, socialAtlasMetric, isDarkRef.current);
     if (map.isStyleLoaded()) { apply(); return; }
     map.once('idle', apply);
     return () => { map.off('idle', apply); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [socialAtlasGeoJson]);
+  }, [socialAtlasGeoJson, socialAtlasMetric]);
+
+  // Update population choropleth (lazy — geojson only available when a pop-* sub-layer is active)
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const apply = () => updatePopulationLayer(map, populationGeoJson, populationMetric, isDarkRef.current);
+    if (map.isStyleLoaded()) { apply(); return; }
+    map.once('idle', apply);
+    return () => { map.off('idle', apply); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [populationGeoJson, populationMetric]);
 
   // Political layer: swap GeoJSON source + apply/reset styling
   const politicalData = politicalLayer === 'bundestag'

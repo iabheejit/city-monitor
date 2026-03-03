@@ -12,6 +12,13 @@ import { getUsageStats } from '../lib/openai.js';
 export function createHealthRouter(cache: Cache, scheduler: Scheduler) {
   const router = Router();
 
+  if (process.env.NODE_ENV !== 'production') {
+    router.post('/health/trigger/:jobName', async (req, res) => {
+      const ok = await scheduler.triggerJob(req.params.jobName);
+      res.json({ ok, job: req.params.jobName });
+    });
+  }
+
   router.get('/health', (_req, res) => {
     res.json({
       status: 'ok',

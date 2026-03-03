@@ -279,6 +279,17 @@ export const laborMarketSnapshots = pgTable('labor_market_snapshots', {
   index('labor_market_city_idx').on(table.cityId),
 ]);
 
+// Population demographics snapshots
+export const populationSnapshots = pgTable('population_snapshots', {
+  id: serial('id').primaryKey(),
+  cityId: text('city_id').notNull(),
+  geojson: jsonb('geojson').notNull(), // GeoJSON FeatureCollection
+  summary: jsonb('summary').notNull(), // PopulationSummary
+  fetchedAt: timestamp('fetched_at').defaultNow().notNull(),
+}, (table) => [
+  index('population_city_idx').on(table.cityId),
+]);
+
 // Milestone 07 — AI Summaries
 export const aiSummaries = pgTable('ai_summaries', {
   id: serial('id').primaryKey(),

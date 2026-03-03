@@ -142,6 +142,20 @@
         "121721": "Parking Permit"
       }
     },
+    "population": {
+      "title": "Population",
+      "total": "Total",
+      "foreign": "Foreign nationality",
+      "elderly": "Aged 65+",
+      "youth": "Under 18",
+      "workingAge": "Working age",
+      "change": "vs. previous half-year",
+      "empty": "No data available",
+      "source": "Statistik Berlin-Brandenburg",
+      "density": "per km²",
+      "densityLabel": "Density",
+      "german": "German nationality"
+    },
     "laborMarket": {
       "title": "Unemployment",
       "unemployment": "Unemployment",
@@ -235,7 +249,8 @@
       "emergencies": "Emergencies",
       "traffic": "Traffic",
       "water": "Water",
-      "socioeconomic": "Society",
+      "social": "Social",
+      "population": "Population",
       "political": "Representation"
     },
     "news": {
@@ -255,9 +270,17 @@
       "levels": "Water Levels",
       "bathing": "Bathing Water"
     },
-    "socioeconomic": {
-      "social-atlas": "Social Atlas 2023",
+    "social": {
+      "unemployment": "Unemployment (2023)",
+      "single-parent": "Single-Parent HH (2023)",
+      "welfare": "Welfare Recipients (2023)",
+      "child-poverty": "Child Poverty (2023)",
       "rent": "Rent"
+    },
+    "population": {
+      "pop-density": "Population Density",
+      "pop-elderly": "Elderly Share",
+      "pop-foreign": "Foreign Population"
     },
     "political": {
       "bezirke": "Districts",

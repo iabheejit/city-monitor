@@ -5,9 +5,10 @@
 
 import { create } from 'zustand';
 
-export type DataLayer = 'weather' | 'news' | 'warnings' | 'air-quality' | 'emergencies' | 'traffic' | 'water' | 'socioeconomic' | 'political';
+export type DataLayer = 'weather' | 'news' | 'warnings' | 'air-quality' | 'emergencies' | 'traffic' | 'water' | 'social' | 'population' | 'political';
 export type PoliticalLayer = 'bezirke' | 'bundestag' | 'landesparlament';
-export type SocioeconomicLayer = 'social-atlas' | 'rent';
+export type SocialLayer = 'unemployment' | 'single-parent' | 'welfare' | 'child-poverty' | 'rent';
+export type PopulationLayer = 'pop-density' | 'pop-elderly' | 'pop-foreign';
 export type NewsSubLayer = 'news' | 'police';
 export type EmergencySubLayer = 'pharmacies' | 'aeds';
 export type WaterSubLayer = 'levels' | 'bathing';
@@ -17,7 +18,8 @@ interface CommandCenterState {
   singleView: boolean;
   activeLayers: Set<DataLayer>;
   politicalLayer: PoliticalLayer;
-  socioeconomicLayer: SocioeconomicLayer;
+  socialLayer: SocialLayer;
+  populationLayer: PopulationLayer;
   newsSubLayers: Set<NewsSubLayer>;
   emergencySubLayers: Set<EmergencySubLayer>;
   waterSubLayers: Set<WaterSubLayer>;
@@ -25,7 +27,8 @@ interface CommandCenterState {
   toggleSingleView: () => void;
   toggleLayer: (layer: DataLayer) => void;
   setPoliticalLayer: (layer: PoliticalLayer) => void;
-  setSocioeconomicLayer: (layer: SocioeconomicLayer) => void;
+  setSocialLayer: (layer: SocialLayer) => void;
+  setPopulationLayer: (layer: PopulationLayer) => void;
   toggleNewsSubLayer: (sub: NewsSubLayer) => void;
   toggleEmergencySubLayer: (sub: EmergencySubLayer) => void;
   toggleWaterSubLayer: (sub: WaterSubLayer) => void;
@@ -43,7 +46,8 @@ export const useCommandCenter = create<CommandCenterState>((set) => ({
   singleView: true,
   activeLayers: new Set(DEFAULT_LAYERS),
   politicalLayer: 'bezirke',
-  socioeconomicLayer: 'social-atlas',
+  socialLayer: 'unemployment',
+  populationLayer: 'pop-density',
   newsSubLayers: new Set(ALL_NEWS_SUBS),
   emergencySubLayers: new Set(ALL_EMERGENCY_SUBS),
   waterSubLayers: new Set(ALL_WATER_SUBS),
@@ -75,7 +79,8 @@ export const useCommandCenter = create<CommandCenterState>((set) => ({
       return { activeLayers: next };
     }),
   setPoliticalLayer: (layer) => set({ politicalLayer: layer }),
-  setSocioeconomicLayer: (layer) => set({ socioeconomicLayer: layer }),
+  setSocialLayer: (layer) => set({ socialLayer: layer }),
+  setPopulationLayer: (layer) => set({ populationLayer: layer }),
   toggleNewsSubLayer: (sub) =>
     set((state) => {
       const next = new Set(state.newsSubLayers);

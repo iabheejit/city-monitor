@@ -142,6 +142,20 @@
         "121721": "Oturma İzni Parkı"
       }
     },
+    "population": {
+      "title": "Nüfus",
+      "total": "Toplam",
+      "foreign": "Yabancı uyruklu",
+      "elderly": "65 yaş ve üzeri",
+      "youth": "18 yaş altı",
+      "workingAge": "Çalışma yaşı",
+      "change": "önceki yarıyıla göre",
+      "empty": "Veri mevcut değil",
+      "source": "Berlin-Brandenburg İstatistik",
+      "density": "km² başına",
+      "densityLabel": "Yoğunluk",
+      "german": "Alman vatandaşlığı"
+    },
     "laborMarket": {
       "title": "İşsizlik",
       "unemployment": "İşsizlik oranı",
@@ -235,7 +249,8 @@
       "emergencies": "Acil Durum",
       "traffic": "Trafik",
       "water": "Su",
-      "socioeconomic": "Toplum",
+      "social": "Sosyal",
+      "population": "Nüfus",
       "political": "Temsil"
     },
     "news": {
@@ -255,9 +270,17 @@
       "levels": "Su Seviyeleri",
       "bathing": "Yüzme Suyu"
     },
-    "socioeconomic": {
-      "social-atlas": "Sosyal Atlas 2023",
+    "social": {
+      "unemployment": "İşsizlik (2023)",
+      "single-parent": "Tek Ebeveyn (2023)",
+      "welfare": "Sosyal Yardım (2023)",
+      "child-poverty": "Çocuk Yoksulluğu (2023)",
       "rent": "Kira"
+    },
+    "population": {
+      "pop-density": "Nüfus Yoğunluğu",
+      "pop-elderly": "Yaşlı Oranı",
+      "pop-foreign": "Yabancı Nüfus"
     },
     "political": {
       "bezirke": "Bezirke",

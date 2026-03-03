@@ -7,7 +7,7 @@ import { sql } from 'drizzle-orm';
 import type { Db } from './index.js';
 import type { Cache } from '../lib/cache.js';
 import { getActiveCities } from '../config/index.js';
-import { loadWeather, loadTransitAlerts, loadEvents, loadSafetyReports, loadNewsItems, loadSummary, loadNinaWarnings, loadAirQualityGrid, loadPoliticalDistricts, loadAllGeocodeLookups, loadWaterLevels, loadAppointments, loadBudget, loadConstructionSites, loadTrafficIncidents, loadPharmacies, loadAeds, loadSocialAtlas, loadWastewater, loadBathingSpots, loadLaborMarket } from './reads.js';
+import { loadWeather, loadTransitAlerts, loadEvents, loadSafetyReports, loadNewsItems, loadSummary, loadNinaWarnings, loadAirQualityGrid, loadPoliticalDistricts, loadAllGeocodeLookups, loadWaterLevels, loadAppointments, loadBudget, loadConstructionSites, loadTrafficIncidents, loadPharmacies, loadAeds, loadSocialAtlas, loadWastewater, loadBathingSpots, loadLaborMarket, loadPopulationGeojson, loadPopulationSummary } from './reads.js';
 import { setGeocodeCacheEntry } from '../lib/geocode.js';
 import { applyDropLogic, type NewsDigest, type NewsItem } from '../cron/ingest-feeds.js';
 import { createLogger } from '../lib/logger.js';
@@ -146,6 +146,16 @@ async function warmCity(db: Db, cache: Cache, cityId: string): Promise<void> {
         const laborMarket = await loadLaborMarket(db, 'berlin');
         if (laborMarket) cache.set(CK.laborMarket('berlin'), laborMarket, 86400);
       })().catch((err) => log.error('labor-market failed', err)),
+
+      (async () => {
+        const geojson = await loadPopulationGeojson(db, 'berlin');
+        if (geojson) cache.set(CK.populationGeojson('berlin'), geojson, 2592000);
+      })().catch((err) => log.error('population geojson failed', err)),
+
+      (async () => {
+        const summary = await loadPopulationSummary(db, 'berlin');
+        if (summary) cache.set(CK.populationSummary('berlin'), summary, 2592000);
+      })().catch((err) => log.error('population summary failed', err)),
     ] : []),
   ];
 

@@ -262,3 +262,18 @@ export const PoliticalDistrictSchema = z.object({
   level: z.enum(['bezirk', 'bundestag', 'landesparlament']),
   representatives: z.array(RepresentativeSchema),
 });
+
+// --- Population Demographics ---
+
+export const PopulationSummarySchema = z.object({
+  total: z.number(),
+  density: z.number().default(0),
+  foreignTotal: z.number(),
+  foreignPct: z.number(),
+  elderlyPct: z.number(),
+  youthPct: z.number(),
+  workingAgePct: z.number(),
+  changeAbsolute: z.number(),
+  changePct: z.number(),
+  snapshotDate: z.string(),
+});

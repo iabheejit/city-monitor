@@ -23,6 +23,7 @@ import { AppointmentsStrip } from '../strips/AppointmentsStrip.js';
 import { BudgetStrip } from '../strips/BudgetStrip.js';
 import { LaborMarketStrip } from '../strips/LaborMarketStrip.js';
 import { WastewaterStrip } from '../strips/WastewaterStrip.js';
+import { PopulationStrip } from '../strips/PopulationStrip.js';
 import { Skeleton } from './Skeleton.js';
 import { ErrorBoundary } from 'react-error-boundary';
 import { MapErrorFallback } from '../ErrorFallback.js';
@@ -93,8 +94,13 @@ export function CommandLayout() {
             </Tile>
           )}
           {cityId === 'berlin' && (
-            <Tile title={t('panel.laborMarket.title')} span={1}>
-              <LaborMarketStrip />
+            <Tile title={t('panel.laborMarket.title')} span={1} expandable defaultExpanded={isDesktop}>
+              {(expanded) => <LaborMarketStrip expanded={expanded} />}
+            </Tile>
+          )}
+          {cityId === 'berlin' && (
+            <Tile title={t('panel.population.title')} span={1}>
+              <PopulationStrip />
             </Tile>
           )}
           <Tile title={t('panel.appointments.title')} span={1} expandable defaultExpanded={isDesktop}>
@@ -102,9 +108,6 @@ export function CommandLayout() {
           </Tile>
           <Tile title={t('panel.bathing.title')} span={1} expandable defaultExpanded={isDesktop}>
             {(expanded) => <BathingStrip expanded={expanded} />}
-          </Tile>
-          <Tile title={t('panel.waterLevels.title')} span={1}>
-            <WaterLevelStrip />
           </Tile>
           <Tile title={t('panel.budget.title')} span={2}>
             <BudgetStrip />
@@ -140,6 +143,9 @@ export function CommandLayout() {
           </Tile>
           <Tile title={t('panel.events.title')} span={2} expandable>
             {(expanded, setExpanded) => <EventsStrip expanded={expanded} onExpand={() => setExpanded(true)} />}
+          </Tile>
+          <Tile title={t('panel.waterLevels.title')} span={1}>
+            <WaterLevelStrip />
           </Tile>
         </DashboardGrid>
       </div>

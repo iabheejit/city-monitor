@@ -15,6 +15,8 @@ export const MAP_NEWS = {
   spatialBonusMax: 10,
   /** Grid cell size in degrees (~1 km at Berlin's latitude) */
   spatialGridSize: 0.01,
+  /** Minimum importance for spatial bonus items (Phase 3, filling empty areas) */
+  minImportanceSpatial: 0.3,
 } as const;
 
 /** Safety marker recency thresholds — at city-wide zoom show only

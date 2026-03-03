@@ -43,6 +43,14 @@ export const CK = {
   laborMarket: (cityId: string) => `${cityId}:labor-market`,
   budget: (cityId: string) => `${cityId}:budget`,
   socialAtlasGeojson: (cityId: string) => `${cityId}:social-atlas:geojson`,
+  populationGeojson: (cityId: string) => `${cityId}:population:geojson`,
+  populationSummary: (cityId: string) => `${cityId}:population:summary`,
+
+  // History
+  weatherHistory: (cityId: string, days: number) => `${cityId}:weather:history:${days}d`,
+  aqiHistory: (cityId: string, days: number) => `${cityId}:aqi:history:${days}d`,
+  waterLevelHistory: (cityId: string, days: number) => `${cityId}:water-levels:history:${days}d`,
+  laborMarketHistory: (cityId: string, days: number) => `${cityId}:labor-market:history:${days}d`,
 
   /** All domain keys included in the bootstrap endpoint. */
   bootstrapKeys: (cityId: string) => [
@@ -61,5 +69,6 @@ export const CK = {
     CK.appointments(cityId),
     CK.laborMarket(cityId),
     CK.wastewaterSummary(cityId),
+    CK.populationSummary(cityId),
   ],
 } as const;

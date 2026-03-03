@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-import { eq, and, or, isNull, desc, max } from 'drizzle-orm';
+import { eq, and, desc, asc, max, gte, sql, avg } from 'drizzle-orm';
 import type { Db } from './index.js';
 import {
   weatherSnapshots,
@@ -27,13 +27,14 @@ import {
   wastewaterSnapshots,
   bathingSnapshots,
   laborMarketSnapshots,
+  populationSnapshots,
 } from './schema.js';
-import type { NinaWarning, PoliticalDistrict, WaterLevelData, BuergeramtData, BudgetSummary, ConstructionSite, TrafficIncident, EmergencyPharmacy, AedLocation, WastewaterSummary, BathingSpot, LaborMarketSummary } from '@city-monitor/shared';
+import type { NinaWarning, PoliticalDistrict, WaterLevelData, BuergeramtData, BudgetSummary, ConstructionSite, TrafficIncident, EmergencyPharmacy, AedLocation, WastewaterSummary, BathingSpot, LaborMarketSummary, PopulationSummary, HistoryPoint } from '@city-monitor/shared';
 import {
   WeatherDataSchema, WaterLevelDataSchema, BuergeramtDataSchema, BudgetSummarySchema,
   PoliticalDistrictSchema, WastewaterSummarySchema, LaborMarketSummarySchema,
   BathingSpotSchema, AedLocationSchema, EmergencyPharmacySchema,
-  TrafficIncidentSchema, ConstructionSiteSchema,
+  TrafficIncidentSchema, ConstructionSiteSchema, PopulationSummarySchema,
 } from '@city-monitor/shared/schemas.js';
 import type { GeocodeResult } from '../lib/geocode.js';
 import type { WeatherData } from '../cron/ingest-weather.js';
@@ -170,10 +171,44 @@ export async function loadNewsItems(db: Db, cityId: string): Promise<PersistedNe
     .from(newsItems)
     .where(and(
       eq(newsItems.cityId, cityId),
-      or(isNull(newsItems.relevantToCity), eq(newsItems.relevantToCity, true)),
+      eq(newsItems.relevantToCity, true),
     ))
     .orderBy(desc(newsItems.publishedAt))
     .limit(200);
+
+  if (rows.length === 0) return null;
+
+  return rows.map((row) => ({
+    id: row.hash,
+    title: row.title,
+    url: row.url,
+    publishedAt: row.publishedAt?.toISOString() ?? '',
+    sourceName: row.sourceName,
+    sourceUrl: row.sourceUrl,
+    description: row.description ?? undefined,
+    category: row.category,
+    tier: row.tier,
+    lang: row.lang,
+    location: row.lat != null && row.lon != null
+      ? { lat: row.lat, lon: row.lon, label: row.locationLabel ?? undefined }
+      : undefined,
+    assessment: row.relevantToCity != null
+      ? { relevant_to_city: row.relevantToCity, importance: row.importance ?? undefined, category: row.category }
+      : undefined,
+  }));
+}
+
+/**
+ * Load ALL assessed news items (including rejected ones) for the cron prior-assessment map.
+ * Unlike loadNewsItems, this does NOT filter out relevant_to_city = false.
+ */
+export async function loadAllNewsAssessments(db: Db, cityId: string): Promise<PersistedNewsItem[] | null> {
+  const rows = await db
+    .select()
+    .from(newsItems)
+    .where(eq(newsItems.cityId, cityId))
+    .orderBy(desc(newsItems.publishedAt))
+    .limit(400);
 
   if (rows.length === 0) return null;
 
@@ -493,6 +528,141 @@ export async function loadLaborMarket(db: Db, cityId: string): Promise<LaborMark
 
   if (rows.length === 0) return null;
   return validateJsonb(LaborMarketSummarySchema, rows[0].data, 'labor-market');
+}
+
+export async function loadPopulationGeojson(db: Db, cityId: string): Promise<unknown | null> {
+  const rows = await db
+    .select()
+    .from(populationSnapshots)
+    .where(eq(populationSnapshots.cityId, cityId))
+    .orderBy(desc(populationSnapshots.fetchedAt))
+    .limit(1);
+
+  if (rows.length === 0) return null;
+  return rows[0].geojson;
+}
+
+export async function loadPopulationSummary(db: Db, cityId: string): Promise<PopulationSummary | null> {
+  const rows = await db
+    .select()
+    .from(populationSnapshots)
+    .where(eq(populationSnapshots.cityId, cityId))
+    .orderBy(desc(populationSnapshots.fetchedAt))
+    .limit(1);
+
+  if (rows.length === 0) return null;
+  return validateJsonb(PopulationSummarySchema, rows[0].summary, 'population');
+}
+
+/* ── Historical time-series queries ─────────────────────────────── */
+
+/**
+ * Load temperature history from weather snapshots.
+ * Returns one point per snapshot (each cron run = ~30min resolution).
+ */
+export async function loadWeatherHistory(
+  db: Db,
+  cityId: string,
+  sinceDays: number,
+): Promise<HistoryPoint[]> {
+  const since = new Date(Date.now() - sinceDays * 86_400_000);
+  const rows = await db
+    .select({ fetchedAt: weatherSnapshots.fetchedAt, current: weatherSnapshots.current })
+    .from(weatherSnapshots)
+    .where(and(eq(weatherSnapshots.cityId, cityId), gte(weatherSnapshots.fetchedAt, since)))
+    .orderBy(asc(weatherSnapshots.fetchedAt));
+
+  return rows
+    .map((r) => {
+      const cur = r.current as { temp?: number } | null;
+      if (!cur || typeof cur.temp !== 'number') return null;
+      return { timestamp: r.fetchedAt.toISOString(), value: cur.temp };
+    })
+    .filter((p): p is HistoryPoint => p !== null);
+}
+
+/**
+ * Load AQI history by averaging europeanAqi across grid stations per fetch batch.
+ * Returns one point per batch (each cron run = ~30min resolution).
+ */
+export async function loadAqiHistory(
+  db: Db,
+  cityId: string,
+  sinceDays: number,
+): Promise<HistoryPoint[]> {
+  const since = new Date(Date.now() - sinceDays * 86_400_000);
+  const rows = await db
+    .select({
+      fetchedAt: airQualityGrid.fetchedAt,
+      avgAqi: avg(airQualityGrid.europeanAqi),
+    })
+    .from(airQualityGrid)
+    .where(and(eq(airQualityGrid.cityId, cityId), gte(airQualityGrid.fetchedAt, since)))
+    .groupBy(airQualityGrid.fetchedAt)
+    .orderBy(asc(airQualityGrid.fetchedAt));
+
+  return rows
+    .map((r) => {
+      const val = r.avgAqi != null ? Number(r.avgAqi) : NaN;
+      if (Number.isNaN(val)) return null;
+      return { timestamp: r.fetchedAt.toISOString(), value: Math.round(val) };
+    })
+    .filter((p): p is HistoryPoint => p !== null);
+}
+
+/**
+ * Load water level history for all stations.
+ * Returns one point per snapshot with the average level across stations.
+ */
+export async function loadWaterLevelHistory(
+  db: Db,
+  cityId: string,
+  sinceDays: number,
+): Promise<HistoryPoint[]> {
+  const since = new Date(Date.now() - sinceDays * 86_400_000);
+  const rows = await db
+    .select({ fetchedAt: waterLevelSnapshots.fetchedAt, stations: waterLevelSnapshots.stations })
+    .from(waterLevelSnapshots)
+    .where(and(eq(waterLevelSnapshots.cityId, cityId), gte(waterLevelSnapshots.fetchedAt, since)))
+    .orderBy(asc(waterLevelSnapshots.fetchedAt));
+
+  return rows
+    .map((r) => {
+      const stations = r.stations as Array<{ currentLevel?: number }> | null;
+      if (!Array.isArray(stations) || stations.length === 0) return null;
+      const levels = stations.map((s) => s.currentLevel).filter((l): l is number => typeof l === 'number');
+      if (levels.length === 0) return null;
+      const avg = levels.reduce((a, b) => a + b, 0) / levels.length;
+      return { timestamp: r.fetchedAt.toISOString(), value: Math.round(avg) };
+    })
+    .filter((p): p is HistoryPoint => p !== null);
+}
+
+/**
+ * Load labor market unemployment rate history.
+ * Returns one point per snapshot (monthly resolution).
+ */
+export async function loadLaborMarketHistory(
+  db: Db,
+  cityId: string,
+  sinceDays: number,
+): Promise<HistoryPoint[]> {
+  const since = new Date(Date.now() - sinceDays * 86_400_000);
+  const rows = await db
+    .select({ fetchedAt: laborMarketSnapshots.fetchedAt, data: laborMarketSnapshots.data })
+    .from(laborMarketSnapshots)
+    .where(and(eq(laborMarketSnapshots.cityId, cityId), gte(laborMarketSnapshots.fetchedAt, since)))
+    .orderBy(asc(laborMarketSnapshots.fetchedAt));
+
+  // Deduplicate by reportMonth — keep latest snapshot per month
+  const byMonth = new Map<string, HistoryPoint>();
+  for (const r of rows) {
+    const d = r.data as { unemploymentRate?: number; reportMonth?: string } | null;
+    if (!d || typeof d.unemploymentRate !== 'number') continue;
+    const month = d.reportMonth ?? r.fetchedAt.toISOString().slice(0, 7);
+    byMonth.set(month, { timestamp: r.fetchedAt.toISOString(), value: d.unemploymentRate });
+  }
+  return [...byMonth.values()];
 }
 
 export type { GeocodeResult };

@@ -142,6 +142,20 @@
         "121721": "تصريح ركن السكان"
       }
     },
+    "population": {
+      "title": "السكان",
+      "total": "الإجمالي",
+      "foreign": "الجنسية الأجنبية",
+      "elderly": "65 سنة فما فوق",
+      "youth": "تحت 18 سنة",
+      "workingAge": "سن العمل",
+      "change": "مقارنة بالنصف السابق",
+      "empty": "لا توجد بيانات متاحة",
+      "source": "إحصائيات برلين-براندنبورغ",
+      "density": "لكل كم²",
+      "densityLabel": "الكثافة",
+      "german": "الجنسية الألمانية"
+    },
     "laborMarket": {
       "title": "البطالة",
       "unemployment": "معدل البطالة",
@@ -235,7 +249,8 @@
       "emergencies": "طوارئ",
       "traffic": "حركة المرور",
       "water": "المياه",
-      "socioeconomic": "المجتمع",
+      "social": "اجتماعي",
+      "population": "السكان",
       "political": "تمثيل"
     },
     "news": {
@@ -255,9 +270,17 @@
       "levels": "مناسيب المياه",
       "bathing": "مياه السباحة"
     },
-    "socioeconomic": {
-      "social-atlas": "الأطلس الاجتماعي 2023",
+    "social": {
+      "unemployment": "البطالة (2023)",
+      "single-parent": "أسر الوالد الواحد (2023)",
+      "welfare": "المساعدة الاجتماعية (2023)",
+      "child-poverty": "فقر الأطفال (2023)",
       "rent": "إيجار"
+    },
+    "population": {
+      "pop-density": "الكثافة السكانية",
+      "pop-elderly": "نسبة كبار السن",
+      "pop-foreign": "السكان الأجانب"
     },
     "political": {
       "bezirke": "الأحياء",

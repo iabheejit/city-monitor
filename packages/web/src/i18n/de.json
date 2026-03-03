@@ -142,6 +142,20 @@
         "121721": "Bewohnerparkausweis"
       }
     },
+    "population": {
+      "title": "Bevölkerung",
+      "total": "Gesamt",
+      "foreign": "Ausländische Staatsangehörigkeit",
+      "elderly": "65 Jahre und älter",
+      "youth": "Unter 18",
+      "workingAge": "Erwerbsfähiges Alter",
+      "change": "ggü. Vorhalbjahr",
+      "empty": "Keine Daten verfügbar",
+      "source": "Statistik Berlin-Brandenburg",
+      "density": "pro km²",
+      "densityLabel": "Dichte",
+      "german": "Deutsche Staatsangehörigkeit"
+    },
     "laborMarket": {
       "title": "Arbeitslosigkeit",
       "unemployment": "Arbeitslosenquote",
@@ -235,7 +249,8 @@
       "emergencies": "Notfall",
       "traffic": "Verkehr",
       "water": "Wasser",
-      "socioeconomic": "Gesellschaft",
+      "social": "Soziales",
+      "population": "Bevölkerung",
       "political": "Vertretung"
     },
     "news": {
@@ -255,9 +270,17 @@
       "levels": "Pegelstände",
       "bathing": "Badegewässer"
     },
-    "socioeconomic": {
-      "social-atlas": "Sozialatlas 2023",
+    "social": {
+      "unemployment": "Arbeitslosigkeit (2023)",
+      "single-parent": "Alleinerziehende (2023)",
+      "welfare": "Transferbezug (2023)",
+      "child-poverty": "Kinderarmut (2023)",
       "rent": "Mietspiegel"
+    },
+    "population": {
+      "pop-density": "Bevölkerungsdichte",
+      "pop-elderly": "Seniorenanteil",
+      "pop-foreign": "Ausländeranteil"
     },
     "political": {
       "bezirke": "Bezirke",

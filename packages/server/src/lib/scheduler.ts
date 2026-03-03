@@ -75,7 +75,26 @@ export function createScheduler(jobs: ScheduledJob[]) {
     }
   }
 
-  return { getJobs, stop };
+  async function triggerJob(name: string): Promise<boolean> {
+    const idx = jobs.findIndex((j) => j.name === name);
+    if (idx < 0) return false;
+    const job = jobs[idx];
+    const info = jobInfos[idx];
+    if (info.running) return false;
+    info.running = true;
+    try {
+      await job.handler();
+      info.lastRun = new Date();
+    } catch (err) {
+      info.lastFailure = new Date();
+      log.error(`${job.name} (manual) failed`, err);
+    } finally {
+      info.running = false;
+    }
+    return true;
+  }
+
+  return { getJobs, stop, triggerJob };
 }
 
 function runStartupJobs(jobs: ScheduledJob[], jobInfos: JobInfo[]): void {

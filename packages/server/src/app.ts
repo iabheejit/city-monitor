@@ -9,7 +9,7 @@ import compression from 'compression';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import { createCache } from './lib/cache.js';
-import { createScheduler, type ScheduledJob } from './lib/scheduler.js';
+import { createScheduler, type JobInfo, type ScheduledJob } from './lib/scheduler.js';
 import { createDb, testConnection } from './db/index.js';
 import { warmCache, findStaleJobs, type FreshnessSpec } from './db/warm-cache.js';
 import { createHealthRouter } from './routes/health.js';
@@ -33,6 +33,7 @@ import { createBudgetRouter } from './routes/budget.js';
 import { createBathingRouter } from './routes/bathing.js';
 import { createWastewaterRouter } from './routes/wastewater.js';
 import { createLaborMarketRouter } from './routes/labor-market.js';
+import { createPopulationRouter } from './routes/population.js';
 import { createFeedIngestion } from './cron/ingest-feeds.js';
 import { createWeatherIngestion } from './cron/ingest-weather.js';
 import { createSummarization } from './cron/summarize.js';
@@ -54,6 +55,7 @@ import { createAppointmentIngestion } from './cron/ingest-appointments.js';
 import { createBathingIngestion } from './cron/ingest-bathing.js';
 import { createWastewaterIngestion } from './cron/ingest-wastewater.js';
 import { createLaborMarketIngestion } from './cron/ingest-labor-market.js';
+import { createPopulationIngestion } from './cron/ingest-population.js';
 import { initGeocodeDb } from './lib/geocode.js';
 import { validateCity } from './lib/validate-city.js';
 
@@ -110,6 +112,7 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
     { jobName: 'ingest-bathing',      tableName: 'bathing_snapshots',       maxAgeSeconds: 86400 },
     { jobName: 'ingest-wastewater',   tableName: 'wastewater_snapshots',    maxAgeSeconds: 86400 },
     { jobName: 'ingest-labor-market', tableName: 'labor_market_snapshots',  maxAgeSeconds: 86400 },
+    { jobName: 'ingest-population',   tableName: 'population_snapshots',    maxAgeSeconds: 2592000 },
   ];
 
   const stale = db
@@ -136,6 +139,7 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
   const ingestBathing = createBathingIngestion(cache, db);
   const ingestWastewater = createWastewaterIngestion(cache, db);
   const ingestLaborMarket = createLaborMarketIngestion(cache, db);
+  const ingestPopulation = createPopulationIngestion(cache, db);
 
   const retainData = db ? createDataRetention(db) : async () => {};
 
@@ -162,11 +166,12 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
     { name: 'ingest-bathing', schedule: '0 6 * * *', handler: ingestBathing, runOnStart: s('ingest-bathing') },
     { name: 'ingest-wastewater', schedule: '0 6 * * *', handler: ingestWastewater, runOnStart: s('ingest-wastewater') },
     { name: 'ingest-labor-market', schedule: '0 7 * * *', handler: ingestLaborMarket, runOnStart: s('ingest-labor-market') },
+    { name: 'ingest-population', schedule: '0 6 1 * *', handler: ingestPopulation, runOnStart: s('ingest-population'), dependsOn: ['ingest-social-atlas'] },
     { name: 'data-retention', schedule: '0 3 * * *', handler: retainData },
   ];
 
   const scheduler = options?.skipScheduler
-    ? { getJobs: () => [], stop: () => {} }
+    ? { getJobs: () => [] as JobInfo[], stop: () => {}, triggerJob: async () => false as boolean }
     : createScheduler(jobs);
 
   // Cache-Control per route tier (max-age < cron interval)
@@ -203,6 +208,7 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
   app.use('/api', cacheFor(43200), createBathingRouter(cache, db));
   app.use('/api', cacheFor(43200), createWastewaterRouter(cache, db));
   app.use('/api', cacheFor(3600), createLaborMarketRouter(cache, db));
+  app.use('/api', cacheFor(43200), createPopulationRouter(cache, db));
 
   return { app, cache, db, scheduler };
 }
