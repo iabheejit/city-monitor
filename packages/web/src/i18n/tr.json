@@ -54,7 +54,8 @@
         "tickets": "Biletler",
         "museums": "Müzeler"
       },
-      "moreInfo": "Daha fazla"
+      "moreInfo": "Daha fazla",
+      "showMore": "{{count}} daha"
     },
     "safety": {
       "title": "Güvenlik",
@@ -229,13 +230,7 @@
       "political": "Temsil"
     },
     "news": {
-      "local": "Yerel",
-      "politics": "Siyaset",
-      "transit": "Ulaşım",
-      "culture": "Kültür",
-      "crime": "Suç",
-      "economy": "Ekonomi",
-      "sports": "Spor",
+      "news": "Haberler",
       "police": "Polis"
     },
     "traffic": {
@@ -281,6 +276,10 @@
     "sourceCode": "Kaynak Kodu",
     "inspiredBy": "World Monitor'den ilham alınmıştır",
     "license": "AGPL-3.0",
-    "weatherTiles": "Hava durumu verileri \u00a9 OpenWeatherMap"
+    "weatherTiles": "Hava durumu verileri \u00a9 OpenWeatherMap",
+    "imprint": "Yasal Bildirim / Impressum",
+    "privacy": "Gizlilik",
+    "noTracking": "Takip Yok",
+    "sources": "Veri Kaynakları"
   }
 }

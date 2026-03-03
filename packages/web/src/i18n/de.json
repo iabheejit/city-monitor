@@ -54,7 +54,8 @@
         "tickets": "Tickets",
         "museums": "Museen"
       },
-      "moreInfo": "Mehr Infos"
+      "moreInfo": "Mehr Infos",
+      "showMore": "{{count}} weitere"
     },
     "safety": {
       "title": "Sicherheit",
@@ -229,13 +230,7 @@
       "political": "Vertretung"
     },
     "news": {
-      "local": "Lokales",
-      "politics": "Politik",
-      "transit": "Nahverkehr",
-      "culture": "Kultur",
-      "crime": "Kriminalität",
-      "economy": "Wirtschaft",
-      "sports": "Sport",
+      "news": "Nachrichten",
       "police": "Polizei"
     },
     "traffic": {
@@ -281,6 +276,10 @@
     "sourceCode": "Quellcode",
     "inspiredBy": "Inspiriert von World Monitor",
     "license": "AGPL-3.0",
-    "weatherTiles": "Wetterdaten \u00a9 OpenWeatherMap"
+    "weatherTiles": "Wetterdaten \u00a9 OpenWeatherMap",
+    "imprint": "Impressum",
+    "privacy": "Datenschutz",
+    "noTracking": "Kein Tracking",
+    "sources": "Datenquellen"
   }
 }

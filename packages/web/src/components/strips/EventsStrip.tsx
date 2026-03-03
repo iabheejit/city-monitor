@@ -34,6 +34,7 @@ const SOURCE_FILTERS: { key: SourceFilter; labelKey: string }[] = [
   { key: 'gomus', labelKey: 'panel.events.source.museums' },
 ];
 
+const COLLAPSED_VISIBLE = 10;
 const MAX_VISIBLE = 25;
 
 function formatEventTime(dateStr: string, lang: string): string {
@@ -126,7 +127,7 @@ function EventCard({ event, lang, t }: { event: CityEvent; lang: string; t: (key
   );
 }
 
-export function EventsStrip() {
+export function EventsStrip({ expanded, onExpand }: { expanded: boolean; onExpand: () => void }) {
   const { id: cityId } = useCityConfig();
   const { data, isLoading } = useEvents(cityId);
   const { t, i18n } = useTranslation();
@@ -170,7 +171,9 @@ export function EventsStrip() {
     ? sourceFiltered
     : sourceFiltered.filter((e) => e.category === resolvedCategory);
 
-  const events = filtered.slice(0, MAX_VISIBLE);
+  const limit = expanded ? MAX_VISIBLE : COLLAPSED_VISIBLE;
+  const events = filtered.slice(0, limit);
+  const remaining = filtered.length - events.length;
 
   const pillActive = 'bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900';
   const pillInactive = 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700';
@@ -259,6 +262,15 @@ export function EventsStrip() {
             {events.map((event, i) => (
               <EventCard key={`${event.id}-${i}`} event={event} lang={i18n.language} t={t} />
             ))}
+            {remaining > 0 && (
+              <button
+                type="button"
+                onClick={onExpand}
+                className="w-full py-1.5 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer"
+              >
+                {t('panel.events.showMore', { count: remaining })}
+              </button>
+            )}
           </div>
         )}
       </div>

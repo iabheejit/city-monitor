@@ -55,7 +55,7 @@ export function CommandLayout() {
           <NinaBanner />
         </div>
         <DashboardGrid>
-          <Tile title={t('panel.news.briefing')} span={1}>
+          <Tile title={t('panel.news.briefing')} span={2}>
             <BriefingStrip />
           </Tile>
           <Tile title={t('panel.weather.title')} span={1} expandable defaultExpanded={isDesktop}>
@@ -64,31 +64,31 @@ export function CommandLayout() {
           <Tile title={t('panel.airQuality.title')} span={1} expandable defaultExpanded={isDesktop}>
             {(expanded) => <AirQualityStrip expanded={expanded} />}
           </Tile>
-          {cityId === 'berlin' && (
-            <Tile title={t('panel.wastewater.title')} span={1} expandable defaultExpanded={isDesktop}>
-              {(expanded) => <WastewaterStrip expanded={expanded} />}
-            </Tile>
-          )}
           <Tile title={t('panel.news.title')} span={2}>
             <NewsStrip />
           </Tile>
           <Tile title={t('panel.transit.title')} span={1} expandable defaultExpanded={false}>
             {(expanded, setExpanded) => <TransitStrip expanded={expanded} onExpand={() => setExpanded(true)} />}
           </Tile>
-          <Tile title={t('panel.waterLevels.title')} span={1}>
-            <WaterLevelStrip />
-          </Tile>
-          <Tile title={t('panel.bathing.title')} span={1} expandable defaultExpanded>
-            {(expanded) => <BathingStrip expanded={expanded} />}
-          </Tile>
-          <Tile title={t('panel.appointments.title')} span={1}>
-            <AppointmentsStrip />
-          </Tile>
+          {cityId === 'berlin' && (
+            <Tile title={t('panel.wastewater.title')} span={1} expandable defaultExpanded={isDesktop}>
+              {(expanded) => <WastewaterStrip expanded={expanded} />}
+            </Tile>
+          )}
           {cityId === 'berlin' && (
             <Tile title={t('panel.laborMarket.title')} span={1}>
               <LaborMarketStrip />
             </Tile>
           )}
+          <Tile title={t('panel.appointments.title')} span={1}>
+            <AppointmentsStrip />
+          </Tile>
+          <Tile title={t('panel.bathing.title')} span={1} expandable defaultExpanded>
+            {(expanded) => <BathingStrip expanded={expanded} />}
+          </Tile>
+          <Tile title={t('panel.waterLevels.title')} span={1}>
+            <WaterLevelStrip />
+          </Tile>
           <Tile title={t('panel.budget.title')} span={2}>
             <BudgetStrip />
           </Tile>
@@ -121,8 +121,8 @@ export function CommandLayout() {
           <Tile title={t('sidebar.layers.political')} expandable>
             {(expanded, setExpanded) => <PoliticalStrip expanded={expanded} onExpand={() => setExpanded(true)} />}
           </Tile>
-          <Tile title={t('panel.events.title')} span={2}>
-            <EventsStrip />
+          <Tile title={t('panel.events.title')} span={2} expandable>
+            {(expanded, setExpanded) => <EventsStrip expanded={expanded} onExpand={() => setExpanded(true)} />}
           </Tile>
         </DashboardGrid>
       </div>

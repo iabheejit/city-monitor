@@ -8,7 +8,8 @@
  * Does NOT port worldmonitor's DeckGLMap component.
  */
 
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
@@ -679,20 +680,22 @@ function buildPopupHtml(props: Record<string, unknown>): string {
   return parts.join('');
 }
 
-function newsToGeoJSON(items: NewsItem[]): GeoJSON.FeatureCollection {
+function newsToGeoJSON(items: NewsItem[], fallback: { lat: number; lon: number }, categoryLabel: (cat: string) => string): GeoJSON.FeatureCollection {
   const features: GeoJSON.Feature[] = [];
   for (const item of items) {
-    if (!item.location) continue;
+    const loc = item.location ?? fallback;
     features.push({
       type: 'Feature',
-      geometry: { type: 'Point', coordinates: [item.location.lon, item.location.lat] },
+      geometry: { type: 'Point', coordinates: [loc.lon, loc.lat] },
       properties: {
         title: item.title,
         category: item.category,
+        categoryLabel: categoryLabel(item.category),
         sourceName: item.sourceName,
         url: item.url,
         color: NEWS_CATEGORY_COLORS[item.category] ?? '#6366f1',
-        locationLabel: item.location.label ?? '',
+        locationLabel: item.location?.label ?? '',
+        importance: item.importance ?? 0,
       },
     });
   }
@@ -717,24 +720,149 @@ function safetyToGeoJSON(reports: SafetyReport[]): GeoJSON.FeatureCollection {
   return { type: 'FeatureCollection', features };
 }
 
-function updateNewsMarkers(map: maplibregl.Map, items: NewsItem[], _isDark: boolean) {
-  const geojson = newsToGeoJSON(items);
+// ---------------------------------------------------------------------------
+// Interactive spiderify: click a heap of stacked markers to scatter them
+// outward with connecting legs. Click elsewhere to collapse.
+// ---------------------------------------------------------------------------
 
-  for (const id of ['news-marker-label', 'news-marker-circle', 'news-marker-icon']) {
+const SPIDER_BASE_RADIUS = 0.003; // ~300m base
+const SPIDER_PER_ITEM = 0.0008;   // extra ~80m per item so large groups spread further
+
+interface SpiderState {
+  groups: Map<string, number[]>;       // groupKey → feature indices
+  origCoords: Map<number, [number, number]>;
+  expandedKey: string | null;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+interface SpiderHandlerSet { handlers: Array<{ event: string; layer?: string; fn: any }> }
+
+const _newsSpider: SpiderState = { groups: new Map(), origCoords: new Map(), expandedKey: null };
+const _newsH: SpiderHandlerSet = { handlers: [] };
+const _safetySpider: SpiderState = { groups: new Map(), origCoords: new Map(), expandedKey: null };
+const _safetyH: SpiderHandlerSet = { handlers: [] };
+
+function cleanupSpiderHandlers(map: maplibregl.Map, hset: SpiderHandlerSet) {
+  for (const h of hset.handlers) {
+    if (h.layer) map.off(h.event as 'click', h.layer, h.fn);
+    else map.off(h.event as 'click', h.fn);
+  }
+  hset.handlers = [];
+}
+
+/** Tag features with group info and store original coordinates */
+function initSpiderState(fc: GeoJSON.FeatureCollection, state: SpiderState) {
+  const previousKey = state.expandedKey;
+  state.groups.clear();
+  state.origCoords.clear();
+  state.expandedKey = null;
+
+  for (let i = 0; i < fc.features.length; i++) {
+    const coords = (fc.features[i].geometry as GeoJSON.Point).coordinates;
+    const key = `${coords[0].toFixed(4)},${coords[1].toFixed(4)}`;
+    state.origCoords.set(i, [coords[0], coords[1]]);
+    if (!state.groups.has(key)) state.groups.set(key, []);
+    state.groups.get(key)!.push(i);
+    fc.features[i].properties!._groupKey = key;
+    fc.features[i].properties!._isExpanded = 0;
+  }
+  for (const [, indices] of state.groups) {
+    for (const idx of indices) fc.features[idx].properties!._groupSize = indices.length;
+  }
+  // Restore expansion if the group key still exists after data refresh
+  if (previousKey && state.groups.has(previousKey)) {
+    state.expandedKey = previousKey;
+  }
+}
+
+/** Compute positions + spider leg lines based on current expansion state */
+function computeSpiderPositions(
+  features: GeoJSON.Feature[],
+  state: SpiderState,
+): GeoJSON.FeatureCollection {
+  const lineFeatures: GeoJSON.Feature[] = [];
+  for (const [key, indices] of state.groups) {
+    if (indices.length <= 1) continue;
+    const orig = state.origCoords.get(indices[0])!;
+    const expanded = state.expandedKey === key;
+    const radius = SPIDER_BASE_RADIUS + SPIDER_PER_ITEM * indices.length;
+
+    for (let j = 0; j < indices.length; j++) {
+      const feat = features[indices[j]];
+      feat.properties!._isExpanded = expanded ? 1 : 0;
+      if (expanded) {
+        const angle = (2 * Math.PI * j) / indices.length - Math.PI / 2;
+        const lon = orig[0] + radius * Math.cos(angle);
+        const lat = orig[1] + radius * Math.sin(angle);
+        (feat.geometry as GeoJSON.Point).coordinates = [lon, lat];
+        lineFeatures.push({
+          type: 'Feature', properties: {},
+          geometry: { type: 'LineString', coordinates: [[orig[0], orig[1]], [lon, lat]] },
+        });
+      } else {
+        // Collapse back to original
+        (feat.geometry as GeoJSON.Point).coordinates = [orig[0], orig[1]];
+      }
+    }
+  }
+  return { type: 'FeatureCollection', features: lineFeatures };
+}
+
+function updateSpiderSources(
+  map: maplibregl.Map,
+  features: GeoJSON.Feature[],
+  state: SpiderState,
+  pointSourceId: string,
+  lineSourceId: string,
+) {
+  const lines = computeSpiderPositions(features, state);
+  const pointSrc = map.getSource(pointSourceId) as maplibregl.GeoJSONSource | undefined;
+  const lineSrc = map.getSource(lineSourceId) as maplibregl.GeoJSONSource | undefined;
+  if (pointSrc) pointSrc.setData({ type: 'FeatureCollection', features });
+  if (lineSrc) lineSrc.setData(lines);
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function addSpiderHandler(map: maplibregl.Map, hset: SpiderHandlerSet, event: string, layerOrFn: string | ((...a: any[]) => void), fn?: (...a: any[]) => void) {
+  if (typeof layerOrFn === 'string') {
+    map.on(event as 'click', layerOrFn, fn!);
+    hset.handlers.push({ event, layer: layerOrFn, fn: fn! });
+  } else {
+    map.on(event as 'click', layerOrFn);
+    hset.handlers.push({ event, fn: layerOrFn });
+  }
+}
+
+function updateNewsMarkers(map: maplibregl.Map, items: NewsItem[], _isDark: boolean, fallback: { lat: number; lon: number }, categoryLabel: (cat: string) => string) {
+  const geojson = newsToGeoJSON(items, fallback, categoryLabel);
+
+  cleanupSpiderHandlers(map, _newsH);
+  for (const id of ['news-marker-count', 'news-marker-label', 'news-marker-circle', 'news-marker-icon', 'news-spider-lines']) {
     if (map.getLayer(id)) map.removeLayer(id);
   }
   if (map.getSource('news-markers')) map.removeSource('news-markers');
+  if (map.getSource('news-spider-lines')) map.removeSource('news-spider-lines');
 
   if (geojson.features.length === 0) return;
 
+  initSpiderState(geojson, _newsSpider);
+
+  // Empty line source (populated on expansion)
+  map.addSource('news-spider-lines', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+  map.addLayer({
+    id: 'news-spider-lines',
+    type: 'line',
+    source: 'news-spider-lines',
+    paint: { 'line-color': '#6366f1', 'line-width': 1.5, 'line-opacity': 0.5 },
+  });
+
   map.addSource('news-markers', { type: 'geojson', data: geojson });
 
-  // Build a match expression: category → news-icon-{category}
   const iconMatch: unknown[] = ['match', ['get', 'category']];
   for (const cat of Object.keys(NEWS_CATEGORY_COLORS)) {
     iconMatch.push(cat, `news-icon-${cat}`);
   }
-  iconMatch.push('news-icon-local'); // fallback
+  iconMatch.push('news-icon-local');
 
   map.addLayer({
     id: 'news-marker-icon',
@@ -748,29 +876,127 @@ function updateNewsMarkers(map: maplibregl.Map, items: NewsItem[], _isDark: bool
     },
   });
 
-  registerPopupHandlers(map, 'news-marker-icon', (e) => {
-    if (!e.features?.length) return null;
-    const props = e.features[0].properties!;
-    const coords = (e.features[0].geometry as GeoJSON.Point).coordinates.slice() as [number, number];
+  // Count badge for stacked groups (hidden when expanded)
+  map.addLayer({
+    id: 'news-marker-count',
+    type: 'symbol',
+    source: 'news-markers',
+    filter: ['all', ['>', ['get', '_groupSize'], 1], ['==', ['get', '_isExpanded'], 0]],
+    layout: {
+      'text-field': ['concat', '+', ['to-string', ['-', ['get', '_groupSize'], 1]]],
+      'text-size': 10,
+      'text-font': ['Open Sans Regular', 'Arial Unicode MS Regular'],
+      'text-offset': [0.9, -0.9],
+      'text-allow-overlap': true,
+    },
+    paint: {
+      'text-color': '#ffffff',
+      'text-halo-color': '#6366f1',
+      'text-halo-width': 1.5,
+    },
+  });
+
+  // Keep a ref to features array for source updates
+  const features = geojson.features;
+  let justExpanded = false;
+
+  // Click: expand group or show popup
+  addSpiderHandler(map, _newsH, 'click', 'news-marker-icon', (e: maplibregl.MapMouseEvent) => {
+    const f = map.queryRenderedFeatures(e.point, { layers: ['news-marker-icon'] });
+    if (!f.length) return;
+    const groupKey = f[0].properties!._groupKey as string;
+    const groupSize = f[0].properties!._groupSize as number;
+
+    if (groupSize > 1 && _newsSpider.expandedKey !== groupKey) {
+      _newsSpider.expandedKey = groupKey;
+      updateSpiderSources(map, features, _newsSpider, 'news-markers', 'news-spider-lines');
+      justExpanded = true;
+      return;
+    }
+    // Individual or already-expanded marker — popup handled below
+  });
+
+  // Hover
+  addSpiderHandler(map, _newsH, 'mouseenter', 'news-marker-icon', (e: maplibregl.MapMouseEvent) => {
+    map.getCanvas().style.cursor = 'pointer';
+    const f = map.queryRenderedFeatures(e.point, { layers: ['news-marker-icon'] });
+    if (!f.length) return;
+    const props = f[0].properties!;
+    const coords = (f[0].geometry as GeoJSON.Point).coordinates.slice() as [number, number];
+    const groupKey = props._groupKey as string;
+    const groupSize = props._groupSize as number;
+
+    if (groupSize > 1 && _newsSpider.expandedKey !== groupKey) {
+      showMapPopup(map, coords, `<div style="font-size:12px;padding:2px 6px">${groupSize} items &middot; click to expand</div>`, { sticky: false });
+    } else {
+      const imp = Number(props.importance) || 0;
+      const html = `<div style="font-size:13px;max-width:280px">
+        <div style="font-weight:600;margin-bottom:4px">${props.title}</div>
+        <div style="opacity:0.6;font-size:11px">${props.sourceName} · ${props.categoryLabel}${imp ? ` · ${Math.round(imp * 100)}%` : ''}</div>
+        ${props.locationLabel ? `<div style="font-size:11px;margin-top:2px">📍 ${props.locationLabel}</div>` : ''}
+        <a href="${props.url}" target="_blank" rel="noopener" style="font-size:11px;color:#3b82f6">Read more →</a>
+      </div>`;
+      showMapPopup(map, coords, html, { sticky: false });
+    }
+  });
+
+  addSpiderHandler(map, _newsH, 'mouseleave', 'news-marker-icon', () => {
+    map.getCanvas().style.cursor = '';
+    _clearHoverTimer();
+    _hoverTimer = setTimeout(_closeHoverPopup, 300);
+  });
+
+  // Sticky popup on click (only if not expanding)
+  addSpiderHandler(map, _newsH, 'click', 'news-marker-icon', (e: maplibregl.MapMouseEvent) => {
+    if (justExpanded) { justExpanded = false; return; }
+    const f = map.queryRenderedFeatures(e.point, { layers: ['news-marker-icon'] });
+    if (!f.length) return;
+    const props = f[0].properties!;
+    const groupSize = props._groupSize as number;
+    const groupKey = props._groupKey as string;
+    if (groupSize > 1 && _newsSpider.expandedKey !== groupKey) return; // handled by expand
+    const coords = (f[0].geometry as GeoJSON.Point).coordinates.slice() as [number, number];
+    const imp = Number(props.importance) || 0;
     const html = `<div style="font-size:13px;max-width:280px">
       <div style="font-weight:600;margin-bottom:4px">${props.title}</div>
-      <div style="opacity:0.6;font-size:11px">${props.sourceName} · ${props.category}</div>
+      <div style="opacity:0.6;font-size:11px">${props.sourceName} · ${props.categoryLabel}${imp ? ` · ${Math.round(imp * 100)}%` : ''}</div>
       ${props.locationLabel ? `<div style="font-size:11px;margin-top:2px">📍 ${props.locationLabel}</div>` : ''}
       <a href="${props.url}" target="_blank" rel="noopener" style="font-size:11px;color:#3b82f6">Read more →</a>
     </div>`;
-    return { html, lngLat: coords };
+    showMapPopup(map, coords, html, { sticky: true });
+  });
+
+  // Collapse on map background click (check both marker layers)
+  addSpiderHandler(map, _newsH, 'click', (e: maplibregl.MapMouseEvent) => {
+    if (!_newsSpider.expandedKey) return;
+    const f = map.queryRenderedFeatures(e.point, { layers: ['news-marker-icon', 'safety-marker-icon'].filter(id => !!map.getLayer(id)) });
+    if (f.length > 0) return; // clicked a marker, not background
+    _newsSpider.expandedKey = null;
+    updateSpiderSources(map, features, _newsSpider, 'news-markers', 'news-spider-lines');
   });
 }
 
 function updateSafetyMarkers(map: maplibregl.Map, reports: SafetyReport[], _isDark: boolean) {
   const geojson = safetyToGeoJSON(reports);
 
-  for (const id of ['safety-marker-label', 'safety-marker-circle', 'safety-marker-icon']) {
+  cleanupSpiderHandlers(map, _safetyH);
+  for (const id of ['safety-marker-count', 'safety-marker-label', 'safety-marker-circle', 'safety-marker-icon', 'safety-spider-lines']) {
     if (map.getLayer(id)) map.removeLayer(id);
   }
   if (map.getSource('safety-markers')) map.removeSource('safety-markers');
+  if (map.getSource('safety-spider-lines')) map.removeSource('safety-spider-lines');
 
   if (geojson.features.length === 0) return;
+
+  initSpiderState(geojson, _safetySpider);
+
+  map.addSource('safety-spider-lines', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+  map.addLayer({
+    id: 'safety-spider-lines',
+    type: 'line',
+    source: 'safety-spider-lines',
+    paint: { 'line-color': '#ef4444', 'line-width': 1.5, 'line-opacity': 0.5 },
+  });
 
   map.addSource('safety-markers', { type: 'geojson', data: geojson });
 
@@ -786,17 +1012,95 @@ function updateSafetyMarkers(map: maplibregl.Map, reports: SafetyReport[], _isDa
     },
   });
 
-  registerPopupHandlers(map, 'safety-marker-icon', (e) => {
-    if (!e.features?.length) return null;
-    const props = e.features[0].properties!;
-    const coords = (e.features[0].geometry as GeoJSON.Point).coordinates.slice() as [number, number];
+  // Count badge for stacked groups (hidden when expanded)
+  map.addLayer({
+    id: 'safety-marker-count',
+    type: 'symbol',
+    source: 'safety-markers',
+    filter: ['all', ['>', ['get', '_groupSize'], 1], ['==', ['get', '_isExpanded'], 0]],
+    layout: {
+      'text-field': ['concat', '+', ['to-string', ['-', ['get', '_groupSize'], 1]]],
+      'text-size': 10,
+      'text-font': ['Open Sans Regular', 'Arial Unicode MS Regular'],
+      'text-offset': [0.9, -0.9],
+      'text-allow-overlap': true,
+    },
+    paint: {
+      'text-color': '#ffffff',
+      'text-halo-color': '#ef4444',
+      'text-halo-width': 1.5,
+    },
+  });
+
+  const features = geojson.features;
+  let justExpanded = false;
+
+  addSpiderHandler(map, _safetyH, 'click', 'safety-marker-icon', (e: maplibregl.MapMouseEvent) => {
+    const f = map.queryRenderedFeatures(e.point, { layers: ['safety-marker-icon'] });
+    if (!f.length) return;
+    const groupKey = f[0].properties!._groupKey as string;
+    const groupSize = f[0].properties!._groupSize as number;
+
+    if (groupSize > 1 && _safetySpider.expandedKey !== groupKey) {
+      _safetySpider.expandedKey = groupKey;
+      updateSpiderSources(map, features, _safetySpider, 'safety-markers', 'safety-spider-lines');
+      justExpanded = true;
+      return;
+    }
+  });
+
+  addSpiderHandler(map, _safetyH, 'mouseenter', 'safety-marker-icon', (e: maplibregl.MapMouseEvent) => {
+    map.getCanvas().style.cursor = 'pointer';
+    const f = map.queryRenderedFeatures(e.point, { layers: ['safety-marker-icon'] });
+    if (!f.length) return;
+    const props = f[0].properties!;
+    const coords = (f[0].geometry as GeoJSON.Point).coordinates.slice() as [number, number];
+    const groupKey = props._groupKey as string;
+    const groupSize = props._groupSize as number;
+
+    if (groupSize > 1 && _safetySpider.expandedKey !== groupKey) {
+      showMapPopup(map, coords, `<div style="font-size:12px;padding:2px 6px">${groupSize} reports &middot; click to expand</div>`, { sticky: false });
+    } else {
+      const html = `<div style="font-size:13px;max-width:280px">
+        <div style="font-weight:600;margin-bottom:4px">${props.title}</div>
+        ${props.district ? `<div style="opacity:0.6;font-size:11px">${props.district}</div>` : ''}
+        ${props.locationLabel ? `<div style="font-size:11px;margin-top:2px">📍 ${props.locationLabel}</div>` : ''}
+        <a href="${props.url}" target="_blank" rel="noopener" style="font-size:11px;color:#3b82f6">Details →</a>
+      </div>`;
+      showMapPopup(map, coords, html, { sticky: false });
+    }
+  });
+
+  addSpiderHandler(map, _safetyH, 'mouseleave', 'safety-marker-icon', () => {
+    map.getCanvas().style.cursor = '';
+    _clearHoverTimer();
+    _hoverTimer = setTimeout(_closeHoverPopup, 300);
+  });
+
+  addSpiderHandler(map, _safetyH, 'click', 'safety-marker-icon', (e: maplibregl.MapMouseEvent) => {
+    if (justExpanded) { justExpanded = false; return; }
+    const f = map.queryRenderedFeatures(e.point, { layers: ['safety-marker-icon'] });
+    if (!f.length) return;
+    const props = f[0].properties!;
+    const groupSize = props._groupSize as number;
+    const groupKey = props._groupKey as string;
+    if (groupSize > 1 && _safetySpider.expandedKey !== groupKey) return;
+    const coords = (f[0].geometry as GeoJSON.Point).coordinates.slice() as [number, number];
     const html = `<div style="font-size:13px;max-width:280px">
       <div style="font-weight:600;margin-bottom:4px">${props.title}</div>
       ${props.district ? `<div style="opacity:0.6;font-size:11px">${props.district}</div>` : ''}
       ${props.locationLabel ? `<div style="font-size:11px;margin-top:2px">📍 ${props.locationLabel}</div>` : ''}
       <a href="${props.url}" target="_blank" rel="noopener" style="font-size:11px;color:#3b82f6">Details →</a>
     </div>`;
-    return { html, lngLat: coords };
+    showMapPopup(map, coords, html, { sticky: true });
+  });
+
+  addSpiderHandler(map, _safetyH, 'click', (e: maplibregl.MapMouseEvent) => {
+    if (!_safetySpider.expandedKey) return;
+    const f = map.queryRenderedFeatures(e.point, { layers: ['safety-marker-icon', 'news-marker-icon'].filter(id => !!map.getLayer(id)) });
+    if (f.length > 0) return;
+    _safetySpider.expandedKey = null;
+    updateSpiderSources(map, features, _safetySpider, 'safety-markers', 'safety-spider-lines');
   });
 }
 
@@ -1107,6 +1411,15 @@ function updateTrafficLayers(map: maplibregl.Map, incidents: TrafficIncident[], 
     </div>`;
     return { html, lngLat: [e.lngLat.lng, e.lngLat.lat] as [number, number] };
   });
+
+  raiseTransitLayers(map);
+}
+
+/** Move transit marker layers above traffic/construction so they're not hidden. */
+function raiseTransitLayers(map: maplibregl.Map) {
+  for (const id of ['transit-marker-icon', 'transit-marker-label']) {
+    if (map.getLayer(id)) map.moveLayer(id);
+  }
 }
 
 // --------------- Construction / Roadworks ---------------
@@ -1214,6 +1527,8 @@ function updateConstructionLayers(map: maplibregl.Map, sites: ConstructionSite[]
       return { html: constructionPopupHtml(p), lngLat: [e.lngLat.lng, e.lngLat.lat] as [number, number] };
     });
   }
+
+  raiseTransitLayers(map);
 }
 
 function constructionPopupHtml(p: Record<string, unknown>): string {
@@ -1656,6 +1971,8 @@ function updateTransitMarkers(map: maplibregl.Map, alerts: TransitAlert[], isDar
 export function CityMap() {
   const city = useCityConfig();
   const { theme } = useTheme();
+  const { t } = useTranslation();
+  const catLabel = useCallback((cat: string) => t(`category.${cat}`, cat), [t]);
   const { data: transitAlerts } = useTransit(city.id);
   const { data: newsDigest } = useNewsDigest(city.id);
   const { data: safetyReports } = useSafety(city.id);
@@ -1695,9 +2012,8 @@ export function CityMap() {
 
   const transitItems = (activeLayers.has('traffic') && trafficSubLayers.has('public-transport')) ? (transitAlerts ?? []) : [];
   const newsActive = activeLayers.has('news');
-  const newsItems = newsActive
+  const newsItems = (newsActive && newsSubLayers.has('news'))
     ? (newsDigest?.items ?? [])
-        .filter((i) => (newsSubLayers as Set<string>).has(i.category))
         .filter((i) => (i.importance ?? 0) >= 0.5)
     : [];
   const safetyItems = (newsActive && newsSubLayers.has('police')) ? (safetyReports ?? []) : [];
@@ -1717,6 +2033,10 @@ export function CityMap() {
   isDarkRef.current = isDark;
   const cityIdRef = useRef(city.id);
   cityIdRef.current = city.id;
+  const cityCoordRef = useRef(city.coordinates);
+  cityCoordRef.current = city.coordinates;
+  const catLabelRef = useRef(catLabel);
+  catLabelRef.current = catLabel;
   const transitItemsRef = useRef(transitItems);
   transitItemsRef.current = transitItems;
   const newsItemsRef = useRef(newsItems);
@@ -1787,7 +2107,7 @@ export function CityMap() {
       updateTrafficLayers(map, trafficItemsRef.current, isDarkRef.current);
       updateConstructionLayers(map, constructionItemsRef.current, isDarkRef.current);
       updateTransitMarkers(map, transitItemsRef.current ?? [], isDarkRef.current);
-      updateNewsMarkers(map, newsItemsRef.current, isDarkRef.current);
+      updateNewsMarkers(map, newsItemsRef.current, isDarkRef.current, cityCoordRef.current, catLabelRef.current);
       updateSafetyMarkers(map, safetyItemsRef.current, isDarkRef.current);
       updateWarningPolygons(map, warningItemsRef.current, isDarkRef.current);
       updatePharmacyMarkers(map, pharmacyItemsRef.current, isDarkRef.current);
@@ -1872,7 +2192,7 @@ export function CityMap() {
       updateTrafficLayers(map, trafficItemsRef.current, isDark);
       updateConstructionLayers(map, constructionItemsRef.current, isDark);
       updateTransitMarkers(map, transitItemsRef.current ?? [], isDark);
-      updateNewsMarkers(map, newsItemsRef.current, isDark);
+      updateNewsMarkers(map, newsItemsRef.current, isDark, cityCoordRef.current, catLabelRef.current);
       updateSafetyMarkers(map, safetyItemsRef.current, isDark);
       updateWarningPolygons(map, warningItemsRef.current, isDark);
       updatePharmacyMarkers(map, pharmacyItemsRef.current, isDark);
@@ -1927,7 +2247,7 @@ export function CityMap() {
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
-    const apply = () => updateNewsMarkers(map, newsItems, isDarkRef.current);
+    const apply = () => updateNewsMarkers(map, newsItems, isDarkRef.current, cityCoordRef.current, catLabelRef.current);
     if (map.isStyleLoaded()) { apply(); return; }
     map.once('idle', apply);
     return () => { map.off('idle', apply); };
