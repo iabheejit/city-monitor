@@ -3,10 +3,11 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useBudget } from '../../hooks/useBudget.js';
+import { useTabKeys } from '../../hooks/useTabKeys.js';
 import { Skeleton } from '../layout/Skeleton.js';
 import type { BudgetAreaSummary, BudgetCategoryAmount } from '../../lib/api.js';
 
@@ -203,15 +204,25 @@ export function BudgetStrip() {
     { key: 'city', label: t('panel.budget.city') },
     { key: 'districts', label: t('panel.budget.districts') },
   ];
+  const modeIdx = modes.findIndex((m) => m.key === mode);
+  const selectModeByIdx = useCallback((i: number) => setMode(modes[i]!.key), [modes]);
+  const { setTabRef: setModeRef, onKeyDown: onModeKeyDown } = useTabKeys(modes.length, modeIdx, selectModeByIdx);
 
   return (
     <>
       {/* Mode selector */}
-      <div className="flex gap-0.5 mb-3 bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5">
-        {modes.map((m) => (
+      <div role="tablist" className="flex gap-0.5 mb-3 bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5">
+        {modes.map((m, i) => (
           <button
             key={m.key}
+            ref={setModeRef(i)}
+            id={`budget-tab-${m.key}`}
+            role="tab"
+            aria-selected={mode === m.key}
+            aria-controls="budget-panel"
+            tabIndex={mode === m.key ? 0 : -1}
             onClick={() => setMode(m.key)}
+            onKeyDown={onModeKeyDown}
             className={`flex-1 px-1.5 py-1 rounded-md text-[11px] font-medium text-center transition-colors ${
               mode === m.key
                 ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
@@ -223,10 +234,11 @@ export function BudgetStrip() {
         ))}
       </div>
 
-      {mode === 'city' && total ? (
-        <CityView area={total} t={t} />
-      ) : (
-        <DistrictView
+      <div id="budget-panel" role="tabpanel" aria-labelledby={`budget-tab-${mode}`}>
+        {mode === 'city' && total ? (
+          <CityView area={total} t={t} />
+        ) : (
+          <DistrictView
           areas={districts}
           leftArea={effectiveLeft}
           rightArea={effectiveRight}
@@ -234,7 +246,8 @@ export function BudgetStrip() {
           onRightChange={setRightArea}
           t={t}
         />
-      )}
+        )}
+      </div>
     </>
   );
 }

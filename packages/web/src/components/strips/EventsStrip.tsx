@@ -3,10 +3,11 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useEvents } from '../../hooks/useEvents.js';
+import { useTabKeys } from '../../hooks/useTabKeys.js';
 import { Skeleton } from '../layout/Skeleton.js';
 import type { CityEvent } from '../../lib/api.js';
 
@@ -174,21 +175,40 @@ export function EventsStrip() {
   const pillActive = 'bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900';
   const pillInactive = 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700';
 
+  // Source tab keyboard navigation
+  const sourceKeys = activeSourceFilters.map((sf) => sf.key);
+  const sourceActiveIdx = sourceKeys.indexOf(resolvedSource);
+  const selectSourceByIdx = useCallback((i: number) => {
+    setSourceFilter(sourceKeys[i] as SourceFilter);
+    setCategoryFilter('all');
+  }, [sourceKeys]);
+  const { setTabRef: setSrcRef, onKeyDown: onSrcKeyDown } = useTabKeys(sourceKeys.length, sourceActiveIdx, selectSourceByIdx);
+
+  // Category tab keyboard navigation
+  const catActiveIdx = (availableCategories as readonly string[]).indexOf(resolvedCategory);
+  const selectCatByIdx = useCallback((i: number) => setCategoryFilter(availableCategories[i] as string), [availableCategories]);
+  const { setTabRef: setCatRef, onKeyDown: onCatKeyDown } = useTabKeys(availableCategories.length, catActiveIdx, selectCatByIdx);
+
   return (
     <>
       {/* Source filter */}
       {showSourceFilter && (
         <div role="tablist" className="flex gap-1 overflow-x-auto pb-1 mb-1">
-          {activeSourceFilters.map((sf) => {
+          {activeSourceFilters.map((sf, i) => {
             const count = sf.key === 'all'
               ? allEvents.length
               : allEvents.filter((e) => e.source === sf.key).length;
             return (
               <button
                 key={sf.key}
+                ref={setSrcRef(i)}
+                id={`events-src-tab-${sf.key}`}
                 role="tab"
                 aria-selected={resolvedSource === sf.key}
+                aria-controls="events-panel"
+                tabIndex={resolvedSource === sf.key ? 0 : -1}
                 onClick={() => { setSourceFilter(sf.key); setCategoryFilter('all'); }}
+                onKeyDown={onSrcKeyDown}
                 className={`shrink-0 flex items-center gap-1 px-2 py-0.5 text-xs rounded-full transition-colors ${
                   resolvedSource === sf.key ? pillActive : pillInactive
                 }`}
@@ -204,14 +224,19 @@ export function EventsStrip() {
       {/* Category filter */}
       {availableCategories.length > 2 && (
         <div role="tablist" className="flex gap-1 overflow-x-auto pb-1.5 mb-1.5">
-          {availableCategories.map((cat) => {
+          {availableCategories.map((cat, i) => {
             const count = cat === 'all' ? sourceFiltered.length : (categoryCounts[cat] ?? 0);
             return (
               <button
                 key={cat}
+                ref={setCatRef(i)}
+                id={`events-cat-tab-${cat}`}
                 role="tab"
                 aria-selected={resolvedCategory === cat}
+                aria-controls="events-panel"
+                tabIndex={resolvedCategory === cat ? 0 : -1}
                 onClick={() => setCategoryFilter(cat)}
+                onKeyDown={onCatKeyDown}
                 className={`shrink-0 flex items-center gap-1 px-2 py-0.5 text-xs rounded-full transition-colors ${
                   resolvedCategory === cat ? pillActive : pillInactive
                 }`}
@@ -224,17 +249,19 @@ export function EventsStrip() {
         </div>
       )}
 
-      {isLoading ? (
-        <Skeleton lines={2} />
-      ) : events.length === 0 ? (
-        <p className="text-sm text-gray-400 py-1 text-center">{t('panel.events.empty')}</p>
-      ) : (
-        <div className="space-y-1.5">
-          {events.map((event, i) => (
-            <EventCard key={`${event.id}-${i}`} event={event} lang={i18n.language} t={t} />
-          ))}
-        </div>
-      )}
+      <div id="events-panel" role="tabpanel" aria-labelledby={`events-cat-tab-${resolvedCategory}`}>
+        {isLoading ? (
+          <Skeleton lines={2} />
+        ) : events.length === 0 ? (
+          <p className="text-sm text-gray-400 py-1 text-center">{t('panel.events.empty')}</p>
+        ) : (
+          <div className="space-y-1.5">
+            {events.map((event, i) => (
+              <EventCard key={`${event.id}-${i}`} event={event} lang={i18n.language} t={t} />
+            ))}
+          </div>
+        )}
+      </div>
     </>
   );
 }

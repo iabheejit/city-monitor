@@ -3,10 +3,11 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useNewsDigest } from '../../hooks/useNewsDigest.js';
+import { useTabKeys } from '../../hooks/useTabKeys.js';
 import { formatRelativeTime } from '../../lib/format-time.js';
 import { Skeleton } from '../layout/Skeleton.js';
 import type { NewsItem } from '../../lib/api.js';
@@ -66,19 +67,28 @@ export function NewsStrip() {
     }
   }
 
+  const activeIndex = (availableCategories as readonly string[]).indexOf(resolvedCategory);
+  const selectByIndex = useCallback((i: number) => setActiveCategory(availableCategories[i] as string), [availableCategories]);
+  const { setTabRef, onKeyDown } = useTabKeys(availableCategories.length, activeIndex, selectByIndex);
+
   return isLoading ? (
     <Skeleton lines={6} />
   ) : (
     <>
       <div role="tablist" className="flex gap-1 overflow-x-auto pb-2 mb-3">
-        {availableCategories.map((cat) => {
+        {availableCategories.map((cat, i) => {
           const count = cat === 'all' ? visibleItems.length : (categoryCounts[cat] ?? 0);
           return (
             <button
               key={cat}
+              ref={setTabRef(i)}
+              id={`news-tab-${cat}`}
               role="tab"
               aria-selected={resolvedCategory === cat}
+              aria-controls="news-panel"
+              tabIndex={resolvedCategory === cat ? 0 : -1}
               onClick={() => setActiveCategory(cat)}
+              onKeyDown={onKeyDown}
               className={`shrink-0 flex items-center gap-1 px-2.5 py-1 text-xs rounded-full transition-colors ${
                 resolvedCategory === cat
                   ? 'bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900'
@@ -92,15 +102,17 @@ export function NewsStrip() {
         })}
       </div>
 
-      {filteredItems.length === 0 ? (
-        <p className="text-sm text-gray-400 py-2 text-center">{t('panel.news.empty')}</p>
-      ) : (
-        <ul className="divide-y divide-gray-100 dark:divide-gray-800">
-          {filteredItems.map((item) => (
-            <CompactNewsItem key={item.id} item={item} />
-          ))}
-        </ul>
-      )}
+      <div id="news-panel" role="tabpanel" aria-labelledby={`news-tab-${resolvedCategory}`}>
+        {filteredItems.length === 0 ? (
+          <p className="text-sm text-gray-400 py-2 text-center">{t('panel.news.empty')}</p>
+        ) : (
+          <ul className="divide-y divide-gray-100 dark:divide-gray-800">
+            {filteredItems.map((item) => (
+              <CompactNewsItem key={item.id} item={item} />
+            ))}
+          </ul>
+        )}
+      </div>
     </>
   );
 }
