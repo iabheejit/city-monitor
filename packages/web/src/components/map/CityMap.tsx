@@ -32,6 +32,7 @@ import type { TransitAlert, NewsItem, SafetyReport, NinaWarning, EmergencyPharma
 import { SEVERITY_COLORS, NEWS_CATEGORY_COLORS, AQI_LEVEL_COLORS, CONSTRUCTION_SUBTYPE_COLORS, WATER_STATE_COLORS, BATHING_QUALITY_COLORS, registerAllMapIcons, registerPoliticalIcons } from '../../lib/map-icons.js';
 import { getAqiLevel } from '../../lib/aqi.js';
 import { getPartyColor, getMajorityParty } from '../../lib/party-colors.js';
+import { MAP_NEWS } from '../../lib/map-settings.js';
 
 const DARK_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-nolabels-gl-style/style.json';
 const LIGHT_STYLE = 'https://basemaps.cartocdn.com/gl/positron-nolabels-gl-style/style.json';
@@ -678,6 +679,80 @@ function buildPopupHtml(props: Record<string, unknown>): string {
 
   parts.push(`</div>`);
   return parts.join('');
+}
+
+/** Snap a coordinate to a grid cell key (e.g. "52.51,13.38") */
+function geoCell(lat: number, lon: number): string {
+  const g = MAP_NEWS.spatialGridSize;
+  return `${Math.floor(lat / g)},${Math.floor(lon / g)}`;
+}
+
+/**
+ * Select the most important news items for map display.
+ * 1. Guarantee the top N items from each category (so no category is invisible)
+ * 2. Fill remaining slots by global importance ranking
+ * 3. Cap at global max
+ * 4. Spatial bonus: add items in grid cells not yet covered (up to bonus cap)
+ */
+function filterNewsForMap(items: NewsItem[], fallback: { lat: number; lon: number }): NewsItem[] {
+  // Items already filtered by relevant_to_city on the server (applyDropLogic)
+  const byImportance = [...items].sort((a, b) => (b.importance ?? 0) - (a.importance ?? 0));
+
+  // Group by category, each group already sorted by importance
+  const byCategory = new Map<string, NewsItem[]>();
+  for (const item of byImportance) {
+    const list = byCategory.get(item.category);
+    if (list) list.push(item);
+    else byCategory.set(item.category, [item]);
+  }
+
+  // Phase 1: guarantee top N per category
+  const picked = new Set<string>();
+  for (const [, catItems] of byCategory) {
+    for (let i = 0; i < Math.min(MAP_NEWS.guaranteedPerCategory, catItems.length); i++) {
+      picked.add(catItems[i].id);
+    }
+  }
+
+  // Phase 2: fill remaining slots by importance
+  const resultSet = new Set<string>();
+  const result: NewsItem[] = [];
+  for (const item of byImportance) {
+    if (result.length >= MAP_NEWS.maxTotal) break;
+    if (picked.has(item.id)) {
+      result.push(item);
+      resultSet.add(item.id);
+    }
+  }
+  for (const item of byImportance) {
+    if (result.length >= MAP_NEWS.maxTotal) break;
+    if (!resultSet.has(item.id)) {
+      result.push(item);
+      resultSet.add(item.id);
+    }
+  }
+
+  // Phase 3: spatial bonus — add items that fill empty grid cells
+  const coveredCells = new Set<string>();
+  for (const item of result) {
+    const loc = item.location ?? fallback;
+    coveredCells.add(geoCell(loc.lat, loc.lon));
+  }
+
+  let bonus = 0;
+  for (const item of byImportance) {
+    if (bonus >= MAP_NEWS.spatialBonusMax) break;
+    if (resultSet.has(item.id)) continue;
+    const loc = item.location ?? fallback;
+    const cell = geoCell(loc.lat, loc.lon);
+    if (coveredCells.has(cell)) continue;
+    coveredCells.add(cell);
+    result.push(item);
+    resultSet.add(item.id);
+    bonus++;
+  }
+
+  return result;
 }
 
 function newsToGeoJSON(items: NewsItem[], fallback: { lat: number; lon: number }, categoryLabel: (cat: string) => string): GeoJSON.FeatureCollection {
@@ -2013,8 +2088,7 @@ export function CityMap() {
   const transitItems = (activeLayers.has('traffic') && trafficSubLayers.has('public-transport')) ? (transitAlerts ?? []) : [];
   const newsActive = activeLayers.has('news');
   const newsItems = (newsActive && newsSubLayers.has('news'))
-    ? (newsDigest?.items ?? [])
-        .filter((i) => (i.importance ?? 0) >= 0.5)
+    ? filterNewsForMap(newsDigest?.items ?? [], city.coordinates)
     : [];
   const safetyItems = (newsActive && newsSubLayers.has('police')) ? (safetyReports ?? []) : [];
   const warningItems = activeLayers.has('warnings') ? (ninaWarnings ?? []) : [];
