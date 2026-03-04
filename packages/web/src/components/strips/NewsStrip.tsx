@@ -13,6 +13,17 @@ import type { NewsItem } from '../../lib/api.js';
 const ALL_CATEGORIES = ['all', 'politics', 'economy', 'culture', 'local', 'transit', 'crime', 'sports'] as const;
 const HIDDEN_CATEGORIES = new Set(['weather']);
 
+const CATEGORY_ICONS: Record<string, string> = {
+  all: '📰',
+  politics: '🏛',
+  economy: '€',
+  culture: '🎭',
+  local: '📍',
+  transit: '🚇',
+  crime: '🚨',
+  sports: '⚽',
+};
+
 const CATEGORY_COLORS: Record<string, string> = {
   local: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
   transit: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300',
@@ -44,12 +55,11 @@ const FAVICON_SLUGS: Record<string, string> = {
   'hamburg.de News': 'hamburg-de-news',
 };
 
-const MAX_ITEMS = 10;
-const COLLAPSED_ITEMS = 5;
+const MAX_ITEMS = 15;
 
 const FRESH_MAX_AGE = 15 * 60 * 1000; // 15 min (cron every 10 min)
 
-export function NewsStrip({ expanded, onExpand }: { expanded: boolean; onExpand: () => void }) {
+export function NewsStrip() {
   const { id: cityId } = useCityConfig();
   const { data, fetchedAt, isLoading, isError, refetch } = useNewsDigest(cityId);
   const { t } = useTranslation();
@@ -97,39 +107,35 @@ export function NewsStrip({ expanded, onExpand }: { expanded: boolean; onExpand:
   if (isLoading) return <Skeleton lines={6} />;
   if (isError) return <StripErrorFallback domain="News" onRetry={refetch} />;
 
-  const displayItems = expanded ? filteredItems : filteredItems.slice(0, COLLAPSED_ITEMS);
-  const remaining = expanded ? 0 : filteredItems.length - displayItems.length;
+  const displayItems = filteredItems.slice(0, MAX_ITEMS);
 
   return (
     <>
-      <div role="tablist" className="flex gap-1 overflow-x-auto pb-2 mb-3">
-        {availableCategories.map((cat, i) => {
-          const count = cat === 'all' ? visibleItems.length : (categoryCounts[cat] ?? 0);
-          return (
-            <button
-              key={cat}
-              ref={setTabRef(i)}
-              id={`news-tab-${cat}`}
-              role="tab"
-              aria-selected={resolvedCategory === cat}
-              aria-controls="news-panel"
-              tabIndex={resolvedCategory === cat ? 0 : -1}
-              onClick={() => setActiveCategory(cat)}
-              onKeyDown={onKeyDown}
-              className={`shrink-0 flex items-center gap-1 px-2.5 py-1 text-xs rounded-full transition-colors ${
-                resolvedCategory === cat
-                  ? 'bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900'
-                  : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
-              }`}
-            >
-              <span>{cat === 'all' ? t('panel.news.all') : t(`category.${cat}`, cat)}</span>
-              <span className="text-[10px] opacity-50">{count}</span>
-            </button>
-          );
-        })}
+      <div role="tablist" className="flex gap-0.5 mb-2 bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5">
+        {availableCategories.map((cat, i) => (
+          <button
+            key={cat}
+            ref={setTabRef(i)}
+            id={`news-tab-${cat}`}
+            role="tab"
+            aria-selected={resolvedCategory === cat}
+            aria-controls="news-panel"
+            tabIndex={resolvedCategory === cat ? 0 : -1}
+            onClick={() => setActiveCategory(cat)}
+            onKeyDown={onKeyDown}
+            title={cat === 'all' ? t('panel.news.all') : t(`category.${cat}`, cat)}
+            className={`flex-1 px-1.5 py-1 rounded-md text-[11px] font-medium text-center transition-colors ${
+              resolvedCategory === cat
+                ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
+                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+            }`}
+          >
+            {CATEGORY_ICONS[cat] ?? '📰'}
+          </button>
+        ))}
       </div>
 
-      <div id="news-panel" role="tabpanel" aria-labelledby={`news-tab-${resolvedCategory}`}>
+      <div id="news-panel" role="tabpanel" aria-labelledby={`news-tab-${resolvedCategory}`} className="flex-1 min-h-0 max-h-[300px] overflow-y-auto scrollbar-thin pr-2">
         {displayItems.length === 0 ? (
           <p className="text-sm text-gray-400 py-2 text-center">{t('panel.news.empty')}</p>
         ) : (
@@ -138,14 +144,6 @@ export function NewsStrip({ expanded, onExpand }: { expanded: boolean; onExpand:
               <CompactNewsItem key={item.id} item={item} />
             ))}
           </ul>
-        )}
-        {remaining > 0 && (
-          <button
-            onClick={onExpand}
-            className="w-full pt-2 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors cursor-pointer"
-          >
-            {t('panel.news.showMore', { count: remaining })}
-          </button>
         )}
       </div>
       {agoText && <TileFooter stale={isStale}>{t('stale.updated', { time: agoText })}</TileFooter>}
