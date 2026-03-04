@@ -1,4 +1,4 @@
-import type { CityConfig, WeatherData, CurrentWeather, HourlyForecast, DailyForecast, WeatherAlert } from '@city-monitor/shared';
+import type { CityConfig, WeatherData, CurrentWeather, HourlyForecast, DailyForecast, WeatherAlert, DwdUvForecast } from '@city-monitor/shared';
 import type { Cache } from '../lib/cache.js';
 import type { Db } from '../db/index.js';
 import { saveWeather } from '../db/writes.js';
@@ -21,12 +21,15 @@ interface OpenMeteoResponse {
     weather_code: number;
     wind_speed_10m: number;
     wind_direction_10m: number;
+    uv_index: number;
+    uv_index_clear_sky: number;
   };
   hourly: {
     time: string[];
     temperature_2m: number[];
     precipitation_probability: number[];
     weather_code: number[];
+    uv_index: number[];
   };
   daily: {
     time: string[];
@@ -36,6 +39,8 @@ interface OpenMeteoResponse {
     precipitation_sum: number[];
     sunrise: string[];
     sunset: string[];
+    uv_index_max: number[];
+    uv_index_clear_sky_max: number[];
   };
 }
 
@@ -57,9 +62,9 @@ async function ingestCityWeather(city: CityConfig, cache: Cache, db: Db | null):
 
   const url = `https://api.open-meteo.com/v1/forecast`
     + `?latitude=${lat}&longitude=${lon}`
-    + `&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m,wind_direction_10m`
-    + `&hourly=temperature_2m,precipitation_probability,weather_code`
-    + `&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,sunrise,sunset`
+    + `&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m,wind_direction_10m,uv_index,uv_index_clear_sky`
+    + `&hourly=temperature_2m,precipitation_probability,weather_code,uv_index`
+    + `&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,sunrise,sunset,uv_index_max,uv_index_clear_sky_max`
     + `&timezone=${encodeURIComponent(city.timezone)}`
     + `&forecast_days=7`;
 
@@ -73,13 +78,19 @@ async function ingestCityWeather(city: CityConfig, cache: Cache, db: Db | null):
   const raw: OpenMeteoResponse = await response.json();
   const data = transformWeatherData(raw);
 
-  // Fetch DWD alerts for German cities
+  // Fetch DWD alerts and UV for German cities
   if (city.country === 'DE') {
     try {
       const alerts = await fetchDwdAlerts(city);
       data.alerts = alerts;
     } catch {
       log.warn(`${city.id}: DWD alerts failed`);
+    }
+    try {
+      const dwdUv = await fetchDwdUv(city);
+      if (dwdUv) data.dwdUv = dwdUv;
+    } catch {
+      log.warn(`${city.id}: DWD UV failed`);
     }
   }
 
@@ -185,6 +196,8 @@ function transformWeatherData(raw: OpenMeteoResponse): WeatherData {
     weatherCode: raw.current.weather_code,
     windSpeed: raw.current.wind_speed_10m,
     windDirection: raw.current.wind_direction_10m,
+    uvIndex: raw.current.uv_index,
+    uvIndexClearSky: raw.current.uv_index_clear_sky,
   };
 
   const hourly: HourlyForecast[] = raw.hourly.time.map((time, i) => ({
@@ -192,6 +205,7 @@ function transformWeatherData(raw: OpenMeteoResponse): WeatherData {
     temp: raw.hourly.temperature_2m[i],
     precipProb: raw.hourly.precipitation_probability[i],
     weatherCode: raw.hourly.weather_code[i],
+    uvIndex: raw.hourly.uv_index[i],
   }));
 
   const daily: DailyForecast[] = raw.daily.time.map((date, i) => ({
@@ -202,6 +216,8 @@ function transformWeatherData(raw: OpenMeteoResponse): WeatherData {
     precip: raw.daily.precipitation_sum[i],
     sunrise: raw.daily.sunrise[i],
     sunset: raw.daily.sunset[i],
+    uvIndexMax: raw.daily.uv_index_max[i],
+    uvIndexClearSkyMax: raw.daily.uv_index_clear_sky_max[i],
   }));
 
   return { current, hourly, daily, alerts: [] };
@@ -254,4 +270,32 @@ async function fetchDwdAlerts(city: CityConfig): Promise<WeatherAlert[]> {
   }
 
   return alerts;
+}
+
+interface DwdUviResponse {
+  content: Array<{
+    city: string;
+    forecast: { today: number; tomorrow: number; dayafter_to: number };
+  }>;
+}
+
+async function fetchDwdUv(city: CityConfig): Promise<DwdUvForecast | null> {
+  const response = await log.fetch('https://opendata.dwd.de/climate_environment/health/alerts/uvi.json', {
+    signal: AbortSignal.timeout(WEATHER_TIMEOUT_MS),
+    headers: { 'User-Agent': 'CityMonitor/1.0' },
+  });
+
+  if (!response.ok) return null;
+
+  const data: DwdUviResponse = await response.json();
+  const entry = data.content?.find(
+    (c) => c.city.toLowerCase() === city.name.toLowerCase(),
+  );
+  if (!entry) return null;
+
+  return {
+    today: entry.forecast.today,
+    tomorrow: entry.forecast.tomorrow,
+    dayAfter: entry.forecast.dayafter_to,
+  };
 }

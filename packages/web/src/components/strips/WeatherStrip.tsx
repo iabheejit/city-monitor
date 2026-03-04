@@ -3,6 +3,7 @@ import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useWeather } from '../../hooks/useWeather.js';
 import { useFreshness } from '../../hooks/useFreshness.js';
 import { getWeatherInfo } from '../../lib/weather-codes.js';
+import { getUvLevel } from '../../lib/uv-levels.js';
 import { StripErrorFallback } from '../ErrorFallback.js';
 import { Skeleton } from '../layout/Skeleton.js';
 import { TileFooter } from '../layout/TileFooter.js';
@@ -116,6 +117,15 @@ export function WeatherStrip({ expanded }: { expanded: boolean }) {
           <span>{t('panel.weather.humidity')} {current.humidity}%</span>
           <span>{t('panel.weather.wind')} {Math.round(current.windSpeed)} km/h</span>
           {current.precipitation > 0 && <span>{current.precipitation} mm</span>}
+          {current.uvIndex != null && (() => {
+            const uv = getUvLevel(current.uvIndex);
+            return (
+              <span className="inline-flex items-center gap-1">
+                {t('panel.weather.uv')} {Math.round(current.uvIndex)}
+                <span className="inline-block w-2 h-2 rounded-full" style={{ backgroundColor: uv.color }} />
+              </span>
+            );
+          })()}
         </div>
       </div>
 
@@ -133,6 +143,11 @@ export function WeatherStrip({ expanded }: { expanded: boolean }) {
                       <div className="text-gray-400">{hour}</div>
                       <div className="text-xl my-0.5">{info.icon}</div>
                       <div className="text-gray-900 dark:text-gray-100 font-medium">{Math.round(h.temp)}°</div>
+                      {h.uvIndex != null && h.uvIndex > 0 && (
+                        <div className="mt-0.5" style={{ color: getUvLevel(h.uvIndex).color }}>
+                          {Math.round(h.uvIndex)}
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -155,12 +170,19 @@ export function WeatherStrip({ expanded }: { expanded: boolean }) {
                       {d.precip > 0 && (
                         <div className="text-blue-500 mt-0.5">{d.precip}mm</div>
                       )}
+                      {d.uvIndexMax != null && d.uvIndexMax > 0 && (
+                        <div className="mt-0.5" style={{ color: getUvLevel(d.uvIndexMax).color }}>
+                          UV {Math.round(d.uvIndexMax)}
+                        </div>
+                      )}
                     </div>
                   );
                 })}
               </div>
             </div>
           )}
+
+
         </>
       )}
       {agoText && <TileFooter stale={isStale}>{t('stale.updated', { time: agoText })}</TileFooter>}

@@ -43,7 +43,17 @@
       "high": "Y",
       "low": "D",
       "alerts": "Uyarılar",
-      "validUntil": "{{time}} tarihine kadar geçerli"
+      "validUntil": "{{time}} tarihine kadar geçerli",
+      "uv": "UV",
+      "uvClearSky": "Güneşliyse UV",
+      "uvLevel": {
+        "low": "Düşük",
+        "moderate": "Orta",
+        "high": "Yüksek",
+        "veryHigh": "Çok Yüksek",
+        "extreme": "Aşırı"
+      },
+      "dwdForecast": "DWD Tahmini"
     },
     "transit": {
       "title": "Toplu Taşıma",
@@ -315,6 +325,7 @@
       "news": "Haberler",
       "warnings": "Uyarı Bildirimleri",
       "air-quality": "Hava Kalitesi",
+      "noise": "G\u00fcr\u00fclt\u00fc",
       "emergencies": "Acil Durum",
       "traffic": "Trafik",
       "water": "Su",
@@ -334,6 +345,12 @@
     "emergencies": {
       "pharmacies": "Eczaneler",
       "aeds": "Defibrilatörler"
+    },
+    "noise": {
+      "total": "Tüm Kaynaklar",
+      "road": "Karayolu Trafiği",
+      "rail": "Demiryolu Trafiği",
+      "air": "Hava Trafiği"
     },
     "water": {
       "levels": "Su Seviyeleri",

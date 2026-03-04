@@ -90,6 +90,12 @@ export interface CityDataSources {
     regionId: number;
     partregionId: number;
   };
+  noiseSensors?: {
+    provider: 'sensor-community';
+    lat: number;
+    lon: number;
+    radius: number; // km
+  };
 }
 
 // Weather data types (shared between server ingestion and web UI)
@@ -409,6 +415,16 @@ export interface PopulationSummary {
   changeAbsolute: number;   // vs previous snapshot (0 if first)
   changePct: number;
   snapshotDate: string;     // "2025-12-31"
+}
+
+// Noise sensors (Sensor.Community DNMS)
+export interface NoiseSensor {
+  id: number;
+  lat: number;
+  lon: number;
+  laeq: number;   // Equivalent continuous sound level dB(A)
+  laMin: number;   // Minimum sound level dB(A)
+  laMax: number;   // Maximum sound level dB(A)
 }
 
 // Pollen forecast (DWD Pollenflug-Gefahrenindex)

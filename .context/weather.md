@@ -15,8 +15,8 @@
 - **Endpoint:** `https://api.open-meteo.com/v1/forecast`
 - **Auth:** None required (free tier, unlimited requests)
 - **Timeout:** 10s
-- **Query params:** latitude, longitude, current/hourly/daily field lists, timezone, `forecast_days=5`
-- **Returns:** Current weather (temp, humidity, feels-like, precipitation, wind, WMO weather code), hourly arrays (temp, precip probability, weather code), daily arrays (high/low, precip sum, sunrise/sunset, weather code)
+- **Query params:** latitude, longitude, current/hourly/daily field lists, timezone, `forecast_days=7`
+- **Returns:** Current weather (temp, humidity, feels-like, precipitation, wind, WMO weather code, UV index, UV index clear sky), hourly arrays (temp, precip probability, weather code, UV index), daily arrays (high/low, precip sum, sunrise/sunset, weather code, UV index max, UV index clear sky max)
 
 ### DWD — Deutscher Wetterdienst (German cities only)
 
@@ -25,21 +25,31 @@
 - **Filtering:** Warnings keyed by region code; matched against city name in `regionName`. Only severity >= 2 surfaced (minor advisories skipped).
 - **Severity mapping:** 2 = severe, 3+ = extreme
 
+### DWD UV Index (German cities only)
+
+- **Endpoint:** `https://opendata.dwd.de/climate_environment/health/alerts/uvi.json`
+- **Format:** JSON with `content` array of `{ city, forecast: { today, tomorrow, dayafter_to } }`
+- **Matching:** City name exact match (case-insensitive)
+- **Schedule:** Updated once daily (07:30 UTC); fetched alongside Open-Meteo weather every 30 min
+- **Data:** 3-day UV index forecast (WHO scale 0–11+), stored as `dwdUv` on `WeatherData`
+
 ## Key Types
 
 ```typescript
 // Shared type from @city-monitor/shared
 interface WeatherData {
-  current: CurrentWeather;   // temp, feelsLike, humidity, precipitation, weatherCode, windSpeed, windDirection
-  hourly: HourlyForecast[];  // time, temp, precipProb, weatherCode
-  daily: DailyForecast[];    // date, high, low, weatherCode, precip, sunrise, sunset
+  current: CurrentWeather;   // temp, feelsLike, humidity, precipitation, weatherCode, windSpeed, windDirection, uvIndex?, uvIndexClearSky?
+  hourly: HourlyForecast[];  // time, temp, precipProb, weatherCode, uvIndex?
+  daily: DailyForecast[];    // date, high, low, weatherCode, precip, sunrise, sunset, uvIndexMax?, uvIndexClearSkyMax?
   alerts: WeatherAlert[];    // headline, severity ('extreme'|'severe'|'moderate'), description, validUntil
+  dwdUv?: DwdUvForecast;     // today, tomorrow, dayAfter (German cities only)
 }
 ```
 
 ## Frontend Utilities
 
 - `packages/web/src/lib/weather-codes.ts` — Maps WMO weather codes to emoji + label. Handles clear/cloudy (0-3), fog (45-48), drizzle (51-57), rain (61-67), snow (71-77), showers (80-82), snow showers (85-86), thunderstorms (95-99). Fallback: "Unknown".
+- `packages/web/src/lib/uv-levels.ts` — Maps UV index to WHO level (low/moderate/high/veryHigh/extreme) and color. Floors fractional values.
 
 ## DB Schema
 

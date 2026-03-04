@@ -11,12 +11,15 @@ const mockOpenMeteoResponse = {
     weather_code: 3,
     wind_speed_10m: 15.3,
     wind_direction_10m: 240,
+    uv_index: 3.2,
+    uv_index_clear_sky: 5.1,
   },
   hourly: {
     time: ['2026-03-02T00:00', '2026-03-02T01:00', '2026-03-02T02:00'],
     temperature_2m: [10, 9.5, 9],
     precipitation_probability: [20, 30, 10],
     weather_code: [3, 3, 2],
+    uv_index: [0, 0.5, 1.2],
   },
   daily: {
     time: ['2026-03-02', '2026-03-03'],
@@ -26,6 +29,8 @@ const mockOpenMeteoResponse = {
     precipitation_sum: [0, 5.2],
     sunrise: ['2026-03-02T06:30', '2026-03-03T06:28'],
     sunset: ['2026-03-02T18:15', '2026-03-03T18:17'],
+    uv_index_max: [4.5, 2.1],
+    uv_index_clear_sky_max: [6.0, 3.5],
   },
 };
 
@@ -70,6 +75,8 @@ describe('ingest-weather', () => {
       weatherCode: 3,
       windSpeed: 15.3,
       windDirection: 240,
+      uvIndex: 3.2,
+      uvIndexClearSky: 5.1,
     });
 
     expect(data.hourly[0]).toEqual({
@@ -77,6 +84,7 @@ describe('ingest-weather', () => {
       temp: 10,
       precipProb: 20,
       weatherCode: 3,
+      uvIndex: 0,
     });
 
     expect(data.daily[0]).toEqual({
@@ -87,6 +95,8 @@ describe('ingest-weather', () => {
       precip: 0,
       sunrise: '2026-03-02T06:30',
       sunset: '2026-03-02T18:15',
+      uvIndexMax: 4.5,
+      uvIndexClearSkyMax: 6.0,
     });
   });
 

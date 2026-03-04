@@ -43,7 +43,17 @@
       "high": "H",
       "low": "T",
       "alerts": "Warnungen",
-      "validUntil": "Gültig bis {{time}}"
+      "validUntil": "Gültig bis {{time}}",
+      "uv": "UV",
+      "uvClearSky": "UV bei Sonne",
+      "uvLevel": {
+        "low": "Niedrig",
+        "moderate": "Mäßig",
+        "high": "Hoch",
+        "veryHigh": "Sehr hoch",
+        "extreme": "Extrem"
+      },
+      "dwdForecast": "DWD-Vorhersage"
     },
     "transit": {
       "title": "Nahverkehr",
@@ -315,6 +325,7 @@
       "news": "Nachrichten",
       "warnings": "Warnmeldungen",
       "air-quality": "Luftqualit\u00e4t",
+      "noise": "L\u00e4rm",
       "emergencies": "Notfall",
       "traffic": "Verkehr",
       "water": "Wasser",
@@ -334,6 +345,12 @@
     "emergencies": {
       "pharmacies": "Apotheken",
       "aeds": "Defibrillatoren"
+    },
+    "noise": {
+      "total": "Alle Quellen",
+      "road": "Straßenverkehr",
+      "rail": "Schienenverkehr",
+      "air": "Flugverkehr"
     },
     "water": {
       "levels": "Pegelstände",

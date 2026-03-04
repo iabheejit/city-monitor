@@ -43,7 +43,17 @@
       "high": "H",
       "low": "L",
       "alerts": "Alerts",
-      "validUntil": "Valid until {{time}}"
+      "validUntil": "Valid until {{time}}",
+      "uv": "UV",
+      "uvClearSky": "UV if sunny",
+      "uvLevel": {
+        "low": "Low",
+        "moderate": "Moderate",
+        "high": "High",
+        "veryHigh": "Very High",
+        "extreme": "Extreme"
+      },
+      "dwdForecast": "DWD Forecast"
     },
     "transit": {
       "title": "Public Transport",
@@ -315,6 +325,7 @@
       "news": "News",
       "warnings": "Alerts",
       "air-quality": "Air Quality",
+      "noise": "Noise",
       "emergencies": "Emergencies",
       "traffic": "Traffic",
       "water": "Water",
@@ -334,6 +345,12 @@
     "emergencies": {
       "pharmacies": "Pharmacies",
       "aeds": "AEDs"
+    },
+    "noise": {
+      "total": "All Sources",
+      "road": "Road Traffic",
+      "rail": "Rail Traffic",
+      "air": "Air Traffic"
     },
     "water": {
       "levels": "Water Levels",

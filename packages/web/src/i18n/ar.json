@@ -43,7 +43,17 @@
       "high": "أعلى",
       "low": "أدنى",
       "alerts": "تنبيهات",
-      "validUntil": "صالح حتى {{time}}"
+      "validUntil": "صالح حتى {{time}}",
+      "uv": "UV",
+      "uvClearSky": "UV في الشمس",
+      "uvLevel": {
+        "low": "منخفض",
+        "moderate": "معتدل",
+        "high": "مرتفع",
+        "veryHigh": "مرتفع جداً",
+        "extreme": "شديد"
+      },
+      "dwdForecast": "توقعات DWD"
     },
     "transit": {
       "title": "المواصلات",
@@ -315,6 +325,7 @@
       "news": "الأخبار",
       "warnings": "تنبيهات",
       "air-quality": "جودة الهواء",
+      "noise": "الضوضاء",
       "emergencies": "طوارئ",
       "traffic": "حركة المرور",
       "water": "المياه",
@@ -334,6 +345,12 @@
     "emergencies": {
       "pharmacies": "صيدليات",
       "aeds": "أجهزة إزالة الرجفان"
+    },
+    "noise": {
+      "total": "جميع المصادر",
+      "road": "حركة المرور",
+      "rail": "حركة القطارات",
+      "air": "حركة الطيران"
     },
     "water": {
       "levels": "مناسيب المياه",

@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useWeather } from '../../hooks/useWeather.js';
 import { getWeatherInfo } from '../../lib/weather-codes.js';
+import { getUvLevel } from '../../lib/uv-levels.js';
 import { Skeleton } from './Skeleton.js';
 
 export function WeatherPopover() {
@@ -60,10 +61,20 @@ export function WeatherPopover() {
         </div>
       </div>
 
-      <div className="flex gap-3 text-xs text-gray-500 dark:text-gray-400 mb-4">
+      <div className="flex gap-3 text-xs text-gray-500 dark:text-gray-400 mb-4 flex-wrap">
         <span>{t('panel.weather.humidity')} {current.humidity}%</span>
         <span>{t('panel.weather.wind')} {Math.round(current.windSpeed)} km/h</span>
         {current.precipitation > 0 && <span>Precip {current.precipitation} mm</span>}
+        {current.uvIndex != null && (() => {
+          const uv = getUvLevel(current.uvIndex);
+          return (
+            <span className="inline-flex items-center gap-1">
+              {t('panel.weather.uv')} {Math.round(current.uvIndex)}
+              <span className="inline-block w-2 h-2 rounded-full" style={{ backgroundColor: uv.color }} />
+              <span style={{ color: uv.color }}>{t(`panel.weather.uvLevel.${uv.level}`)}</span>
+            </span>
+          );
+        })()}
       </div>
 
       {/* Hourly — horizontal scroll */}
@@ -81,6 +92,11 @@ export function WeatherPopover() {
                   <div className="text-gray-400">{hour}</div>
                   <div>{info.icon}</div>
                   <div className="text-gray-900 dark:text-gray-100 font-medium">{Math.round(h.temp)}°</div>
+                  {h.uvIndex != null && h.uvIndex > 0 && (
+                    <div className="mt-0.5" style={{ color: getUvLevel(h.uvIndex).color }}>
+                      {Math.round(h.uvIndex)}
+                    </div>
+                  )}
                 </div>
               );
             })}
