@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useTabKeys } from '../../hooks/useTabKeys.js';
+import { TileFooter } from '../layout/TileFooter.js';
 
 type Tab = 'citywide' | 'local';
 
@@ -157,6 +158,7 @@ export function CrisisStrip({ expanded, onExpand }: { expanded: boolean; onExpan
           </div>
         )}
       </div>
+      <TileFooter>{t('panel.crisis.source')}</TileFooter>
     </>
   );
 }

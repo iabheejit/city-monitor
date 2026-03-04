@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { usePopulationSummary } from '../../hooks/usePopulationSummary.js';
+import { useFreshness } from '../../hooks/useFreshness.js';
 import { StripErrorFallback } from '../ErrorFallback.js';
 import { Skeleton } from '../layout/Skeleton.js';
 import { TileFooter } from '../layout/TileFooter.js';
@@ -21,11 +22,14 @@ const BAR_COLORS = {
   elderly: '#f59e0b',     // amber
 };
 
+const FRESH_MAX_AGE = 60 * 24 * 60 * 60 * 1000; // 60 days (cron monthly)
+
 export function PopulationStrip() {
   const { id: cityId } = useCityConfig();
   const isBerlin = cityId === 'berlin';
-  const { data, isLoading, isError, refetch } = usePopulationSummary(cityId);
+  const { data, fetchedAt, isLoading, isError, refetch } = usePopulationSummary(cityId);
   const { t } = useTranslation();
+  const { isStale, agoText } = useFreshness(fetchedAt, FRESH_MAX_AGE);
 
   if (!isBerlin) return null;
   if (isLoading) return <Skeleton lines={2} />;
@@ -95,7 +99,7 @@ export function PopulationStrip() {
       </div>
 
       {/* Source footnote */}
-      <TileFooter>{t('panel.population.source')} · {data.snapshotDate}</TileFooter>
+      <TileFooter stale={isStale}>{data.snapshotDate}{agoText && (' · ' + t('stale.updated', { time: agoText }))}</TileFooter>
     </div>
   );
 }

@@ -1,8 +1,10 @@
 import { useTranslation } from 'react-i18next';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useFeuerwehr } from '../../hooks/useFeuerwehr.js';
+import { useFreshness } from '../../hooks/useFreshness.js';
 import { StripErrorFallback } from '../ErrorFallback.js';
 import { Skeleton } from '../layout/Skeleton.js';
+import { TileFooter } from '../layout/TileFooter.js';
 
 function formatTime(seconds: number): string {
   const mins = Math.floor(seconds / 60);
@@ -58,10 +60,13 @@ function StatRow({
 }
 
 
+const FRESH_MAX_AGE = 36 * 60 * 60 * 1000; // 36h (cron daily)
+
 export function FeuerwehrStrip({ expanded }: { expanded: boolean }) {
   const { id: cityId } = useCityConfig();
-  const { data, isLoading, isError, refetch } = useFeuerwehr(cityId);
+  const { data, fetchedAt, isLoading, isError, refetch } = useFeuerwehr(cityId);
   const { t } = useTranslation();
+  const { isStale, agoText } = useFreshness(fetchedAt, FRESH_MAX_AGE);
 
   if (isLoading) return <Skeleton lines={2} />;
   if (isError) return <StripErrorFallback domain="Feuerwehr" onRetry={refetch} />;
@@ -72,32 +77,35 @@ export function FeuerwehrStrip({ expanded }: { expanded: boolean }) {
   if (!expanded) {
     // Collapsed: compact rows for 3 stats
     return (
-      <div className="flex flex-col gap-3 py-1">
-        <StatRow
-          label={t('panel.feuerwehr.missions')}
-          current={current.missionCountAll.toLocaleString('de-DE')}
-          partial={partial ? partial.missionCountAll.toLocaleString('de-DE') : null}
-          accent="text-red-600 dark:text-red-400"
-          delta={formatDelta(current.missionCountAll, previous?.missionCountAll)}
-        />
-        <StatRow
-          label={t('panel.feuerwehr.emsResponseTime')}
-          current={formatTime(current.responseTimeEmsCriticalMedian)}
-          partial={partial ? formatTime(partial.responseTimeEmsCriticalMedian) : null}
-          accent="text-blue-600 dark:text-blue-400"
-          delta={formatDelta(current.responseTimeEmsCriticalMedian, previous?.responseTimeEmsCriticalMedian)}
-        />
-        <StatRow
-          label={t('panel.feuerwehr.fireResponseTime')}
-          current={formatTime(current.responseTimeFirePumpMedian)}
-          partial={partial ? formatTime(partial.responseTimeFirePumpMedian) : null}
-          accent="text-orange-600 dark:text-orange-400"
-          delta={formatDelta(current.responseTimeFirePumpMedian, previous?.responseTimeFirePumpMedian)}
-        />
-        <div className="text-center text-xs text-gray-400 dark:text-gray-500">
-          {current.reportMonth}
+      <>
+        <div className="flex flex-col gap-3 py-1">
+          <StatRow
+            label={t('panel.feuerwehr.missions')}
+            current={current.missionCountAll.toLocaleString('de-DE')}
+            partial={partial ? partial.missionCountAll.toLocaleString('de-DE') : null}
+            accent="text-red-600 dark:text-red-400"
+            delta={formatDelta(current.missionCountAll, previous?.missionCountAll)}
+          />
+          <StatRow
+            label={t('panel.feuerwehr.emsResponseTime')}
+            current={formatTime(current.responseTimeEmsCriticalMedian)}
+            partial={partial ? formatTime(partial.responseTimeEmsCriticalMedian) : null}
+            accent="text-blue-600 dark:text-blue-400"
+            delta={formatDelta(current.responseTimeEmsCriticalMedian, previous?.responseTimeEmsCriticalMedian)}
+          />
+          <StatRow
+            label={t('panel.feuerwehr.fireResponseTime')}
+            current={formatTime(current.responseTimeFirePumpMedian)}
+            partial={partial ? formatTime(partial.responseTimeFirePumpMedian) : null}
+            accent="text-orange-600 dark:text-orange-400"
+            delta={formatDelta(current.responseTimeFirePumpMedian, previous?.responseTimeFirePumpMedian)}
+          />
+          <div className="text-center text-xs text-gray-400 dark:text-gray-500">
+            {current.reportMonth}
+          </div>
         </div>
-      </div>
+        {agoText && <TileFooter stale={isStale}>{t('stale.updated', { time: agoText })}</TileFooter>}
+      </>
     );
   }
 
@@ -130,50 +138,53 @@ export function FeuerwehrStrip({ expanded }: { expanded: boolean }) {
   ];
 
   return (
-    <div className="flex flex-col gap-4 py-1">
-      {/* Column headers */}
-      <div className="flex">
-        <div className="flex-1 text-center text-xs font-medium text-gray-500 dark:text-gray-400">
-          {current.reportMonth}
-        </div>
-        {partial && (
-          <>
-            <div className="w-6" />
-            <div className="flex-1 flex flex-col items-center">
-              <span className="text-xs font-medium text-gray-500 dark:text-gray-400">{partial.reportMonth}</span>
-              <span className="mt-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">
-                {t('panel.feuerwehr.partial')}
-              </span>
-            </div>
-          </>
-        )}
-      </div>
-
-      {/* Stat rows — items-start keeps numbers aligned at top */}
-      {stats.map((stat) => (
-        <div key={stat.label} className="flex items-start">
-          <div className="flex-1 text-center">
-            <div className={`${stat.size} font-extrabold tabular-nums leading-none ${stat.accent}`}>
-              {stat.left}
-            </div>
-            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{stat.label}</div>
-            {stat.delta && (
-              <div className={`text-xs font-medium tabular-nums ${stat.delta.color}`}>{stat.delta.text}</div>
-            )}
+    <>
+      <div className="flex flex-col gap-4 py-1">
+        {/* Column headers */}
+        <div className="flex">
+          <div className="flex-1 text-center text-xs font-medium text-gray-500 dark:text-gray-400">
+            {current.reportMonth}
           </div>
-          {stat.right !== undefined && (
+          {partial && (
             <>
-              <div className="w-px bg-gray-200 dark:bg-gray-700 self-stretch mx-3" />
-              <div className="flex-1 text-center">
-                <div className={`${stat.size} font-extrabold tabular-nums leading-none ${stat.accent}`}>
-                  {stat.right}
-                </div>
-                <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{stat.label}</div>
+              <div className="w-6" />
+              <div className="flex-1 flex flex-col items-center">
+                <span className="text-xs font-medium text-gray-500 dark:text-gray-400">{partial.reportMonth}</span>
+                <span className="mt-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">
+                  {t('panel.feuerwehr.partial')}
+                </span>
               </div>
             </>
           )}
         </div>
-      ))}
-    </div>
+
+        {/* Stat rows — items-start keeps numbers aligned at top */}
+        {stats.map((stat) => (
+          <div key={stat.label} className="flex items-start">
+            <div className="flex-1 text-center">
+              <div className={`${stat.size} font-extrabold tabular-nums leading-none ${stat.accent}`}>
+                {stat.left}
+              </div>
+              <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{stat.label}</div>
+              {stat.delta && (
+                <div className={`text-xs font-medium tabular-nums ${stat.delta.color}`}>{stat.delta.text}</div>
+              )}
+            </div>
+            {stat.right !== undefined && (
+              <>
+                <div className="w-px bg-gray-200 dark:bg-gray-700 self-stretch mx-3" />
+                <div className="flex-1 text-center">
+                  <div className={`${stat.size} font-extrabold tabular-nums leading-none ${stat.accent}`}>
+                    {stat.right}
+                  </div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{stat.label}</div>
+                </div>
+              </>
+            )}
+          </div>
+        ))}
+      </div>
+      {agoText && <TileFooter stale={isStale}>{t('stale.updated', { time: agoText })}</TileFooter>}
+    </>
   );
 }

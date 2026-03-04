@@ -70,7 +70,7 @@ Sources with **hardcoded URLs or version-pinned data** that need periodic manual
 ## Research: Potential New Data Sources (2026-03-03)
 
 - Bike-sharing stations (nextbike/Lime GBFS feeds — standardized, real-time)
-- Parking availability (some cities have open APIs)
+- ~~Parking availability~~ — researched 2026-03-04, no real-time data for Berlin (no Parkleitsystem); static WFS data exists but low value for real-time dashboard
 - Noise complaints / noise map (Berlin has a strategic noise map WMS)
 - Energy generation (solar/wind dashboards from Bundesnetzagentur SMARD API)
 - Pollen forecast (DWD offers pollen index data)
@@ -98,6 +98,16 @@ Sources with **hardcoded URLs or version-pinned data** that need periodic manual
 - CSV grows throughout the year (13+ MB)
 
 **Best for:** KPI tiles (daily call count, avg response time, type breakdown). Not suitable for map pins.
+
+---
+
+## Parking Availability — NOT FEASIBLE (No Real-Time Data)
+
+Researched 2026-03-04. Full analysis: `.plans/completed/2026-03-04_parking-map-layer.md`
+
+- **Real-time:** Berlin has no Parkleitsystem. No public API from any garage operator (APCOA, Contipark, Q-Park). Not in ParkAPI v3, not on Mobilithek. LiveParking.eu has Hamburg but not Berlin (and is "all rights reserved").
+- **Static WFS (dl-de-zero-2.0):** Street parking (45,917 polygons), managed zones (100 polygons with fees/hours), P+R (48 points with surveyed occupancy), disabled parking (912 points). All verified working at `gdi.berlin.de/services/wfs/`.
+- **Verdict:** Without real-time occupancy, static parking zones add little value to a real-time dashboard. Revisit if Berlin deploys a Parkleitsystem (eUVM project may lead to this, no timeline).
 
 ---
 

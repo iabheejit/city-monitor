@@ -97,65 +97,69 @@ export function WastewaterStrip({ expanded }: { expanded: boolean }) {
 
   if (!expanded) {
     return (
-      <div className="flex-1 flex flex-col justify-center">
-        <div className="flex justify-around text-center">
-          {data.pathogens.map((p) => (
-            <div key={p.name}>
-              <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                {pathogenLabel(p.name, t)}
-              </div>
-              <div className="flex items-baseline justify-center gap-1">
-                <span className={`text-2xl font-extrabold ${LEVEL_COLORS[p.level]}`}>
-                  {t(`panel.wastewater.level.${p.level}`)}
-                </span>
-                {(p.value > 0 || p.trend === 'gone') && (
-                  <span className={`text-lg font-bold ${LEVEL_COLORS[p.level]}`}>
-                    {TREND_ARROWS[p.trend]}
+      <>
+        <div className="flex-1 flex flex-col justify-center">
+          <div className="flex justify-around text-center">
+            {data.pathogens.map((p) => (
+              <div key={p.name}>
+                <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                  {pathogenLabel(p.name, t)}
+                </div>
+                <div className="flex items-baseline justify-center gap-1">
+                  <span className={`text-2xl font-extrabold ${LEVEL_COLORS[p.level]}`}>
+                    {t(`panel.wastewater.level.${p.level}`)}
                   </span>
-                )}
+                  {(p.value > 0 || p.trend === 'gone') && (
+                    <span className={`text-lg font-bold ${LEVEL_COLORS[p.level]}`}>
+                      {TREND_ARROWS[p.trend]}
+                    </span>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
         <TileFooter stale={isStale}>
           {t('panel.wastewater.sampleDate', { date: new Date(data.sampleDate).toLocaleDateString(undefined, { timeZone: 'UTC' }) })}
           {agoText && (' · ' + t('stale.updated', { time: agoText }))}
         </TileFooter>
-      </div>
+      </>
     );
   }
 
   return (
-    <div className="space-y-3">
-      {data.pathogens.map((p) => (
-        <div key={p.name}>
-          <div className="flex items-baseline justify-between mb-1">
-            <div className="flex items-baseline gap-2">
-              <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                {pathogenLabel(p.name, t)}
-              </span>
-              <span className="text-xs tabular-nums text-gray-400 dark:text-gray-500">
-                {formatValue(p.value)} gc/L
-              </span>
-            </div>
-            <div className="flex items-baseline gap-1">
-              <span className={`text-sm font-bold leading-none ${LEVEL_COLORS[p.level]}`}>
-                {t(`panel.wastewater.level.${p.level}`)}
-              </span>
-              {(p.value > 0 || p.trend === 'gone') && (
-                <span className={`text-xs ${LEVEL_COLORS[p.level]}`}>
-                  {TREND_ARROWS[p.trend]}
+    <>
+      <div className="space-y-3">
+        {data.pathogens.map((p) => (
+          <div key={p.name}>
+            <div className="flex items-baseline justify-between mb-1">
+              <div className="flex items-baseline gap-2">
+                <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                  {pathogenLabel(p.name, t)}
                 </span>
-              )}
+                <span className="text-xs tabular-nums text-gray-400 dark:text-gray-500">
+                  {formatValue(p.value)} gc/L
+                </span>
+              </div>
+              <div className="flex items-baseline gap-1">
+                <span className={`text-sm font-bold leading-none ${LEVEL_COLORS[p.level]}`}>
+                  {t(`panel.wastewater.level.${p.level}`)}
+                </span>
+                {(p.value > 0 || p.trend === 'gone') && (
+                  <span className={`text-xs ${LEVEL_COLORS[p.level]}`}>
+                    {TREND_ARROWS[p.trend]}
+                  </span>
+                )}
+              </div>
             </div>
+            <Sparkline data={p.history} color={SPARKLINE_STROKES[p.level]} sampleDate={data.sampleDate} label={`${pathogenLabel(p.name, t)} trend`} />
           </div>
-          <Sparkline data={p.history} color={SPARKLINE_STROKES[p.level]} sampleDate={data.sampleDate} label={`${pathogenLabel(p.name, t)} trend`} />
-        </div>
-      ))}
+        ))}
+      </div>
       <TileFooter stale={isStale}>
         {t('panel.wastewater.sampleDate', { date: new Date(data.sampleDate).toLocaleDateString(undefined, { timeZone: 'UTC' }) })}
         {agoText && (' · ' + t('stale.updated', { time: agoText }))}
       </TileFooter>
-    </div>
+    </>
   );
 }
