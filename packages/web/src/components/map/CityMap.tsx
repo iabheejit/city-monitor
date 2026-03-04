@@ -106,7 +106,7 @@ export function CityMap() {
   const transitItems = (activeLayers.has('traffic') && trafficSubLayers.has('public-transport')) ? (transitAlerts ?? []) : [];
   const newsActive = activeLayers.has('news');
   const newsItems = (newsActive && newsSubLayers.has('news'))
-    ? filterNewsForMap(newsDigest?.items ?? [], city.coordinates)
+    ? filterNewsForMap(newsDigest?.items ?? [], city.coordinates, city.boundingBox)
     : [];
   const safetyItemsRaw = (newsActive && newsSubLayers.has('police')) ? (safetyReports ?? []) : [];
   // At city-wide zoom, show only the last 24h of safety reports; at close zoom, show all

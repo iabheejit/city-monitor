@@ -8,17 +8,20 @@
 
 export const MAP_NEWS = {
   /** Max news markers shown on the map total (before spatial bonus) */
-  maxTotal: 25,
+  maxTotal: 15,
   /** Guaranteed slots per category (filled first, before importance ranking) */
-  guaranteedPerCategory: 3,
-  /** Max items without a location (they all cluster at city center) */
-  maxWithoutLocation: 5,
-  /** Max extra markers added to fill empty map areas */
-  spatialBonusMax: 15,
-  /** Grid cell size in degrees (~1 km at Berlin's latitude) */
-  spatialGridSize: 0.01,
+  guaranteedPerCategory: 2,
+  /** Max extra markers added to fill empty map areas (farthest-first) */
+  spatialBonusMax: 25,
   /** Minimum importance for spatial bonus items (Phase 3, filling empty areas) */
   minImportanceSpatial: 0.3,
+  /**
+   * Minimum squared-degree distance from the nearest existing marker for a
+   * spatial bonus candidate to be accepted.  Candidates closer than this are
+   * skipped — they would just pile onto an already crowded area.
+   * ~0.005 ≈ roughly 500 m in Berlin latitude.
+   */
+  minSpatialGapSq: 0.0004,
 } as const;
 
 /** Safety marker recency thresholds — at city-wide zoom show only

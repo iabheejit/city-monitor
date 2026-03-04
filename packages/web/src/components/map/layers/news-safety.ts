@@ -15,21 +15,32 @@ import {
   cleanupSpiderHandlers, initSpiderState, expandAllSpiderGroups, addSpiderHandler,
 } from '../spider.js';
 
-/** Snap a coordinate to a grid cell key (e.g. "52.51,13.38") */
-function geoCell(lat: number, lon: number): string {
-  const g = MAP_NEWS.spatialGridSize;
-  return `${Math.floor(lat / g)},${Math.floor(lon / g)}`;
-}
-
 /**
  * Select the most important news items for map display.
+ *
+ * Items geocoded outside the city bounding box are rejected as mis-geocoded.
+ * Locationless items can still fill the base slots (placed at city center)
+ * if they are important enough.
+ *
+ * All categories (including crime) share the same budget:
  * 1. Guarantee the top N items from each category (so no category is invisible)
  * 2. Fill remaining slots by global importance ranking
- * 3. Cap at global max
- * 4. Spatial bonus: add items in grid cells not yet covered (up to bonus cap)
+ * 3. Spatial bonus: greedily add items farthest from existing markers,
+ *    stopping when the gap would be too small (minSpatialGapSq)
  */
-export function filterNewsForMap(items: NewsItem[], fallback: { lat: number; lon: number }): NewsItem[] {
-  const byImportance = [...items].sort((a, b) => (b.importance ?? 0) - (a.importance ?? 0));
+export function filterNewsForMap(
+  items: NewsItem[],
+  fallback: { lat: number; lon: number },
+  bbox?: { north: number; south: number; east: number; west: number },
+): NewsItem[] {
+  const inBounds = (loc: { lat: number; lon: number }) =>
+    !bbox || (loc.lat >= bbox.south && loc.lat <= bbox.north && loc.lon >= bbox.west && loc.lon <= bbox.east);
+
+  // Reject items geocoded outside the city (mis-geocoded outliers).
+  // Items without a location are kept — they land at city center.
+  const eligible = items.filter((i) => !i.location || inBounds(i.location));
+
+  const byImportance = [...eligible].sort((a, b) => (b.importance ?? 0) - (a.importance ?? 0));
 
   const byCategory = new Map<string, NewsItem[]>();
   for (const item of byImportance) {
@@ -46,53 +57,64 @@ export function filterNewsForMap(items: NewsItem[], fallback: { lat: number; lon
     }
   }
 
-  // Phase 2: fill remaining slots by importance, capping locationless items
-  // (locationless items all cluster at city center, wasting map coverage)
+  // Phase 2: fill remaining slots by importance
   const resultSet = new Set<string>();
   const result: NewsItem[] = [];
-  let noLocCount = 0;
-
-  const canAdd = (item: NewsItem): boolean => {
-    if (item.location) return true;
-    return noLocCount < MAP_NEWS.maxWithoutLocation;
-  };
-
   for (const item of byImportance) {
     if (result.length >= MAP_NEWS.maxTotal) break;
-    if (picked.has(item.id) && canAdd(item)) {
+    if (picked.has(item.id)) {
       result.push(item);
       resultSet.add(item.id);
-      if (!item.location) noLocCount++;
     }
   }
   for (const item of byImportance) {
     if (result.length >= MAP_NEWS.maxTotal) break;
-    if (!resultSet.has(item.id) && canAdd(item)) {
+    if (!resultSet.has(item.id)) {
       result.push(item);
       resultSet.add(item.id);
-      if (!item.location) noLocCount++;
     }
   }
 
-  // Phase 3: spatial bonus — add items that fill empty grid cells
-  const coveredCells = new Set<string>();
+  // Phase 3: spatial bonus — greedily add items that are farthest from any
+  // existing marker so that large empty areas on the map get filled first.
+  // Only items WITH a location are eligible (locationless ones already sit at
+  // city center and wouldn't help fill gaps).
+  const placed: Array<{ lat: number; lon: number }> = [];
   for (const item of result) {
-    const loc = item.location ?? fallback;
-    coveredCells.add(geoCell(loc.lat, loc.lon));
+    placed.push(item.location ?? fallback);
   }
 
-  let bonus = 0;
-  for (const item of byImportance) {
-    if (bonus >= MAP_NEWS.spatialBonusMax) break;
-    if (resultSet.has(item.id)) continue;
-    if ((item.importance ?? 0) < MAP_NEWS.minImportanceSpatial) continue;
-    const loc = item.location ?? fallback;
-    const cell = geoCell(loc.lat, loc.lon);
-    if (coveredCells.has(cell)) continue;
-    coveredCells.add(cell);
-    result.push(item);
-    resultSet.add(item.id);
-    bonus++;
+  const candidates = byImportance.filter(
+    (item) => !resultSet.has(item.id)
+      && item.location
+      && (item.importance ?? 0) >= MAP_NEWS.minImportanceSpatial,
+  );
+
+  // Greedy: always pick the candidate farthest from the nearest placed marker.
+  // Stop once even the best candidate is closer than minSpatialGapSq — adding
+  // more items would just pile onto already-covered areas.
+  for (let bonus = 0; bonus < MAP_NEWS.spatialBonusMax && candidates.length > 0; bonus++) {
+    let bestIdx = -1;
+    let bestDist = -1;
+    for (let i = 0; i < candidates.length; i++) {
+      const loc = candidates[i].location!;
+      let minDist = Infinity;
+      for (const p of placed) {
+        const dlat = loc.lat - p.lat;
+        const dlon = loc.lon - p.lon;
+        const d = dlat * dlat + dlon * dlon;
+        if (d < minDist) minDist = d;
+      }
+      if (minDist > bestDist) {
+        bestDist = minDist;
+        bestIdx = i;
+      }
+    }
+    if (bestIdx < 0 || bestDist < MAP_NEWS.minSpatialGapSq) break;
+    const winner = candidates.splice(bestIdx, 1)[0];
+    result.push(winner);
+    resultSet.add(winner.id);
+    placed.push(winner.location!);
   }
 
   return result;
