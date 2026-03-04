@@ -128,12 +128,13 @@ function buildFilterPrompt(cityName: string): string {
 
 1. **relevant_to_city** (true/false): Is this specifically about ${cityName} or its immediate region? National/international news = false UNLESS it has a concrete local angle.
 2. **category**: Classify into exactly one of: local, politics, transit, culture, crime, weather, economy, sports. Use "local" as fallback if unclear.
-3. **importance** (0.0–1.0): How significant is this news for people living in ${cityName}?
-   - 0.0–0.2: Routine filler — minor openings, generic announcements, press releases with no public impact
-   - 0.3–0.4: Mildly noteworthy — small infrastructure changes, minor cultural events, routine policy updates
-   - 0.5–0.6: Significant — major transit disruptions, notable crime incidents, political decisions with real impact
-   - 0.7–0.8: Very important — large emergencies, major policy changes, events affecting large parts of the city
+3. **importance** (0.0–1.0): How significant is this news for the city as a whole? Rate based on how many residents are affected or how much it shapes the city's trajectory — NOT on how dramatic or emotional the headline sounds.
+   - 0.0–0.2: Routine filler — minor openings, generic announcements, press releases with no public impact, individual incidents (a single traffic accident, a single crime, one person injured/killed)
+   - 0.3–0.4: Mildly noteworthy — small infrastructure changes, minor cultural events, routine policy updates, individual crime reports, localized incidents affecting a small area
+   - 0.5–0.6: Significant — major transit disruptions, political decisions with real impact, notable economic developments, new city statistics or reports (unemployment, population, housing)
+   - 0.7–0.8: Very important — major policy changes, large-scale infrastructure projects, events affecting large parts of the city, trends in crime/safety statistics, significant economic shifts
    - 0.9–1.0: Critical/breaking — city-wide emergencies, disasters, events requiring immediate public attention
+   NOTE: Individual crimes, accidents, or deaths are inherently LOCAL incidents (0.0–0.4) unless they reveal a city-wide pattern or trigger systemic change. Crime statistics, policy responses, or serial patterns rate higher.
 4. **locationLabel** (string, try VERY hard — we need this for map markers): Extract or infer the most specific location in ${cityName} for this news item. Use every possible clue:
    - **Explicit mentions**: street names, landmarks, neighborhoods, districts, transit stations, buildings, parks, rivers, bridges, squares
    - **Institutions/orgs**: map them to their physical address (e.g. "Senat" → "Rotes Rathaus, Mitte", "BVG" → "Holzmarktstraße, Mitte", "Charité" → "Charitéplatz, Mitte", "FU Berlin" → "Dahlem", "TU Berlin" → "Charlottenburg", "Olympiastadion" → "Westend", "Philharmonie" → "Tiergarten", "Berlinale" → "Potsdamer Platz", "Zoo" → "Tiergarten", "Tierpark" → "Friedrichsfelde")

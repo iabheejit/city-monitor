@@ -8,7 +8,7 @@ import { StripErrorFallback } from '../ErrorFallback.js';
 import { Skeleton } from '../layout/Skeleton.js';
 import type { NewsItem } from '../../lib/api.js';
 
-const ALL_CATEGORIES = ['all', 'local', 'transit', 'politics', 'culture', 'crime', 'economy', 'sports'] as const;
+const ALL_CATEGORIES = ['all', 'politics', 'economy', 'culture', 'local', 'transit', 'crime', 'sports'] as const;
 const HIDDEN_CATEGORIES = new Set(['weather']);
 
 const CATEGORY_COLORS: Record<string, string> = {
