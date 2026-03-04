@@ -63,26 +63,28 @@ export function TransitStrip({ expanded = false, onExpand }: { expanded?: boolea
 
   if (isError) return <StripErrorFallback domain="Transit" onRetry={refetch} />;
 
-  return isLoading ? (
-    <Skeleton lines={4} />
-  ) : sorted.length === 0 ? (
-    <p className="text-sm text-gray-400 py-2 text-center">{t('panel.transit.empty')}</p>
-  ) : (
+  if (isLoading) return <Skeleton lines={4} />;
+
+  return (
     <>
-      <div>
-        {visible.map((alert) => (
-          <AlertRow key={alert.id} alert={alert} />
-        ))}
-        {hiddenCount > 0 && (
-          <button
-            type="button"
-            onClick={onExpand}
-            className="w-full text-xs text-gray-400 dark:text-gray-500 text-center pt-1.5 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-          >
-            +{hiddenCount} {t('panel.transit.more')}
-          </button>
-        )}
-      </div>
+      {sorted.length === 0 ? (
+        <p className="text-sm text-gray-400 py-2 text-center flex-1">{t('panel.transit.empty')}</p>
+      ) : (
+        <div>
+          {visible.map((alert) => (
+            <AlertRow key={alert.id} alert={alert} />
+          ))}
+          {hiddenCount > 0 && (
+            <button
+              type="button"
+              onClick={onExpand}
+              className="w-full text-xs text-gray-400 dark:text-gray-500 text-center pt-1.5 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+            >
+              +{hiddenCount} {t('panel.transit.more')}
+            </button>
+          )}
+        </div>
+      )}
       {agoText && <TileFooter stale={isStale}>{t('stale.updated', { time: agoText })}</TileFooter>}
     </>
   );

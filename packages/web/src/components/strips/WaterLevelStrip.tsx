@@ -71,11 +71,13 @@ export function WaterLevelStrip() {
   }
 
   return (
-    <div className="space-y-2">
-      {data.stations.map((station) => (
-        <StationRow key={station.uuid} station={station} t={t} />
-      ))}
+    <>
+      <div className="space-y-2 flex-1">
+        {data.stations.map((station) => (
+          <StationRow key={station.uuid} station={station} t={t} />
+        ))}
+      </div>
       {agoText && <TileFooter stale={isStale}>{t('stale.updated', { time: agoText })}</TileFooter>}
-    </div>
+    </>
   );
 }

@@ -25,14 +25,15 @@ import {
   populationSnapshots,
   feuerwehrSnapshots,
   pollenSnapshots,
+  noiseSensorSnapshots,
 } from './schema.js';
-import type { NinaWarning, PoliticalDistrict, WaterLevelData, BuergeramtData, BudgetSummary, ConstructionSite, TrafficIncident, EmergencyPharmacy, AedLocation, WastewaterSummary, BathingSpot, LaborMarketSummary, PopulationSummary, FeuerwehrSummary, PollenForecast, HistoryPoint } from '@city-monitor/shared';
+import type { NinaWarning, PoliticalDistrict, WaterLevelData, BuergeramtData, BudgetSummary, ConstructionSite, TrafficIncident, EmergencyPharmacy, AedLocation, WastewaterSummary, BathingSpot, LaborMarketSummary, PopulationSummary, FeuerwehrSummary, PollenForecast, NoiseSensor, HistoryPoint } from '@city-monitor/shared';
 import {
   WeatherDataSchema, WaterLevelDataSchema, BuergeramtDataSchema, BudgetSummarySchema,
   PoliticalDistrictSchema, WastewaterSummarySchema, LaborMarketSummarySchema,
   BathingSpotSchema, AedLocationSchema, EmergencyPharmacySchema,
   TrafficIncidentSchema, ConstructionSiteSchema, PopulationSummarySchema,
-  FeuerwehrSummarySchema, PollenForecastSchema,
+  FeuerwehrSummarySchema, PollenForecastSchema, NoiseSensorSchema,
 } from '@city-monitor/shared/schemas.js';
 import type { GeocodeResult } from '../lib/geocode.js';
 import type { WeatherData } from '../cron/ingest-weather.js';
@@ -92,9 +93,6 @@ export async function loadTransitAlerts(db: Db, cityId: string): Promise<DbResul
     .where(eq(transitDisruptions.cityId, cityId));
   const latestTs = latest[0]?.val;
   if (!latestTs) return null;
-
-  // Safety net: discard data older than 3h (transit cron runs every 15min)
-  if (Date.now() - latestTs.getTime() > 3 * 60 * 60 * 1000) return null;
 
   const rows = await db
     .select()
@@ -625,6 +623,19 @@ export async function loadPollen(db: Db, cityId: string): Promise<DbResult<Polle
   // Safety net: discard data older than 48h (pollen cron runs every 6h, DWD updates daily)
   if (rows[0].fetchedAt && Date.now() - rows[0].fetchedAt.getTime() > 48 * 60 * 60 * 1000) return null;
   const data = validateJsonb(PollenForecastSchema, rows[0].data, 'pollen');
+  return data ? { data, fetchedAt: rows[0].fetchedAt } : null;
+}
+
+export async function loadNoiseSensors(db: Db, cityId: string): Promise<DbResult<NoiseSensor[]>> {
+  const rows = await db
+    .select()
+    .from(noiseSensorSnapshots)
+    .where(eq(noiseSensorSnapshots.cityId, cityId))
+    .orderBy(desc(noiseSensorSnapshots.fetchedAt))
+    .limit(1);
+
+  if (rows.length === 0) return null;
+  const data = validateJsonb(z.array(NoiseSensorSchema), rows[0].data, 'noise-sensors');
   return data ? { data, fetchedAt: rows[0].fetchedAt } : null;
 }
 
