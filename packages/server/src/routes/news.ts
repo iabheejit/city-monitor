@@ -102,6 +102,7 @@ export function createNewsRouter(cache: Cache, db: Db | null = null) {
       nina: data[CK.ninaWarnings(city.id)] ?? null,
       airQuality: data[CK.airQuality(city.id)] ?? null,
       pharmacies: data[CK.pharmacies(city.id)] ?? null,
+      aeds: data[CK.aedLocations(city.id)] ?? null,
       traffic: data[CK.trafficIncidents(city.id)] ?? null,
       construction: data[CK.constructionSites(city.id)] ?? null,
       waterLevels: data[CK.waterLevels(city.id)] ?? null,

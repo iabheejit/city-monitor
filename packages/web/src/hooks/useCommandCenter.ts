@@ -33,7 +33,7 @@ interface CommandCenterState {
 
 const DEFAULT_LAYERS: Set<DataLayer> = new Set(['warnings']);
 const ALL_NEWS_SUBS: Set<NewsSubLayer> = new Set(['news']);
-const ALL_EMERGENCY_SUBS: Set<EmergencySubLayer> = new Set(['pharmacies', 'aeds']);
+const ALL_EMERGENCY_SUBS: Set<EmergencySubLayer> = new Set(['pharmacies']);
 const ALL_WATER_SUBS: Set<WaterSubLayer> = new Set(['levels', 'bathing']);
 const ALL_TRAFFIC_SUBS: Set<TrafficSubLayer> = new Set(['public-transport', 'incidents', 'roadworks']);
 

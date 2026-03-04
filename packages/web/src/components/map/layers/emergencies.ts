@@ -4,7 +4,6 @@
 
 import maplibregl from 'maplibre-gl';
 import type { EmergencyPharmacy, AedLocation } from '../../../lib/api.js';
-import { MAP_DENSITY } from '../../../lib/map-settings.js';
 import { registerPopupHandlers } from '../popups.js';
 
 /** Format "2026-03-03T09:00:00" range into e.g. "Today 09:00 – Tomorrow 09:00" or "3 Mar 09:00 – 4 Mar 09:00" */
@@ -79,7 +78,6 @@ export function updatePharmacyMarkers(map: maplibregl.Map, pharmacies: Emergency
     id: 'pharmacy-marker-icon',
     type: 'symbol',
     source: 'pharmacy-markers',
-    minzoom: MAP_DENSITY.pharmacyMinZoom,
     layout: {
       'icon-image': 'pharmacy-icon',
       'icon-size': 0.85,
@@ -122,7 +120,6 @@ export function updateAedMarkers(map: maplibregl.Map, aeds: AedLocation[], _isDa
     id: 'aed-marker-icon',
     type: 'symbol',
     source: 'aed-markers',
-    minzoom: MAP_DENSITY.aedMinZoom,
     layout: {
       'icon-image': 'aed-icon',
       'icon-size': 0.85,

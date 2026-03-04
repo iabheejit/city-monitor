@@ -20,6 +20,7 @@ export interface BootstrapData {
   nina: ApiResponse<NinaWarning[]> | null;
   airQuality: ApiResponse<AirQuality | null> | null;
   pharmacies: ApiResponse<EmergencyPharmacy[]> | null;
+  aeds: ApiResponse<AedLocation[]> | null;
   traffic: ApiResponse<TrafficIncident[]> | null;
   construction: ApiResponse<ConstructionSite[]> | null;
   waterLevels: ApiResponse<WaterLevelData> | null;

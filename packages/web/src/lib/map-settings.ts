@@ -21,10 +21,3 @@ export const MAP_NEWS = {
   minSpatialGapSq: 0.0004,
 } as const;
 
-/** Dense point layers get a minimum zoom so they don't clutter the city view. */
-export const MAP_DENSITY = {
-  /** Min zoom for pharmacy markers */
-  pharmacyMinZoom: 12,
-  /** Min zoom for AED markers */
-  aedMinZoom: 13,
-} as const;

@@ -57,6 +57,7 @@ export const CK = {
     CK.ninaWarnings(cityId),
     CK.airQuality(cityId),
     CK.pharmacies(cityId),
+    CK.aedLocations(cityId),
     CK.trafficIncidents(cityId),
     CK.constructionSites(cityId),
     CK.waterLevels(cityId),
