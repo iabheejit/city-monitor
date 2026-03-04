@@ -161,6 +161,8 @@ export interface FreshnessSpec {
   jobName: string;
   tableName: string;
   maxAgeSeconds: number;
+  /** Optional column + value filter so the freshness check targets a specific row subset */
+  filter?: { column: string; value: string };
 }
 
 /**
@@ -174,9 +176,10 @@ export async function findStaleJobs(db: Db, specs: FreshnessSpec[]): Promise<Set
 
   await Promise.allSettled(specs.map(async (spec) => {
     try {
-      const result = await db.execute(
-        sql`SELECT fetched_at FROM ${sql.identifier(spec.tableName)} ORDER BY fetched_at DESC LIMIT 1`
-      );
+      const query = spec.filter
+        ? sql`SELECT fetched_at FROM ${sql.identifier(spec.tableName)} WHERE ${sql.identifier(spec.filter.column)} = ${spec.filter.value} ORDER BY fetched_at DESC LIMIT 1`
+        : sql`SELECT fetched_at FROM ${sql.identifier(spec.tableName)} ORDER BY fetched_at DESC LIMIT 1`;
+      const result = await db.execute(query);
       const rows = Array.isArray(result) ? result : (result as { rows?: unknown[] }).rows ?? [];
       const row = rows[0] as { fetched_at?: string | Date } | undefined;
       if (!row || !row.fetched_at) {

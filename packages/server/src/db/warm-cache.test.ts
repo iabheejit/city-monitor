@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { warmCache } from './warm-cache.js';
+import { warmCache, findStaleJobs, type FreshnessSpec } from './warm-cache.js';
 import { createCache } from '../lib/cache.js';
 import type { Db } from './index.js';
 
@@ -66,7 +66,7 @@ describe('warmCache', () => {
     expect(cache.get('berlin:transit:alerts')).not.toBeNull();
   });
 
-  it('runs per-city reads in parallel, not sequentially', async () => {
+  it('runs per-city reads in parallel, not sequentially (warmCache)', async () => {
     const reads = await import('./reads.js');
     const callOrder: string[] = [];
 
@@ -103,5 +103,78 @@ describe('warmCache', () => {
     expect(transitStart).toBeLessThan(weatherEnd);
     expect(eventsStart).toBeLessThan(weatherEnd);
     expect(weatherStart).toBeLessThan(weatherEnd);
+  });
+});
+
+describe('findStaleJobs', () => {
+  function mockDb(executeResult: unknown) {
+    return { execute: vi.fn().mockResolvedValue(executeResult) } as unknown as Db;
+  }
+
+  it('marks job stale when table is empty', async () => {
+    const db = mockDb({ rows: [] });
+    const specs: FreshnessSpec[] = [
+      { jobName: 'test-job', tableName: 'test_table', maxAgeSeconds: 3600 },
+    ];
+    const stale = await findStaleJobs(db, specs);
+    expect(stale.has('test-job')).toBe(true);
+  });
+
+  it('marks job fresh when fetched_at is within maxAge', async () => {
+    const db = mockDb({ rows: [{ fetched_at: new Date().toISOString() }] });
+    const specs: FreshnessSpec[] = [
+      { jobName: 'test-job', tableName: 'test_table', maxAgeSeconds: 3600 },
+    ];
+    const stale = await findStaleJobs(db, specs);
+    expect(stale.has('test-job')).toBe(false);
+  });
+
+  it('marks job stale when fetched_at exceeds maxAge', async () => {
+    const old = new Date(Date.now() - 7200_000).toISOString(); // 2 hours ago
+    const db = mockDb({ rows: [{ fetched_at: old }] });
+    const specs: FreshnessSpec[] = [
+      { jobName: 'test-job', tableName: 'test_table', maxAgeSeconds: 3600 },
+    ];
+    const stale = await findStaleJobs(db, specs);
+    expect(stale.has('test-job')).toBe(true);
+  });
+
+  it('includes filter column in query when spec has filter', async () => {
+    const executeFn = vi.fn().mockResolvedValue({ rows: [{ fetched_at: new Date().toISOString() }] });
+    const db = { execute: executeFn } as unknown as Db;
+
+    const specs: FreshnessSpec[] = [
+      { jobName: 'ingest-political', tableName: 'political_districts', maxAgeSeconds: 604800, filter: { column: 'level', value: 'bundestag' } },
+    ];
+    await findStaleJobs(db, specs);
+
+    // The SQL template should include the filter value
+    const sqlArg = executeFn.mock.calls[0][0];
+    const queryChunks = sqlArg.queryChunks ?? sqlArg.value ?? [];
+    const sqlString = JSON.stringify(queryChunks);
+    expect(sqlString).toContain('bundestag');
+  });
+
+  it('filter prevents unrelated rows from satisfying freshness check', async () => {
+    // Simulates: bezirke row is fresh but bundestag row is missing.
+    // Without filter, the table-level check would find the bezirke row and consider it fresh.
+    // With filter on level=bundestag, the query returns no rows → stale.
+    const executeFn = vi.fn().mockResolvedValue({ rows: [] }); // filtered query returns nothing
+    const db = { execute: executeFn } as unknown as Db;
+
+    const specs: FreshnessSpec[] = [
+      { jobName: 'ingest-political', tableName: 'political_districts', maxAgeSeconds: 604800, filter: { column: 'level', value: 'bundestag' } },
+    ];
+    const stale = await findStaleJobs(db, specs);
+    expect(stale.has('ingest-political')).toBe(true);
+  });
+
+  it('marks job stale when DB throws', async () => {
+    const db = { execute: vi.fn().mockRejectedValue(new Error('connection refused')) } as unknown as Db;
+    const specs: FreshnessSpec[] = [
+      { jobName: 'test-job', tableName: 'test_table', maxAgeSeconds: 3600 },
+    ];
+    const stale = await findStaleJobs(db, specs);
+    expect(stale.has('test-job')).toBe(true);
   });
 });

@@ -97,7 +97,7 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
     { jobName: 'ingest-nina',         tableName: 'nina_warnings',           maxAgeSeconds: 300 },
     { jobName: 'ingest-pharmacies',   tableName: 'pharmacy_snapshots',      maxAgeSeconds: 21600 },
     { jobName: 'ingest-traffic',      tableName: 'traffic_snapshots',       maxAgeSeconds: 300 },
-    { jobName: 'ingest-political',    tableName: 'political_districts',     maxAgeSeconds: 604800 },
+    { jobName: 'ingest-political',    tableName: 'political_districts',     maxAgeSeconds: 604800, filter: { column: 'level', value: 'bundestag' } },
     { jobName: 'ingest-aq-grid',      tableName: 'air_quality_grid',        maxAgeSeconds: 1800 },
     { jobName: 'ingest-construction', tableName: 'construction_snapshots',  maxAgeSeconds: 1800 },
     { jobName: 'ingest-aeds',         tableName: 'aed_snapshots',           maxAgeSeconds: 86400 },
