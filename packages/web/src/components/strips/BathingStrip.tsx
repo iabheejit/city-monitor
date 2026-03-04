@@ -16,12 +16,6 @@ const QUALITY_COLORS: Record<string, string> = {
 
 const SLOTS = 7;
 
-/** Returns true when any loaded bathing spot has inSeason === false. */
-export function useBathingOffSeason(cityId: string): boolean {
-  const { data } = useBathing(cityId);
-  return data != null && data.length > 0 && !data[0].inSeason;
-}
-
 const SpotRow = memo(function SpotRow({ spot, t }: { spot: BathingSpot; t: (k: string) => string }) {
   const color = QUALITY_COLORS[spot.quality] ?? QUALITY_COLORS.good;
 

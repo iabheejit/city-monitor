@@ -20,7 +20,7 @@ const SHARED_SOURCES: SourceGroup[] = [
       {
         name: 'Open-Meteo',
         url: 'https://open-meteo.com/',
-        description: 'Current weather conditions and 7-day forecast (temperature, humidity, wind, precipitation).',
+        description: 'Current weather conditions, 7-day forecast (temperature, humidity, wind, precipitation), and UV index.',
       },
       {
         name: 'Open-Meteo Air Quality',
@@ -35,7 +35,7 @@ const SHARED_SOURCES: SourceGroup[] = [
       {
         name: 'DWD (Deutscher Wetterdienst)',
         url: 'https://www.dwd.de/',
-        description: 'Official German severe weather warnings and pollen forecast (Pollenflug-Gefahrenindex).',
+        description: 'Official German severe weather warnings, pollen forecast (Pollenflug-Gefahrenindex), and UV index alerts.',
       },
       {
         name: 'WAQI (World Air Quality Index)',

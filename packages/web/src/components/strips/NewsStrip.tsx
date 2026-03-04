@@ -90,15 +90,6 @@ export function NewsStrip() {
     [items],
   );
 
-  const categoryCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    for (const item of items) {
-      if (!HIDDEN_CATEGORIES.has(item.category)) {
-        counts[item.category] = (counts[item.category] ?? 0) + 1;
-      }
-    }
-    return counts;
-  }, [items]);
 
   const activeIndex = (availableCategories as readonly string[]).indexOf(resolvedCategory);
   const selectByIndex = useCallback((i: number) => setActiveCategory(availableCategories[i] as string), [availableCategories]);

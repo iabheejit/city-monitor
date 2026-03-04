@@ -278,6 +278,12 @@ export function createCouncilMeetingIngestion(cache: Cache, db: Db | null = null
             return true;
           });
 
+        // Don't overwrite good data if all API calls failed
+        if (deduplicated.length === 0) {
+          log.warn(`${city.id} no council meetings found — keeping existing data`);
+          continue;
+        }
+
         cache.set(CK.councilMeetings(city.id), deduplicated, TTL_SECONDS);
 
         if (db) {
