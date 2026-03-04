@@ -176,7 +176,7 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
 
   // Non-city routes (mounted before validateCity so /api/health, /api/weather-tiles aren't rejected)
   app.use('/api', createHealthRouter(cache, scheduler));
-  app.use('/api', cacheFor(600), createWeatherTilesRouter());
+  app.use('/api', cacheFor(300), createWeatherTilesRouter());
 
   // Validate :city param on all /:city/* routes
   app.use('/api/:city', validateCity);

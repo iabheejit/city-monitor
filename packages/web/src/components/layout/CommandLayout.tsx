@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useRef } from 'react';
+import { lazy, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Sidebar } from '../sidebar/Sidebar.js';
 import { MobileLayerDrawer } from '../sidebar/MobileLayerDrawer.js';
@@ -24,7 +24,6 @@ import { ErrorBoundary } from 'react-error-boundary';
 import { MapErrorFallback } from '../ErrorFallback.js';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useNina } from '../../hooks/useNina.js';
-import { useCommandCenter, type DataLayer } from '../../hooks/useCommandCenter.js';
 
 const CityMap = lazy(() =>
   import('../map/CityMap.js').then((m) => ({ default: m.CityMap })),
@@ -52,16 +51,9 @@ export function CommandLayout() {
   const isDesktop = typeof window !== 'undefined'
     && window.matchMedia('(min-width: 640px)').matches;
 
-  // Once NINA data loads, switch default layer: warnings if alerts exist, traffic otherwise
-  const { data: ninaWarnings } = useNina(cityId);
-  const setActiveLayers = useCommandCenter((s) => s.setActiveLayers);
-  const layerInitRef = useRef(false);
-  useEffect(() => {
-    if (layerInitRef.current || ninaWarnings === undefined) return;
-    layerInitRef.current = true;
-    const layer: DataLayer = ninaWarnings.length > 0 ? 'warnings' : 'traffic';
-    setActiveLayers(new Set<DataLayer>([layer]));
-  }, [ninaWarnings, setActiveLayers]);
+  // NINA warnings are fetched for the topbar badge; the default active layers
+  // (traffic + weather + warnings) are set in useCommandCenter defaults.
+  useNina(cityId);
 
   return (
     <>

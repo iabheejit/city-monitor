@@ -135,7 +135,6 @@ Adding a city = adding a config file + registering in `ALL_CITIES` + setting `AC
 | `LOCATIONIQ_TOKEN` | No | — | LocationIQ geocoding token. Used as fallback when Nominatim is rate-limited. |
 | `WAQI_API_TOKEN` | No | — | WAQI air quality API token. AQ grid skipped if not set. |
 | `TOMTOM_API_KEY` | No | — | TomTom traffic API key. Traffic skipped if not set. |
-| `OPENWEATHERMAP_API_KEY` | No | — | OWM tile proxy for weather map overlay. Returns 503 if not set. |
 | `FIRECRAWL_API_KEY` | No | — | Firecrawl v2 API key for Bürgeramt appointment scraping. Appointments skipped if not set. |
 
 ## Utility Libraries

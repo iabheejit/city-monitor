@@ -28,6 +28,11 @@ const SHARED_SOURCES: SourceGroup[] = [
         description: 'European Air Quality Index (AQI), PM2.5, PM10, NO2, and ozone levels.',
       },
       {
+        name: 'RainViewer',
+        url: 'https://www.rainviewer.com/',
+        description: 'Precipitation radar tiles for the rain radar map overlay.',
+      },
+      {
         name: 'DWD (Deutscher Wetterdienst)',
         url: 'https://www.dwd.de/',
         description: 'Official German severe weather warnings.',

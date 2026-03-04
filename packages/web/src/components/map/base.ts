@@ -95,7 +95,8 @@ export function setWeatherOverlay(map: maplibregl.Map, visible: boolean) {
         type: 'raster',
         tiles: ['/api/weather-tiles/{z}/{x}/{y}.png'],
         tileSize: 256,
-        attribution: '&copy; <a href="https://openweathermap.org/" target="_blank">OpenWeatherMap</a>',
+        maxzoom: 7, // RainViewer max zoom; MapLibre upscales for higher zooms
+        attribution: '&copy; <a href="https://www.rainviewer.com/" target="_blank">RainViewer</a>',
       });
     }
     if (!map.getLayer(WEATHER_LAYER)) {
