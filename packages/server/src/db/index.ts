@@ -1,8 +1,3 @@
-/**
- * Copyright (C) 2026 Odin Mühlenbein
- * SPDX-License-Identifier: AGPL-3.0-or-later
- */
-
 import { drizzle } from 'drizzle-orm/postgres-js';
 import { sql } from 'drizzle-orm';
 import postgres from 'postgres';

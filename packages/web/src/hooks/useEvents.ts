@@ -1,8 +1,3 @@
-/**
- * Copyright (C) 2026 Odin Mühlenbein
- * SPDX-License-Identifier: AGPL-3.0-or-later
- */
-
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { api, type CityEvent, type ApiResponse } from '../lib/api.js';
 

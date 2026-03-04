@@ -1,8 +1,3 @@
-/**
- * Copyright (C) 2026 Odin Mühlenbein
- * SPDX-License-Identifier: AGPL-3.0-or-later
- */
-
 const PARTY_COLORS: Record<string, string> = {
   'SPD': '#E3000F',
   'CDU': '#000000',

@@ -1,8 +1,3 @@
-/**
- * Copyright (C) 2026 Odin Mühlenbein
- * SPDX-License-Identifier: AGPL-3.0-or-later
- */
-
 /** Typed cache key helpers. Use these instead of raw string interpolation. */
 export const CK = {
   // Weather & Air Quality

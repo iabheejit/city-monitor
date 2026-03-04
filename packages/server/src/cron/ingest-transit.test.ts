@@ -1,8 +1,3 @@
-/**
- * Copyright (C) 2026 Odin Mühlenbein
- * SPDX-License-Identifier: AGPL-3.0-or-later
- */
-
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createCache } from '../lib/cache.js';
 import { createTransitIngestion, type TransitAlert } from './ingest-transit.js';

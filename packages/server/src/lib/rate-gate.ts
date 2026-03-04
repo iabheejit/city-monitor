@@ -1,9 +1,4 @@
 /**
- * Copyright (C) 2026 Odin Mühlenbein
- * SPDX-License-Identifier: AGPL-3.0-or-later
- */
-
-/**
  * Creates a rate gate that enforces a minimum time gap between calls.
  * Callers that arrive too early are delayed until the next allowed slot.
  */

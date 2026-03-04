@@ -1,8 +1,3 @@
-/**
- * Copyright (C) 2026 Odin Mühlenbein
- * SPDX-License-Identifier: AGPL-3.0-or-later
- */
-
 import type { ReactNode } from 'react';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { TopBar } from './TopBar.js';

@@ -1,7 +1,4 @@
 /**
- * Copyright (C) 2026 Odin Mühlenbein
- * SPDX-License-Identifier: AGPL-3.0-or-later
- *
  * WMO Weather interpretation codes (WW) to human-readable labels and icons.
  * Reference: https://www.nodc.noaa.gov/archive/arc0021/0002199/1.1/data/0-data/HTML/WMO-CODE/WMO4677.HTM
  */

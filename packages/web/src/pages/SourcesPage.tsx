@@ -1,8 +1,3 @@
-/**
- * Copyright (C) 2026 Odin Mühlenbein
- * SPDX-License-Identifier: AGPL-3.0-or-later
- */
-
 import { useEffect } from 'react';
 import { useCityConfig } from '../hooks/useCityConfig.js';
 import { PageShell } from '../components/layout/PageShell.js';

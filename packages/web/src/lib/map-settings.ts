@@ -1,6 +1,3 @@
-// SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2025 Odin Mühlenbein
-
 /**
  * Map display settings — controls how many markers appear per layer.
  * Tune these to keep the map readable without overwhelming the user.
@@ -22,15 +19,6 @@ export const MAP_NEWS = {
    * ~0.005 ≈ roughly 500 m in Berlin latitude.
    */
   minSpatialGapSq: 0.0004,
-} as const;
-
-/** Safety marker recency thresholds — at city-wide zoom show only
- *  very recent reports; at close zoom show the full 7-day window. */
-export const MAP_SAFETY = {
-  /** Hours of recency at city-wide zoom (< zoomThreshold) */
-  recentHours: 24,
-  /** Zoom level below which we restrict to recentHours */
-  zoomThreshold: 12,
 } as const;
 
 /** Dense point layers get a minimum zoom so they don't clutter the city view. */

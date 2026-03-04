@@ -1,8 +1,3 @@
-/**
- * Copyright (C) 2026 Odin Mühlenbein
- * SPDX-License-Identifier: AGPL-3.0-or-later
- */
-
 import { useTranslation } from 'react-i18next';
 
 /** Full-page fallback for the top-level error boundary. */

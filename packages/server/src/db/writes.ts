@@ -1,7 +1,4 @@
 /**
- * Copyright (C) 2026 Odin Mühlenbein
- * SPDX-License-Identifier: AGPL-3.0-or-later
- *
  * DB write functions.
  * All writes INSERT new rows (no delete) to preserve historical data.
  * A daily cleanup cron removes rows older than 7 days.

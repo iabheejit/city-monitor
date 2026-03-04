@@ -1,7 +1,4 @@
 /**
- * Copyright (C) 2026 Odin Mühlenbein
- * SPDX-License-Identifier: AGPL-3.0-or-later
- *
  * Prunes rows older than the configured retention period from all tables.
  * Since save functions no longer delete before inserting, historical data
  * accumulates and this cron is the sole cleanup mechanism.

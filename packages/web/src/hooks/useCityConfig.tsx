@@ -1,8 +1,3 @@
-/**
- * Copyright (C) 2026 Odin Mühlenbein
- * SPDX-License-Identifier: AGPL-3.0-or-later
- */
-
 import { createContext, useContext, type ReactNode } from 'react';
 import type { CityConfig } from '@city-monitor/shared';
 import { getCityConfig, getDefaultCityId } from '../config/index.js';

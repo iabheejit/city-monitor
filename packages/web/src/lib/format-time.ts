@@ -1,8 +1,3 @@
-/**
- * Copyright (C) 2026 Odin Mühlenbein
- * SPDX-License-Identifier: AGPL-3.0-or-later
- */
-
 const MINUTE = 60;
 const HOUR = 3600;
 const DAY = 86400;

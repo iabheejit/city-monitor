@@ -1,8 +1,3 @@
-/**
- * Copyright (C) 2026 Odin Mühlenbein
- * SPDX-License-Identifier: AGPL-3.0-or-later
- */
-
 import { Router } from 'express';
 import type { Cache } from '../lib/cache.js';
 import type { PoliticalDistrict } from '../cron/ingest-political.js';

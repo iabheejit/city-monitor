@@ -1,7 +1,4 @@
 /**
- * Copyright (C) 2026 Odin Mühlenbein
- * SPDX-License-Identifier: AGPL-3.0-or-later
- *
  * Zod schemas for JSONB data validation.
  * Used in DB read functions to validate data from Postgres JSONB columns
  * before casting to TypeScript types. On validation failure, functions

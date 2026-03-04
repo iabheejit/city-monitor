@@ -2,17 +2,6 @@
 
 This project is licensed **AGPL-3.0-or-later** and inspired by [World Monitor](https://worldmonitor.io) by Elie Habib. All code is original work.
 
-## Per-File Header
-
-Every source file should include:
-
-```typescript
-/**
- * Copyright (C) 2026 Odin Mühlenbein
- * SPDX-License-Identifier: AGPL-3.0-or-later
- */
-```
-
 ## Dashboard Footer (Section 13 compliance)
 
 The frontend includes a visible footer link satisfying AGPL Section 13 (source availability for network users):

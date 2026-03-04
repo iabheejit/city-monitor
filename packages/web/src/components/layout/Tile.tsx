@@ -1,8 +1,3 @@
-/**
- * Copyright (C) 2026 Odin Mühlenbein
- * SPDX-License-Identifier: AGPL-3.0-or-later
- */
-
 import { type ReactNode, useState } from 'react';
 
 type TileSpan = 1 | 2 | 'full';

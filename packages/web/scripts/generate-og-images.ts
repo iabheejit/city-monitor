@@ -1,7 +1,4 @@
 /**
- * Copyright (C) 2026 Odin Mühlenbein
- * SPDX-License-Identifier: AGPL-3.0-or-later
- *
  * Generates Open Graph images (1200×630) for social media previews.
  * Uses Satori (HTML→SVG) and resvg (SVG→PNG).
  *

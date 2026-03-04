@@ -1,8 +1,3 @@
-/**
- * Copyright (C) 2026 Odin Mühlenbein
- * SPDX-License-Identifier: AGPL-3.0-or-later
- */
-
 import type { CityConfig } from '@city-monitor/shared';
 import { berlin } from './cities/berlin.js';
 import { hamburg } from './cities/hamburg.js';

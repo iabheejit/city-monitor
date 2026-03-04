@@ -1,7 +1,4 @@
 /**
- * Copyright (C) 2026 Odin Mühlenbein
- * SPDX-License-Identifier: AGPL-3.0-or-later
- *
  * Vite plugin that generates per-route HTML files with correct <head> meta tags
  * at build time. Crawlers (Facebook, Twitter, Google) that don't execute JS will
  * receive the correct OG title/description for each static route.

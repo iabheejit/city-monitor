@@ -1,8 +1,3 @@
-/**
- * Copyright (C) 2026 Odin Mühlenbein
- * SPDX-License-Identifier: AGPL-3.0-or-later
- */
-
 export function Skeleton({ lines = 3 }: { lines?: number }) {
   return (
     <div data-testid="skeleton" className="space-y-3 animate-pulse" aria-hidden="true">

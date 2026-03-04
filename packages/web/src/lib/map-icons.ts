@@ -1,7 +1,4 @@
 /**
- * Copyright (C) 2026 Odin Mühlenbein
- * SPDX-License-Identifier: AGPL-3.0-or-later
- *
  * Lucide-to-canvas icon renderer for MapLibre GL map markers.
  * Draws crisp SVG-based icons onto ImageData via Path2D (synchronous).
  */
