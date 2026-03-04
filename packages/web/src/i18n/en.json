@@ -283,6 +283,15 @@
         "warning": "Warning",
         "poor": "Poor"
       }
+    },
+    "councilMeetings": {
+      "title": "Council Meetings",
+      "empty": "No upcoming meetings",
+      "bvv": "District Assembly",
+      "parliament": "State Parliament",
+      "agendaItems": "{{count}} agenda items",
+      "today": "Today",
+      "tomorrow": "Tomorrow"
     }
   },
   "category": {
@@ -350,7 +359,8 @@
       "total": "All Sources",
       "road": "Road Traffic",
       "rail": "Rail Traffic",
-      "air": "Air Traffic"
+      "air": "Air Traffic",
+      "live": "Live Sensors"
     },
     "water": {
       "levels": "Water Levels",

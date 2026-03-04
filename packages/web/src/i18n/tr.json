@@ -283,6 +283,15 @@
         "warning": "Uyarı",
         "poor": "Kötü"
       }
+    },
+    "councilMeetings": {
+      "title": "Meclis Toplantıları",
+      "empty": "Yaklaşan toplantı yok",
+      "bvv": "İlçe Meclisi",
+      "parliament": "Eyalet Parlamentosu",
+      "agendaItems": "{{count}} gündem maddesi",
+      "today": "Bugün",
+      "tomorrow": "Yarın"
     }
   },
   "category": {
@@ -350,7 +359,8 @@
       "total": "Tüm Kaynaklar",
       "road": "Karayolu Trafiği",
       "rail": "Demiryolu Trafiği",
-      "air": "Hava Trafiği"
+      "air": "Hava Trafiği",
+      "live": "Canlı Sensörler"
     },
     "water": {
       "levels": "Su Seviyeleri",

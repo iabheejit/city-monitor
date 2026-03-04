@@ -14,7 +14,7 @@ EU Directive 2002/49/EC strategic noise maps served as WMS tile overlays. No bac
 
 ### Sub-Layers
 
-4 noise sub-layers with mutually exclusive selection:
+4 WMS noise sub-layers with radio-style selection (one active at a time, deselectable on Berlin where live sensors provide fallback visibility):
 
 | Sub-layer | Berlin WMS Layer | Hamburg WMS Layer |
 |-----------|-----------------|-------------------|
@@ -27,7 +27,7 @@ Hamburg has no "total" combined layer — the UI falls back to "road" when Total
 
 ### Architecture
 
-- **Zustand:** `noiseLayer` state (`'total' | 'road' | 'rail' | 'air'`) in `useCommandCenter`
+- **Zustand:** `noiseLayer` state (`NoiseWmsLayer = NoiseLayer | null`) in `useCommandCenter` — null means no WMS map active
 - **Map:** `setNoiseOverlay()` in `base.ts` — adds/removes raster source+layer (same pattern as rent map)
 - **Constants:** `NOISE_WMS_LAYERS`, `getNoiseWmsUrl()` in `constants.ts`
 - **Sidebar:** Noise parent + sub-layer buttons in `DataLayerToggles.tsx`
@@ -64,7 +64,7 @@ Standard data source pattern:
 - **Map layer:** `layers/noise-sensors.ts` — colored circles with dB labels
   - Green (<45 dB), Yellow (45–55), Orange (55–65), Red (>65)
   - Popups show LAeq, LAmin, LAmax values
-- **Visibility:** Markers appear when the "Noise" data layer is toggled on
+- **Visibility:** Markers appear when "Noise" layer is on AND "Live Sensors" sub-item is active (`noiseLiveData` in store). Live sensors are independently toggleable from WMS maps. Default: on.
 
 ### Noise Level Thresholds
 

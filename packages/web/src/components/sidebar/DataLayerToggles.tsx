@@ -1,7 +1,7 @@
 import { createElement, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { TrainFront, Wind, Newspaper, TriangleAlert, HeartPulse, Pill, Car, Construction, Landmark, Building2, Building, CloudRain, Droplets, Waves, Home, BarChart3, Siren, Users, UserRound, Globe, Briefcase, Baby, HandCoins, Heart, Volume2, TrainTrack, Plane } from 'lucide';
-import { useCommandCenter, type DataLayer, type PoliticalLayer, type SocialLayer, type PopulationLayer, type NoiseLayer, type NewsSubLayer, type EmergencySubLayer, type WaterSubLayer, type TrafficSubLayer } from '../../hooks/useCommandCenter.js';
+import { TrainFront, Wind, Newspaper, TriangleAlert, HeartPulse, Pill, Car, Construction, Landmark, Building2, Building, CloudRain, Droplets, Waves, Home, BarChart3, Siren, Users, UserRound, Globe, Briefcase, Baby, HandCoins, Heart, Volume2, TrainTrack, Plane, Activity } from 'lucide';
+import { useCommandCenter, type DataLayer, type PoliticalLayer, type SocialLayer, type PopulationLayer, type NoiseLayer, type NoiseWmsLayer, type NewsSubLayer, type EmergencySubLayer, type WaterSubLayer, type TrafficSubLayer } from '../../hooks/useCommandCenter.js';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import type { IconNode } from '../../lib/map-icons.js';
 
@@ -122,6 +122,8 @@ export function DataLayerToggles() {
   const toggleTrafficSubLayer = useCommandCenter((s) => s.toggleTrafficSubLayer);
   const noiseLayer = useCommandCenter((s) => s.noiseLayer);
   const setNoiseLayer = useCommandCenter((s) => s.setNoiseLayer);
+  const noiseLiveData = useCommandCenter((s) => s.noiseLiveData);
+  const toggleNoiseLiveData = useCommandCenter((s) => s.toggleNoiseLiveData);
   const socialLayer = useCommandCenter((s) => s.socialLayer);
   const setSocialLayer = useCommandCenter((s) => s.setSocialLayer);
   const populationLayer = useCommandCenter((s) => s.populationLayer);
@@ -195,8 +197,20 @@ export function DataLayerToggles() {
             ));
           } else if (layer === 'noise' && active) {
             // Hamburg has no 'total' sub-layer — fall back to 'road' for active state highlight
-            const effectiveNoise = (noiseLayer === 'total' && city.id !== 'berlin') ? 'road' : noiseLayer;
-            subItems = NOISE_SUB_META
+            const effectiveNoise: NoiseWmsLayer = (noiseLayer === 'total' && city.id !== 'berlin') ? 'road' : noiseLayer;
+            // Cities without live sensors can't deselect the last WMS map (nothing would be visible)
+            const hasLiveSensors = city.id === 'berlin';
+            const liveItem = hasLiveSensors ? (
+              <SubLayerItem
+                key="live"
+                icon={Activity as IconNode}
+                color="#10b981"
+                active={noiseLiveData}
+                label={t('sidebar.noise.live')}
+                onClick={toggleNoiseLiveData}
+              />
+            ) : null;
+            const wmsItems = NOISE_SUB_META
               .filter(({ cities: c }) => !c || c.includes(city.id))
               .map(({ key, icon: subIcon, color: subColor }) => (
               <SubLayerItem
@@ -205,9 +219,10 @@ export function DataLayerToggles() {
                 color={subColor}
                 active={effectiveNoise === key}
                 label={t(`sidebar.noise.${key}`)}
-                onClick={() => setNoiseLayer(key)}
+                onClick={() => { if (hasLiveSensors || effectiveNoise !== key) setNoiseLayer(key); }}
               />
             ));
+            subItems = <>{liveItem}{wmsItems}</>;
           } else if (layer === 'social' && active) {
             subItems = SOCIAL_SUB_META.map(({ key, icon: subIcon, color: subColor }) => (
               <SubLayerItem

@@ -71,9 +71,13 @@ export function CityMap() {
   const roadsActive = trafficActive || constructionActive;
   const weatherActive = activeLayers.has('weather');
   const noiseLayerSel = useCommandCenter((s) => s.noiseLayer);
+  const noiseLiveData = useCommandCenter((s) => s.noiseLiveData);
   const noiseActive = activeLayers.has('noise');
-  // Hamburg has no 'total' layer — fall back to 'road'
-  const effectiveNoiseLayer = (noiseLayerSel === 'total' && city.id !== 'berlin') ? 'road' : noiseLayerSel;
+  const noiseWmsActive = noiseActive && noiseLayerSel !== null;
+  // Hamburg has no 'total' layer — fall back to 'road'; default to 'total' when null (unused but satisfies types)
+  const effectiveNoiseLayer = noiseLayerSel === null ? 'total'
+    : (noiseLayerSel === 'total' && city.id !== 'berlin') ? 'road'
+    : noiseLayerSel;
   const socialLayer = useCommandCenter((s) => s.socialLayer);
   const socialActive = activeLayers.has('social') && city.id === 'berlin';
   const rentMapActive = socialActive && socialLayer === 'rent';
@@ -139,8 +143,8 @@ export function CityMap() {
   );
   const aqGridItems = activeLayers.has('air-quality') ? (aqGrid ?? EMPTY_AQ) : EMPTY_AQ;
   const noiseSensorItems = useMemo(
-    () => noiseActive ? (noiseSensorData?.data ?? []) : [],
-    [noiseActive, noiseSensorData?.data],
+    () => (noiseActive && noiseLiveData) ? (noiseSensorData?.data ?? []) : [],
+    [noiseActive, noiseLiveData, noiseSensorData?.data],
   );
   const waterLevelItems = (waterActive && waterSubLayers.has('levels')) ? (waterLevelData?.stations ?? EMPTY_WL) : EMPTY_WL;
   const bathingItems = useMemo(
@@ -195,8 +199,8 @@ export function CityMap() {
   roadsActiveRef.current = roadsActive;
   const weatherActiveRef = useRef(weatherActive);
   weatherActiveRef.current = weatherActive;
-  const noiseActiveRef = useRef(noiseActive);
-  noiseActiveRef.current = noiseActive;
+  const noiseWmsActiveRef = useRef(noiseWmsActive);
+  noiseWmsActiveRef.current = noiseWmsActive;
   const effectiveNoiseLayerRef = useRef(effectiveNoiseLayer);
   effectiveNoiseLayerRef.current = effectiveNoiseLayer;
   const rentMapActiveRef = useRef(rentMapActive);
@@ -253,7 +257,7 @@ export function CityMap() {
       updateSocialAtlasLayer(map, socialAtlasGeoJsonRef.current, socialAtlasMetricRef.current, isDarkRef.current);
       updatePopulationLayer(map, populationGeoJsonRef.current, populationMetricRef.current, isDarkRef.current);
       setWeatherOverlay(map, weatherActiveRef.current);
-      setNoiseOverlay(map, noiseActiveRef.current, cityIdRef.current, effectiveNoiseLayerRef.current);
+      setNoiseOverlay(map, noiseWmsActiveRef.current, cityIdRef.current, effectiveNoiseLayerRef.current);
       setRentMapOverlay(map, rentMapActiveRef.current);
 
       // Collapse the attribution control (MapLibre opens it by default)
@@ -340,7 +344,7 @@ export function CityMap() {
       updateSocialAtlasLayer(map, socialAtlasGeoJsonRef.current, socialAtlasMetricRef.current, isDark);
       updatePopulationLayer(map, populationGeoJsonRef.current, populationMetricRef.current, isDark);
       setWeatherOverlay(map, weatherActiveRef.current);
-      setNoiseOverlay(map, noiseActiveRef.current, cityIdRef.current, effectiveNoiseLayerRef.current);
+      setNoiseOverlay(map, noiseWmsActiveRef.current, cityIdRef.current, effectiveNoiseLayerRef.current);
       setRentMapOverlay(map, rentMapActiveRef.current);
     });
   }, [isDark, city.id]);
@@ -375,14 +379,14 @@ export function CityMap() {
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
-    const apply = () => setNoiseOverlay(map, noiseActive, city.id, effectiveNoiseLayer);
+    const apply = () => setNoiseOverlay(map, noiseWmsActive, city.id, effectiveNoiseLayer);
     if (map.isStyleLoaded()) {
       apply();
       return;
     }
     map.once('idle', apply);
     return () => { map.off('idle', apply); };
-  }, [noiseActive, effectiveNoiseLayer, city.id]);
+  }, [noiseWmsActive, effectiveNoiseLayer, city.id]);
 
   // Update transit markers when alerts or layer toggle changes
   useEffect(() => {

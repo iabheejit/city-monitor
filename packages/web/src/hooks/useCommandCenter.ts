@@ -5,6 +5,7 @@ export type PoliticalLayer = 'bezirke' | 'bundestag' | 'landesparlament';
 export type SocialLayer = 'unemployment' | 'single-parent' | 'welfare' | 'child-poverty' | 'rent';
 export type PopulationLayer = 'pop-density' | 'pop-elderly' | 'pop-foreign';
 export type NoiseLayer = 'total' | 'road' | 'rail' | 'air';
+export type NoiseWmsLayer = NoiseLayer | null;
 export type NewsSubLayer = 'news' | 'police';
 export type EmergencySubLayer = 'pharmacies' | 'aeds';
 export type WaterSubLayer = 'levels' | 'bathing';
@@ -16,7 +17,8 @@ interface CommandCenterState {
   politicalLayer: PoliticalLayer;
   socialLayer: SocialLayer;
   populationLayer: PopulationLayer;
-  noiseLayer: NoiseLayer;
+  noiseLayer: NoiseWmsLayer;
+  noiseLiveData: boolean;
   newsSubLayers: Set<NewsSubLayer>;
   emergencySubLayers: Set<EmergencySubLayer>;
   waterSubLayers: Set<WaterSubLayer>;
@@ -27,6 +29,7 @@ interface CommandCenterState {
   setSocialLayer: (layer: SocialLayer) => void;
   setPopulationLayer: (layer: PopulationLayer) => void;
   setNoiseLayer: (layer: NoiseLayer) => void;
+  toggleNoiseLiveData: () => void;
   toggleNewsSubLayer: (sub: NewsSubLayer) => void;
   toggleEmergencySubLayer: (sub: EmergencySubLayer) => void;
   toggleWaterSubLayer: (sub: WaterSubLayer) => void;
@@ -47,6 +50,7 @@ export const useCommandCenter = create<CommandCenterState>((set) => ({
   socialLayer: 'unemployment',
   populationLayer: 'pop-density',
   noiseLayer: 'total',
+  noiseLiveData: true,
   newsSubLayers: new Set(ALL_NEWS_SUBS),
   emergencySubLayers: new Set(ALL_EMERGENCY_SUBS),
   waterSubLayers: new Set(ALL_WATER_SUBS),
@@ -80,7 +84,8 @@ export const useCommandCenter = create<CommandCenterState>((set) => ({
   setPoliticalLayer: (layer) => set({ politicalLayer: layer }),
   setSocialLayer: (layer) => set({ socialLayer: layer }),
   setPopulationLayer: (layer) => set({ populationLayer: layer }),
-  setNoiseLayer: (layer) => set({ noiseLayer: layer }),
+  setNoiseLayer: (layer) => set((state) => ({ noiseLayer: state.noiseLayer === layer ? null : layer })),
+  toggleNoiseLiveData: () => set((state) => ({ noiseLiveData: !state.noiseLiveData })),
   toggleNewsSubLayer: (sub) =>
     set((state) => {
       const next = new Set(state.newsSubLayers);

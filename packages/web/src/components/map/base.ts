@@ -133,6 +133,8 @@ export function setNoiseOverlay(map: maplibregl.Map, visible: boolean, cityId: s
       tileSize: 256,
       attribution: '&copy; <a href="https://daten.berlin.de" target="_blank">Open Data</a>',
     });
+    // Insert below noise sensor markers so live data stays in foreground
+    const beforeId = map.getLayer('noise-sensor-icon') ? 'noise-sensor-icon' : undefined;
     map.addLayer({
       id: NOISE_LAYER,
       type: 'raster',
@@ -140,7 +142,7 @@ export function setNoiseOverlay(map: maplibregl.Map, visible: boolean, cityId: s
       paint: {
         'raster-opacity': 0.7,
       },
-    });
+    }, beforeId);
   }
 }
 

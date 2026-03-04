@@ -283,6 +283,15 @@
         "warning": "Warnung",
         "poor": "Schlecht"
       }
+    },
+    "councilMeetings": {
+      "title": "BVV-Sitzungen",
+      "empty": "Keine anstehenden Sitzungen",
+      "bvv": "Bezirksverordnetenversammlung",
+      "parliament": "Abgeordnetenhaus",
+      "agendaItems": "{{count}} Tagesordnungspunkte",
+      "today": "Heute",
+      "tomorrow": "Morgen"
     }
   },
   "category": {
@@ -350,7 +359,8 @@
       "total": "Alle Quellen",
       "road": "Straßenverkehr",
       "rail": "Schienenverkehr",
-      "air": "Flugverkehr"
+      "air": "Flugverkehr",
+      "live": "Live-Sensoren"
     },
     "water": {
       "levels": "Pegelstände",
