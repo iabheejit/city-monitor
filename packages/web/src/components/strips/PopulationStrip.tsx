@@ -16,11 +16,64 @@ function formatPct(n: number): string {
   return `${sign}${n.toFixed(1)}%`;
 }
 
-const BAR_COLORS = {
+
+const SEGMENT_COLORS = {
   youth: '#3b82f6',      // blue
   workingAge: '#10b981',  // emerald
   elderly: '#f59e0b',     // amber
 };
+
+/* ── Donut chart (SVG) ─────────────────────────────────── */
+
+interface DonutSlice {
+  startAngle: number;
+  endAngle: number;
+  color: string;
+  label: string;
+  pct: number;
+}
+
+function polarToCartesian(cx: number, cy: number, r: number, angle: number): [number, number] {
+  return [cx + r * Math.cos(angle), cy + r * Math.sin(angle)];
+}
+
+function AgeDonut({ slices }: { slices: DonutSlice[] }) {
+  const cx = 60, cy = 60, r = 52, innerR = 30;
+  const labelR = (r + innerR) / 2;
+
+  return (
+    <svg role="img" aria-label="Age breakdown" viewBox="0 0 120 120" className="w-full max-w-[140px] mx-auto">
+      {slices.map((slice, i) => {
+        const sweep = slice.endAngle - slice.startAngle;
+        const large = sweep > Math.PI ? 1 : 0;
+        const [x1, y1] = polarToCartesian(cx, cy, r, slice.startAngle);
+        const [x2, y2] = polarToCartesian(cx, cy, r, slice.endAngle);
+        const [ix1, iy1] = polarToCartesian(cx, cy, innerR, slice.startAngle);
+        const [ix2, iy2] = polarToCartesian(cx, cy, innerR, slice.endAngle);
+        const d = [
+          `M${x1},${y1}`,
+          `A${r},${r},0,${large},1,${x2},${y2}`,
+          `L${ix2},${iy2}`,
+          `A${innerR},${innerR},0,${large},0,${ix1},${iy1}`,
+          'Z',
+        ].join(' ');
+        const midAngle = slice.startAngle + sweep / 2;
+        const [lx, ly] = polarToCartesian(cx, cy, labelR, midAngle);
+        return (
+          <g key={i}>
+            <path d={d} fill={slice.color} opacity={0.85}>
+              <title>{slice.label}: {slice.pct.toFixed(1)}%</title>
+            </path>
+            <text x={lx} y={ly} textAnchor="middle" dominantBaseline="middle"
+              fill="#fff" style={{ fontSize: 7, fontWeight: 700 }} pointerEvents="none">
+              {slice.pct.toFixed(1)}%
+            </text>
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
 
 const FRESH_MAX_AGE = 60 * 24 * 60 * 60 * 1000; // 60 days (cron monthly)
 
@@ -54,29 +107,38 @@ export function PopulationStrip() {
         )}
       </div>
 
-      {/* Age breakdown stacked bar */}
-      <div className="mt-6">
-        <div className="flex h-5 rounded overflow-hidden">
-          <div
-            className="transition-all"
-            style={{ width: `${data.youthPct}%`, backgroundColor: BAR_COLORS.youth }}
-            title={`${t('panel.population.youth')}: ${data.youthPct.toFixed(1)}%`}
-          />
-          <div
-            className="transition-all"
-            style={{ width: `${data.workingAgePct}%`, backgroundColor: BAR_COLORS.workingAge }}
-            title={`${t('panel.population.workingAge')}: ${data.workingAgePct.toFixed(1)}%`}
-          />
-          <div
-            className="transition-all"
-            style={{ width: `${data.elderlyPct}%`, backgroundColor: BAR_COLORS.elderly }}
-            title={`${t('panel.population.elderly')}: ${data.elderlyPct.toFixed(1)}%`}
-          />
-        </div>
-        <div className="flex justify-between mt-1 text-[11px]">
-          <span style={{ color: BAR_COLORS.youth }}>{t('panel.population.youth')} {data.youthPct.toFixed(1)}%</span>
-          <span style={{ color: BAR_COLORS.workingAge }}>{t('panel.population.workingAge')} {data.workingAgePct.toFixed(1)}%</span>
-          <span style={{ color: BAR_COLORS.elderly }}>{t('panel.population.elderly')} {data.elderlyPct.toFixed(1)}%</span>
+      {/* Age breakdown donut */}
+      <div className="mt-4">
+        <AgeDonut
+          slices={(() => {
+            const segments = [
+              { key: 'youth' as const, pct: data.youthPct },
+              { key: 'workingAge' as const, pct: data.workingAgePct },
+              { key: 'elderly' as const, pct: data.elderlyPct },
+            ];
+            const slices: DonutSlice[] = [];
+            let angle = -Math.PI / 2;
+            for (const seg of segments) {
+              const sweep = (seg.pct / 100) * Math.PI * 2;
+              slices.push({
+                startAngle: angle,
+                endAngle: angle + sweep,
+                color: SEGMENT_COLORS[seg.key],
+                label: t(`panel.population.${seg.key}`),
+                pct: seg.pct,
+              });
+              angle += sweep;
+            }
+            return slices;
+          })()}
+        />
+        <div className="flex flex-wrap justify-center gap-x-2.5 gap-y-0.5 mt-1">
+          {(['youth', 'workingAge', 'elderly'] as const).map((key) => (
+            <span key={key} className="inline-flex items-center gap-1 text-[10px] text-gray-600 dark:text-gray-400">
+              <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: SEGMENT_COLORS[key] }} />
+              {t(`panel.population.${key}`)}
+            </span>
+          ))}
         </div>
       </div>
 

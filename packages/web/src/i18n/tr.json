@@ -177,7 +177,7 @@
       "empty": "Veri mevcut değil"
     },
     "wastewater": {
-      "title": "Atık Su",
+      "title": "Atık Su Virüs Yükü",
       "empty": "Veri mevcut değil",
       "fluA": "Grip A",
       "fluB": "Grip B",
@@ -206,6 +206,35 @@
       "tidal": "Gelgit",
       "vsNormal": "normal: {{diff}}",
       "empty": "Seviye verisi yok"
+    },
+    "pollen": {
+      "title": "Polen Tahmini",
+      "empty": "Veri mevcut değil",
+      "offSeason": "Sezon dışı",
+      "noActive": "Polen yükü yok",
+      "today": "Bugün",
+      "tomorrow": "Yarın",
+      "dayAfter": "Öbür gün",
+      "type": {
+        "Hasel": "Fındık",
+        "Erle": "Kızılağaç",
+        "Esche": "Dişbudak",
+        "Birke": "Huş",
+        "Graeser": "Çimen",
+        "Roggen": "Çavdar",
+        "Beifuss": "Yavşan",
+        "Ambrosia": "Ambrosia"
+      },
+      "level": {
+        "-1": "—",
+        "0": "Yok",
+        "0-1": "Düşük",
+        "1": "Düşük",
+        "1-2": "Orta",
+        "2": "Orta",
+        "2-3": "Yüksek",
+        "3": "Yüksek"
+      }
     },
     "crisis": {
       "title": "Kriz Hizmetleri",

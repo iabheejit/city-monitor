@@ -177,7 +177,7 @@
       "empty": "Keine Daten verfügbar"
     },
     "wastewater": {
-      "title": "Abwasser",
+      "title": "Abwasser-Viruslast",
       "empty": "Keine Daten verfügbar",
       "fluA": "Grippe A",
       "fluB": "Grippe B",
@@ -206,6 +206,35 @@
       "tidal": "Tide",
       "vsNormal": "gg. {{diff}} normal",
       "empty": "Keine Pegeldaten"
+    },
+    "pollen": {
+      "title": "Pollenvorhersage",
+      "empty": "Keine Daten verfügbar",
+      "offSeason": "Außerhalb der Saison",
+      "noActive": "Keine Pollenbelastung",
+      "today": "Heute",
+      "tomorrow": "Morgen",
+      "dayAfter": "Übermorgen",
+      "type": {
+        "Hasel": "Hasel",
+        "Erle": "Erle",
+        "Esche": "Esche",
+        "Birke": "Birke",
+        "Graeser": "Gräser",
+        "Roggen": "Roggen",
+        "Beifuss": "Beifuß",
+        "Ambrosia": "Ambrosia"
+      },
+      "level": {
+        "-1": "—",
+        "0": "Keine",
+        "0-1": "Gering",
+        "1": "Gering",
+        "1-2": "Mittel",
+        "2": "Mittel",
+        "2-3": "Hoch",
+        "3": "Hoch"
+      }
     },
     "crisis": {
       "title": "Krisendienste",

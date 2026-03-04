@@ -194,7 +194,7 @@
       "empty": "No water level data"
     },
     "wastewater": {
-      "title": "Wastewater",
+      "title": "Wastewater Viral Load",
       "empty": "No data available",
       "fluA": "Flu A",
       "fluB": "Flu B",
@@ -205,6 +205,35 @@
         "low": "Low",
         "moderate": "Moderate",
         "high": "High"
+      }
+    },
+    "pollen": {
+      "title": "Pollen Forecast",
+      "empty": "No data available",
+      "offSeason": "Off-season",
+      "noActive": "No pollen burden",
+      "today": "Today",
+      "tomorrow": "Tomorrow",
+      "dayAfter": "Day after",
+      "type": {
+        "Hasel": "Hazel",
+        "Erle": "Alder",
+        "Esche": "Ash",
+        "Birke": "Birch",
+        "Graeser": "Grasses",
+        "Roggen": "Rye",
+        "Beifuss": "Mugwort",
+        "Ambrosia": "Ragweed"
+      },
+      "level": {
+        "-1": "—",
+        "0": "None",
+        "0-1": "Low",
+        "1": "Low",
+        "1-2": "Med",
+        "2": "Med",
+        "2-3": "High",
+        "3": "High"
       }
     },
     "crisis": {
