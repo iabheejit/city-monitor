@@ -34,6 +34,7 @@ function pathogenLabel(name: string, t: (key: string) => string): string {
   if (name === 'Influenza A') return t('panel.wastewater.fluA');
   if (name === 'Influenza B') return t('panel.wastewater.fluB');
   if (name === 'RSV') return t('panel.wastewater.rsv');
+  if (name === 'SARS-CoV-2') return t('panel.wastewater.covid');
   return name;
 }
 
@@ -140,6 +141,11 @@ export function WastewaterStrip({ expanded }: { expanded: boolean }) {
                 <span className="text-xs tabular-nums text-gray-400 dark:text-gray-500">
                   {formatValue(p.value)} gc/L
                 </span>
+                {p.sampleDate && (
+                  <span className="text-[10px] text-gray-400 dark:text-gray-500">
+                    ({new Date(p.sampleDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', timeZone: 'UTC' })})
+                  </span>
+                )}
               </div>
               <div className="flex items-baseline gap-1">
                 <span className={`text-sm font-bold leading-none ${LEVEL_COLORS[p.level]}`}>
@@ -152,7 +158,7 @@ export function WastewaterStrip({ expanded }: { expanded: boolean }) {
                 )}
               </div>
             </div>
-            <Sparkline data={p.history} color={SPARKLINE_STROKES[p.level]} sampleDate={data.sampleDate} label={`${pathogenLabel(p.name, t)} trend`} />
+            <Sparkline data={p.history} color={SPARKLINE_STROKES[p.level]} sampleDate={p.sampleDate ?? data.sampleDate} label={`${pathogenLabel(p.name, t)} trend`} />
           </div>
         ))}
       </div>

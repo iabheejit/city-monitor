@@ -192,6 +192,7 @@
       "fluA": "Grippe A",
       "fluB": "Grippe B",
       "rsv": "RSV",
+      "covid": "COVID-19",
       "sampleDate": "Probe: {{date}}",
       "level": {
         "none": "Keins",

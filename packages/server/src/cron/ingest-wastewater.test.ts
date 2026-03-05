@@ -1,9 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createCache } from '../lib/cache.js';
-import { createWastewaterIngestion } from './ingest-wastewater.js';
+import { createWastewaterIngestion, parseAmelagBerlinCovid, buildCovidPathogen, computeTrend, computeLevel } from './ingest-wastewater.js';
 import type { WastewaterSummary } from '@city-monitor/shared';
 
-// CSV header + data rows (semicolon-delimited, German decimals)
+// --- Lageso CSV helpers ---
+
 const CSV_HEADER = '"Probennummer";"Datum";"Klärwerk";"UWW_Code";"UWW_Name";"Durchfluss";"Abwasser_Temperatur";"Abwasser_pH";"Methode";"Erreger";"Target";"Messwert"';
 
 function row(date: string, plant: string, pathogen: string, value: string): string {
@@ -14,6 +15,44 @@ function row(date: string, plant: string, pathogen: string, value: string): stri
 
 function buildCsv(...rows: string[]): string {
   return [CSV_HEADER, ...rows].join('\n');
+}
+
+// --- AMELAG TSV helpers ---
+
+const TSV_HEADER = 'standort\tbundesland\tdatum\tviruslast\tviruslast_normalisiert\tvorhersage\tobere_schranke\tuntere_schranke\teinwohner\tlaborwechsel\ttyp\tunter_bg';
+
+function amelagRow(plant: string, bundesland: string, date: string, viruslast: string, typ: string): string {
+  return `${plant}\t${bundesland}\t${date}\t${viruslast}\t1.0\t\t\t\t1000000\t0\t${typ}\t0`;
+}
+
+function buildTsv(...rows: string[]): string {
+  return [TSV_HEADER, ...rows].join('\n');
+}
+
+/**
+ * Mock fetch to return different responses for Lageso and AMELAG URLs.
+ * By default, AMELAG returns 500 so existing Lageso-only tests are unaffected.
+ */
+function mockFetch(lagesoBody: string, amelagBody?: string) {
+  vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+    const url = typeof input === 'string' ? input : input instanceof URL ? input.href : (input as Request).url;
+    if (url.includes('lageso.de')) {
+      return new Response(lagesoBody, { status: 200 });
+    }
+    if (url.includes('github')) {
+      if (amelagBody !== undefined) {
+        return new Response(amelagBody, { status: 200 });
+      }
+      return new Response('', { status: 500 });
+    }
+    return new Response('', { status: 404 });
+  });
+}
+
+function mockFetchFail() {
+  vi.spyOn(globalThis, 'fetch').mockImplementation(async () => {
+    return new Response('', { status: 500 });
+  });
 }
 
 // Two weeks of data across 3 plants, 3 pathogens
@@ -41,24 +80,20 @@ const mockCsvFull = buildCsv(
 );
 
 // 4 weeks of data for sparkline / level testing (single plant for simplicity)
-// Max non-zero for Flu A across all dates: 100000 (week 2)
-// Latest value = 50000, which is 50% of max → moderate
 const mockCsvMultiWeek = buildCsv(
-  row('2025-12-28', 'Ruhleben', 'Influenza A', '50000,00'),  // latest: 50% of max → moderate
-  row('2025-12-21', 'Ruhleben', 'Influenza A', '100000,00'), // max non-zero value
-  row('2025-12-14', 'Ruhleben', 'Influenza A', '20000,00'),  // 20% of max → low
-  row('2025-12-07', 'Ruhleben', 'Influenza A', '0,00'),      // none
+  row('2025-12-28', 'Ruhleben', 'Influenza A', '50000,00'),
+  row('2025-12-21', 'Ruhleben', 'Influenza A', '100000,00'),
+  row('2025-12-14', 'Ruhleben', 'Influenza A', '20000,00'),
+  row('2025-12-07', 'Ruhleben', 'Influenza A', '0,00'),
 );
 
-describe('ingest-wastewater', () => {
+describe('ingest-wastewater (Lageso)', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
   });
 
   it('parses CSV and caches WastewaterSummary', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(mockCsvFull, { status: 200 }),
-    );
+    mockFetch(mockCsvFull);
 
     const cache = createCache();
     const ingest = createWastewaterIngestion(cache);
@@ -66,15 +101,14 @@ describe('ingest-wastewater', () => {
 
     const summary = cache.get<WastewaterSummary>('berlin:wastewater:summary');
     expect(summary).toBeTruthy();
+    // 3 Lageso pathogens (AMELAG fails with 500 → no SARS-CoV-2)
     expect(summary!.pathogens).toHaveLength(3);
     expect(summary!.sampleDate).toBe('2025-12-14');
     expect(summary!.plantCount).toBe(3);
   });
 
   it('averages Messwert across plants per pathogen', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(mockCsvFull, { status: 200 }),
-    );
+    mockFetch(mockCsvFull);
 
     const cache = createCache();
     const ingest = createWastewaterIngestion(cache);
@@ -82,22 +116,17 @@ describe('ingest-wastewater', () => {
 
     const summary = cache.get<WastewaterSummary>('berlin:wastewater:summary')!;
     const fluA = summary.pathogens.find((p) => p.name === 'Influenza A')!;
-    // (30000 + 60000 + 45000) / 3 = 45000
     expect(fluA.value).toBe(45000);
 
     const fluB = summary.pathogens.find((p) => p.name === 'Influenza B')!;
-    // (1000 + 2000 + 3000) / 3 = 2000
     expect(fluB.value).toBe(2000);
 
     const rsv = summary.pathogens.find((p) => p.name === 'RSV')!;
-    // (0 + 0 + 0) / 3 = 0
     expect(rsv.value).toBe(0);
   });
 
   it('computes previous week values correctly', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(mockCsvFull, { status: 200 }),
-    );
+    mockFetch(mockCsvFull);
 
     const cache = createCache();
     const ingest = createWastewaterIngestion(cache);
@@ -105,14 +134,11 @@ describe('ingest-wastewater', () => {
 
     const summary = cache.get<WastewaterSummary>('berlin:wastewater:summary')!;
     const fluA = summary.pathogens.find((p) => p.name === 'Influenza A')!;
-    // (10000 + 20000 + 15000) / 3 = 15000
     expect(fluA.previousValue).toBe(15000);
   });
 
   it('computes trend "rising" when current > 1.5x previous', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(mockCsvFull, { status: 200 }),
-    );
+    mockFetch(mockCsvFull);
 
     const cache = createCache();
     const ingest = createWastewaterIngestion(cache);
@@ -120,14 +146,11 @@ describe('ingest-wastewater', () => {
 
     const summary = cache.get<WastewaterSummary>('berlin:wastewater:summary')!;
     const fluA = summary.pathogens.find((p) => p.name === 'Influenza A')!;
-    // 45000 / 15000 = 3.0 > 1.5 → rising
     expect(fluA.trend).toBe('rising');
   });
 
   it('computes trend "stable" when change is within thresholds', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(mockCsvFull, { status: 200 }),
-    );
+    mockFetch(mockCsvFull);
 
     const cache = createCache();
     const ingest = createWastewaterIngestion(cache);
@@ -135,14 +158,11 @@ describe('ingest-wastewater', () => {
 
     const summary = cache.get<WastewaterSummary>('berlin:wastewater:summary')!;
     const fluB = summary.pathogens.find((p) => p.name === 'Influenza B')!;
-    // 2000 / 2000 = 1.0 → stable
     expect(fluB.trend).toBe('stable');
   });
 
   it('computes trend "gone" when current is 0 but previous was > 0', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(mockCsvFull, { status: 200 }),
-    );
+    mockFetch(mockCsvFull);
 
     const cache = createCache();
     const ingest = createWastewaterIngestion(cache);
@@ -150,7 +170,6 @@ describe('ingest-wastewater', () => {
 
     const summary = cache.get<WastewaterSummary>('berlin:wastewater:summary')!;
     const rsv = summary.pathogens.find((p) => p.name === 'RSV')!;
-    // current=0, previous=500 → gone
     expect(rsv.trend).toBe('gone');
   });
 
@@ -159,9 +178,7 @@ describe('ingest-wastewater', () => {
       row('2025-12-14', 'Ruhleben', 'RSV', '5000,00'),
       row('2025-12-07', 'Ruhleben', 'RSV', '0,00'),
     );
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(csv, { status: 200 }),
-    );
+    mockFetch(csv);
 
     const cache = createCache();
     const ingest = createWastewaterIngestion(cache);
@@ -173,21 +190,17 @@ describe('ingest-wastewater', () => {
   });
 
   it('handles fetch failure gracefully', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response('', { status: 500 }),
-    );
+    mockFetchFail();
 
     const cache = createCache();
     const ingest = createWastewaterIngestion(cache);
-    await ingest(); // should not throw
+    await ingest();
 
     expect(cache.get('berlin:wastewater:summary')).toBeNull();
   });
 
   it('handles empty CSV (header only)', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(CSV_HEADER, { status: 200 }),
-    );
+    mockFetch(CSV_HEADER);
 
     const cache = createCache();
     const ingest = createWastewaterIngestion(cache);
@@ -197,9 +210,7 @@ describe('ingest-wastewater', () => {
   });
 
   it('uses 7-day TTL for cache entry', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(mockCsvFull, { status: 200 }),
-    );
+    mockFetch(mockCsvFull);
 
     const cache = createCache();
     const setSpy = vi.spyOn(cache, 'set');
@@ -218,9 +229,7 @@ describe('ingest-wastewater', () => {
       row('2025-12-14', 'Ruhleben', 'Influenza A', '12345,6789'),
       row('2025-12-07', 'Ruhleben', 'Influenza A', '1000,50'),
     );
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(csv, { status: 200 }),
-    );
+    mockFetch(csv);
 
     const cache = createCache();
     const ingest = createWastewaterIngestion(cache);
@@ -238,9 +247,7 @@ describe('ingest-wastewater', () => {
       row('2025-12-14', 'Ruhleben', 'Influenza B', '1000,00'),
       row('2025-12-14', 'Ruhleben', 'RSV', '0,00'),
     );
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(csv, { status: 200 }),
-    );
+    mockFetch(csv);
 
     const cache = createCache();
     const ingest = createWastewaterIngestion(cache);
@@ -254,9 +261,7 @@ describe('ingest-wastewater', () => {
   });
 
   it('computes level "moderate" when value is 50% of historical max', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(mockCsvMultiWeek, { status: 200 }),
-    );
+    mockFetch(mockCsvMultiWeek);
 
     const cache = createCache();
     const ingest = createWastewaterIngestion(cache);
@@ -264,14 +269,11 @@ describe('ingest-wastewater', () => {
 
     const summary = cache.get<WastewaterSummary>('berlin:wastewater:summary')!;
     const fluA = summary.pathogens.find((p) => p.name === 'Influenza A')!;
-    // 50000 / 100000 = 50% → moderate (≤50%)
     expect(fluA.level).toBe('moderate');
   });
 
   it('computes level "none" when value is 0', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(mockCsvFull, { status: 200 }),
-    );
+    mockFetch(mockCsvFull);
 
     const cache = createCache();
     const ingest = createWastewaterIngestion(cache);
@@ -284,13 +286,11 @@ describe('ingest-wastewater', () => {
 
   it('computes level "high" when value > 50% of max', async () => {
     const csv = buildCsv(
-      row('2025-12-28', 'Ruhleben', 'Influenza A', '80000,00'),  // 80% of 100k → high
+      row('2025-12-28', 'Ruhleben', 'Influenza A', '80000,00'),
       row('2025-12-21', 'Ruhleben', 'Influenza A', '100000,00'),
       row('2025-12-14', 'Ruhleben', 'Influenza A', '10000,00'),
     );
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(csv, { status: 200 }),
-    );
+    mockFetch(csv);
 
     const cache = createCache();
     const ingest = createWastewaterIngestion(cache);
@@ -303,13 +303,11 @@ describe('ingest-wastewater', () => {
 
   it('computes level "low" when value ≤ 25% of max', async () => {
     const csv = buildCsv(
-      row('2025-12-28', 'Ruhleben', 'Influenza A', '20000,00'),  // 20% of 100k → low
+      row('2025-12-28', 'Ruhleben', 'Influenza A', '20000,00'),
       row('2025-12-21', 'Ruhleben', 'Influenza A', '100000,00'),
       row('2025-12-14', 'Ruhleben', 'Influenza A', '50000,00'),
     );
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(csv, { status: 200 }),
-    );
+    mockFetch(csv);
 
     const cache = createCache();
     const ingest = createWastewaterIngestion(cache);
@@ -321,9 +319,7 @@ describe('ingest-wastewater', () => {
   });
 
   it('builds history array with correct length and order (oldest first)', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(mockCsvMultiWeek, { status: 200 }),
-    );
+    mockFetch(mockCsvMultiWeek);
 
     const cache = createCache();
     const ingest = createWastewaterIngestion(cache);
@@ -331,23 +327,18 @@ describe('ingest-wastewater', () => {
 
     const summary = cache.get<WastewaterSummary>('berlin:wastewater:summary')!;
     const fluA = summary.pathogens.find((p) => p.name === 'Influenza A')!;
-    // 4 dates available, all should be in history (< 12 so no truncation)
     expect(fluA.history).toHaveLength(4);
-    // oldest first: 2025-12-07 (0), 2025-12-14 (20000), 2025-12-21 (100000), 2025-12-28 (50000)
     expect(fluA.history).toEqual([0, 20000, 100000, 50000]);
   });
 
   it('caps history at 12 entries', async () => {
-    // Build 14 weeks of data
     const rows: string[] = [];
     for (let i = 0; i < 14; i++) {
       const d = new Date(2025, 11, 28 - i * 7);
       const dateStr = d.toISOString().split('T')[0];
       rows.push(row(dateStr, 'Ruhleben', 'Influenza A', `${(i + 1) * 1000},00`));
     }
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(buildCsv(...rows), { status: 200 }),
-    );
+    mockFetch(buildCsv(...rows));
 
     const cache = createCache();
     const ingest = createWastewaterIngestion(cache);
@@ -356,18 +347,12 @@ describe('ingest-wastewater', () => {
     const summary = cache.get<WastewaterSummary>('berlin:wastewater:summary')!;
     const fluA = summary.pathogens.find((p) => p.name === 'Influenza A')!;
     expect(fluA.history).toHaveLength(12);
-    // Oldest first — last 12 dates sorted ascending by date
-    // Dates descending: 2025-12-28 (1000), 2025-12-21 (2000), ..., 2025-10-05 (12000), 2025-09-28 (13000), 2025-09-21 (14000)
-    // Last 12 = dates[0..11] → 2025-12-28 through 2025-10-12
-    // Reversed to oldest-first: 2025-10-12 (12000), 2025-10-19 (11000), ..., 2025-12-28 (1000)
     expect(fluA.history[0]).toBe(12000);
     expect(fluA.history[11]).toBe(1000);
   });
 
   it('existing tests still have level and history fields', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(mockCsvFull, { status: 200 }),
-    );
+    mockFetch(mockCsvFull);
 
     const cache = createCache();
     const ingest = createWastewaterIngestion(cache);
@@ -381,4 +366,184 @@ describe('ingest-wastewater', () => {
       expect(Array.isArray(p.history)).toBe(true);
     }
   });
+});
+
+describe('ingest-wastewater (AMELAG SARS-CoV-2)', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('merges SARS-CoV-2 from AMELAG into Lageso summary', async () => {
+    const amelagTsv = buildTsv(
+      amelagRow('Ruhleben', 'BE', '2025-12-10', '5000', 'SARS-CoV-2'),
+      amelagRow('Schoenerlinde', 'BE', '2025-12-10', '3000', 'SARS-CoV-2'),
+      amelagRow('Ruhleben', 'BE', '2025-12-03', '2000', 'SARS-CoV-2'),
+      amelagRow('Schoenerlinde', 'BE', '2025-12-03', '1000', 'SARS-CoV-2'),
+    );
+    mockFetch(mockCsvFull, amelagTsv);
+
+    const cache = createCache();
+    const ingest = createWastewaterIngestion(cache);
+    await ingest();
+
+    const summary = cache.get<WastewaterSummary>('berlin:wastewater:summary')!;
+    expect(summary.pathogens).toHaveLength(4);
+    const covid = summary.pathogens.find((p) => p.name === 'SARS-CoV-2')!;
+    expect(covid).toBeTruthy();
+    expect(covid.value).toBe(4000); // avg(5000, 3000)
+    expect(covid.previousValue).toBe(1500); // avg(2000, 1000)
+  });
+
+  it('sets per-pathogen sampleDate when AMELAG date differs from Lageso', async () => {
+    const amelagTsv = buildTsv(
+      amelagRow('Ruhleben', 'BE', '2025-12-10', '5000', 'SARS-CoV-2'),
+      amelagRow('Ruhleben', 'BE', '2025-12-03', '2000', 'SARS-CoV-2'),
+    );
+    mockFetch(mockCsvFull, amelagTsv);
+
+    const cache = createCache();
+    const ingest = createWastewaterIngestion(cache);
+    await ingest();
+
+    const summary = cache.get<WastewaterSummary>('berlin:wastewater:summary')!;
+    const covid = summary.pathogens.find((p) => p.name === 'SARS-CoV-2')!;
+    // Lageso date is 2025-12-14, AMELAG date is 2025-12-10 → different
+    expect(covid.sampleDate).toBe('2025-12-10');
+  });
+
+  it('omits per-pathogen sampleDate when dates match', async () => {
+    const amelagTsv = buildTsv(
+      amelagRow('Ruhleben', 'BE', '2025-12-14', '5000', 'SARS-CoV-2'),
+      amelagRow('Ruhleben', 'BE', '2025-12-07', '2000', 'SARS-CoV-2'),
+    );
+    mockFetch(mockCsvFull, amelagTsv);
+
+    const cache = createCache();
+    const ingest = createWastewaterIngestion(cache);
+    await ingest();
+
+    const summary = cache.get<WastewaterSummary>('berlin:wastewater:summary')!;
+    const covid = summary.pathogens.find((p) => p.name === 'SARS-CoV-2')!;
+    expect(covid.sampleDate).toBeUndefined();
+  });
+
+  it('filters out non-Berlin and non-SARS-CoV-2 rows from AMELAG', async () => {
+    const amelagTsv = buildTsv(
+      amelagRow('Ruhleben', 'BE', '2025-12-10', '5000', 'SARS-CoV-2'),
+      amelagRow('Hamburg-Dradenau', 'HH', '2025-12-10', '9999', 'SARS-CoV-2'),
+      amelagRow('Ruhleben', 'BE', '2025-12-10', '8888', 'Influenza A'),
+      amelagRow('Ruhleben', 'BE', '2025-12-03', '2000', 'SARS-CoV-2'),
+    );
+    mockFetch(mockCsvFull, amelagTsv);
+
+    const cache = createCache();
+    const ingest = createWastewaterIngestion(cache);
+    await ingest();
+
+    const summary = cache.get<WastewaterSummary>('berlin:wastewater:summary')!;
+    const covid = summary.pathogens.find((p) => p.name === 'SARS-CoV-2')!;
+    // Only Berlin SARS-CoV-2 row for 2025-12-10 → value = 5000 (not 9999 or 8888)
+    expect(covid.value).toBe(5000);
+  });
+
+  it('still caches Lageso data when AMELAG fetch fails', async () => {
+    // AMELAG returns 500 (default mockFetch behavior without amelagBody)
+    mockFetch(mockCsvFull);
+
+    const cache = createCache();
+    const ingest = createWastewaterIngestion(cache);
+    await ingest();
+
+    const summary = cache.get<WastewaterSummary>('berlin:wastewater:summary')!;
+    expect(summary.pathogens).toHaveLength(3);
+    expect(summary.pathogens.find((p) => p.name === 'SARS-CoV-2')).toBeUndefined();
+  });
+
+  it('still caches Lageso data when AMELAG TSV has no Berlin data', async () => {
+    const amelagTsv = buildTsv(
+      amelagRow('Hamburg-Dradenau', 'HH', '2025-12-10', '5000', 'SARS-CoV-2'),
+    );
+    mockFetch(mockCsvFull, amelagTsv);
+
+    const cache = createCache();
+    const ingest = createWastewaterIngestion(cache);
+    await ingest();
+
+    const summary = cache.get<WastewaterSummary>('berlin:wastewater:summary')!;
+    expect(summary.pathogens).toHaveLength(3);
+  });
+});
+
+describe('parseAmelagBerlinCovid', () => {
+  it('stream-parses TSV and returns only Berlin SARS-CoV-2 rows', async () => {
+    const tsv = buildTsv(
+      amelagRow('Ruhleben', 'BE', '2025-12-10', '5000.5', 'SARS-CoV-2'),
+      amelagRow('Hamburg-Dradenau', 'HH', '2025-12-10', '9999', 'SARS-CoV-2'),
+      amelagRow('Ruhleben', 'BE', '2025-12-10', '8888', 'Influenza A'),
+      amelagRow('Schoenerlinde', 'BE', '2025-12-03', '2000', 'SARS-CoV-2'),
+    );
+    const response = new Response(tsv, { status: 200 });
+    const rows = await parseAmelagBerlinCovid(response);
+
+    expect(rows).toHaveLength(2);
+    expect(rows[0]).toEqual({ date: '2025-12-10', plant: 'Ruhleben', value: 5000.5 });
+    expect(rows[1]).toEqual({ date: '2025-12-03', plant: 'Schoenerlinde', value: 2000 });
+  });
+
+  it('returns empty array for empty TSV', async () => {
+    const response = new Response(TSV_HEADER + '\n', { status: 200 });
+    const rows = await parseAmelagBerlinCovid(response);
+    expect(rows).toEqual([]);
+  });
+});
+
+describe('buildCovidPathogen', () => {
+  it('builds pathogen with trend and level from AMELAG rows', () => {
+    const rows = [
+      { date: '2025-12-10', plant: 'Ruhleben', value: 6000 },
+      { date: '2025-12-10', plant: 'Schoenerlinde', value: 4000 },
+      { date: '2025-12-03', plant: 'Ruhleben', value: 2000 },
+      { date: '2025-12-03', plant: 'Schoenerlinde', value: 1000 },
+    ];
+    const pathogen = buildCovidPathogen(rows)!;
+
+    expect(pathogen.name).toBe('SARS-CoV-2');
+    expect(pathogen.value).toBe(5000); // avg(6000, 4000)
+    expect(pathogen.previousValue).toBe(1500); // avg(2000, 1000)
+    expect(pathogen.trend).toBe('rising'); // 5000 / 1500 = 3.33 > 1.5
+    expect(pathogen.sampleDate).toBe('2025-12-10');
+  });
+
+  it('returns null for empty rows', () => {
+    expect(buildCovidPathogen([])).toBeNull();
+  });
+
+  it('builds history oldest-first, capped at 12', () => {
+    const rows = [];
+    for (let i = 0; i < 14; i++) {
+      const d = new Date(2025, 11, 28 - i * 7);
+      rows.push({ date: d.toISOString().split('T')[0], plant: 'Ruhleben', value: (i + 1) * 100 });
+    }
+    const pathogen = buildCovidPathogen(rows)!;
+    expect(pathogen.history).toHaveLength(12);
+    // Oldest first: dates[11] value=1200, ..., dates[0] value=100
+    expect(pathogen.history[0]).toBe(1200);
+    expect(pathogen.history[11]).toBe(100);
+  });
+});
+
+describe('computeTrend', () => {
+  it('returns "stable" when both zero', () => expect(computeTrend(0, 0)).toBe('stable'));
+  it('returns "new" when previous zero', () => expect(computeTrend(100, 0)).toBe('new'));
+  it('returns "gone" when current zero', () => expect(computeTrend(0, 100)).toBe('gone'));
+  it('returns "rising" above threshold', () => expect(computeTrend(200, 100)).toBe('rising'));
+  it('returns "falling" below threshold', () => expect(computeTrend(50, 100)).toBe('falling'));
+  it('returns "stable" within thresholds', () => expect(computeTrend(120, 100)).toBe('stable'));
+});
+
+describe('computeLevel', () => {
+  it('returns "none" for zero value', () => expect(computeLevel(0, 1000)).toBe('none'));
+  it('returns "low" for ≤25%', () => expect(computeLevel(250, 1000)).toBe('low'));
+  it('returns "moderate" for ≤50%', () => expect(computeLevel(500, 1000)).toBe('moderate'));
+  it('returns "high" for >50%', () => expect(computeLevel(600, 1000)).toBe('high'));
 });

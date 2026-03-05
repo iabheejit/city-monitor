@@ -367,7 +367,7 @@ export interface LaborMarketSummary {
   reportMonth: string;            // ISO month "2026-02"
 }
 
-// Wastewater monitoring (Lageso Berlin)
+// Wastewater monitoring (Lageso Berlin + AMELAG)
 export interface WastewaterPathogen {
   name: string;
   value: number;           // avg gene copies/L across plants (latest week)
@@ -375,6 +375,7 @@ export interface WastewaterPathogen {
   trend: 'rising' | 'falling' | 'stable' | 'new' | 'gone';
   level: 'none' | 'low' | 'moderate' | 'high';
   history: number[];       // last 12 weeks, oldest first
+  sampleDate?: string;     // per-pathogen date when it differs from summary sampleDate (AMELAG lag)
 }
 
 export interface WastewaterSummary {

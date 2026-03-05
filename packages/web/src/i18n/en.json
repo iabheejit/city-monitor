@@ -209,6 +209,7 @@
       "fluA": "Flu A",
       "fluB": "Flu B",
       "rsv": "RSV",
+      "covid": "COVID-19",
       "sampleDate": "Sample: {{date}}",
       "level": {
         "none": "None",

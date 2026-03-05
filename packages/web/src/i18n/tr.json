@@ -192,6 +192,7 @@
       "fluA": "Grip A",
       "fluB": "Grip B",
       "rsv": "RSV",
+      "covid": "COVID-19",
       "sampleDate": "Örnek: {{date}}",
       "level": {
         "none": "Yok",
