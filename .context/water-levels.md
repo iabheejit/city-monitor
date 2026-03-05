@@ -28,7 +28,7 @@ The cron job (`ingest-water-levels.ts`) maps API data to a state enum:
 ## Server Pipeline
 
 1. **Cron** (`*/15 * * * *`): `createWaterLevelIngestion(cache, db)` fetches PEGELONLINE batch API, derives state, writes to cache (key: `{cityId}:water-levels`, TTL: 900s) then DB
-2. **DB**: `waterLevelSnapshots` table (cityId, stations JSONB, fetchedAt). Full-refresh writes (delete + insert in transaction). 30-day retention (extended for trend charts)
+2. **DB**: Unified `snapshots` table, type `pegelonline` (data JSONB contains `{ stations }`). 30-day retention (extended for trend charts)
 3. **Route** (`GET /api/:city/water-levels`): Three-tier read (cache → DB → empty `{ stations: [], fetchedAt: null }`). 300s Cache-Control
 4. **Bootstrap**: Included in `GET /api/:city/bootstrap` response as `waterLevels` field
 

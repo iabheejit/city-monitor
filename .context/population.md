@@ -28,7 +28,7 @@ Numbers use spaces as thousands separators. PLR-level rows are identified by all
 Berlin-only (hardcoded, same pattern as wastewater/labor market).
 
 - **Cron**: `ingest-population` — `0 6 1 * *` (monthly on the 1st at 6 AM; data is semi-annual but we check monthly)
-- **DB table**: `population_snapshots` (id, cityId, geojson JSONB, summary JSONB, fetchedAt)
+- **DB**: Unified `snapshots` table, type `afstat-population` (data JSONB contains `{ geojson, summary }`)
 - **Cache keys**: `${cityId}:population:geojson`, `${cityId}:population:summary`
 - **TTL**: 2592000 seconds (30 days)
 - **Bootstrap**: `populationSummary` (~200B) included in bootstrap for instant tile display

@@ -53,4 +53,4 @@ interface WeatherData {
 
 ## DB Schema
 
-`weatherSnapshots` table — `current`, `hourly`, `daily` stored as JSONB, `alerts` as JSONB (nullable).
+Unified `snapshots` table, type `open-meteo` — `data` JSONB contains `{ current, hourly, daily, alerts }`. No staleness guard on reads — `loadWeather()` always returns the latest row regardless of age. The frontend freshness system (TileFooter, 45-min threshold) handles stale display. Note: `dwdUv` is NOT persisted to DB — it only lives in the in-memory cache and is re-fetched on each cron run.

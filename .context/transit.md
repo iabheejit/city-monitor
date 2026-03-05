@@ -48,7 +48,7 @@ Alerts are deduped by `${line}:${summary}` — the same disruption reported acro
 
 ### DB Schema
 
-`transitDisruptions` table — cityId, line, type, severity, message, detail, station, lat, lon, affectedStops (JSONB), resolved. Indexed by `transit_city_idx(cityId)`. Persisted via `saveTransitAlerts()` in `writes.ts` on every ingestion run (if DB connected). Data retention: resolved alerts older than 48 hours are pruned nightly.
+Unified `snapshots` table, type `vbb-disruptions` — data JSONB stores the full `TransitAlert[]` array as a single snapshot per fetch. Persisted via `saveTransitAlerts()` in `writes.ts` on every ingestion run (if DB connected). Data retention: 7 days.
 
 ### Hamburg
 

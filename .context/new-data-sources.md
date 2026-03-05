@@ -8,7 +8,7 @@ Follow every step when adding a new data source. Skip items marked with a surfac
 
 1. **Shared types** — add data interfaces to `shared/types.ts`
 2. **Cache keys** — add typed key(s) to `packages/server/src/lib/cache-keys.ts` (`CK.*`). If the data is small and should load instantly, add to `bootstrapKeys`. If large (>50KB), exclude and lazy-fetch.
-3. **DB table** — add snapshot table to `packages/server/src/db/schema.ts` (follow INSERT-only pattern)
+3. **DB snapshot type** — add type to `SNAPSHOT_TYPES` in `packages/server/src/db/schema.ts` (all snapshots use the unified `snapshots` table)
 4. **DB writes** — add save function to `packages/server/src/db/writes.ts`
 5. **DB reads** — add load function to `packages/server/src/db/reads.ts`
 6. **Cron job** — create `packages/server/src/cron/ingest-<name>.ts` with factory function

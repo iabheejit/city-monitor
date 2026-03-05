@@ -21,7 +21,7 @@ Berlin-only feature showing upcoming BVV (district assembly) and Abgeordnetenhau
 
 1. **Cron** (`ingest-council-meetings.ts`): every 6h, fetches OParl + PARDOK, 14-day lookahead
 2. **Cache**: `{cityId}:council-meetings`, TTL 25920s (7.2h)
-3. **DB**: `council_meeting_snapshots` table (JSON blob), 7-day retention
+3. **DB**: Unified `snapshots` table, type `oparl-meetings`, 7-day retention
 4. **Route**: `GET /:city/council-meetings` — 3-tier read (cache → DB → null)
 5. **Bootstrap**: included in `GET /:city/bootstrap` response
 

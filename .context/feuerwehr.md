@@ -17,7 +17,7 @@ Follows the standard data source pattern (like labor-market):
 - **Cron:** `ingest-feuerwehr.ts` — daily at 08:00, fetches CSV, parses last 3 months (previous, current complete, current partial)
 - **Type:** `FeuerwehrSummary` = `{ current, partial, previous }` where each is a `FeuerwehrMonthData`
 - **Cache key:** `CK.feuerwehr(cityId)` — included in bootstrap bundle
-- **DB:** `feuerwehr_snapshots` table (JSONB), 30-day retention
+- **DB:** Unified `snapshots` table, type `bf-feuerwehr`, 30-day retention
 - **Route:** `GET /:city/feuerwehr` — cache-first, DB fallback, 12h HTTP cache
 
 ## Frontend

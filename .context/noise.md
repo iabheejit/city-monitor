@@ -51,7 +51,7 @@ Standard data source pattern:
 - **Config:** `berlin.ts` — `dataSources.noiseSensors: { provider, lat, lon, radius }`
 - **Cron:** `ingest-noise-sensors.ts` — fetches area API, filters DNMS entries
 - **Parser:** `parseNoiseSensors()` — exported pure function
-- **DB:** `noise_sensor_snapshots` table (JSONB `data` column)
+- **DB:** Unified `snapshots` table, type `sc-dnms`
 - **Cache:** TTL 1200s (20 min), cache key `noise-sensors:{cityId}`
 - **Route:** `GET /:city/noise-sensors` — 3-tier read (cache → DB → null)
 - **Bootstrap:** Included (small payload)

@@ -33,7 +33,7 @@ Each type has `today`, `tomorrow`, `dayAfterTomorrow` forecasts. DWD JSON uses `
 Standard data source pattern:
 - **Cron:** `ingest-pollen.ts` — single fetch, iterates active cities with pollen config
 - **Parser:** `parseDwdPollenJson()` — exported pure function, testable
-- **DB:** `pollen_snapshots` table (JSONB `data` column)
+- **DB:** Unified `snapshots` table, type `dwd-pollen`
 - **Route:** `GET /:city/pollen` — 3-tier read (cache → DB → null)
 - **Bootstrap:** Included (small payload)
 - **Warm cache:** Shared section (not Berlin-only)
