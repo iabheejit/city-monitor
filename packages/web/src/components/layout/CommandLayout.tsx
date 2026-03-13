@@ -109,7 +109,7 @@ export function CommandLayout() {
             {(expanded, setExpanded) => <AppointmentsStrip expanded={expanded} onExpand={() => setExpanded(true)} />}
           </Tile>
           {cityId === 'berlin' && (
-            <Tile title={t('panel.feuerwehr.title')} span={1} expandable defaultExpanded={isDesktop}>
+            <Tile title={t('panel.feuerwehr.title')} span={1} expandable defaultExpanded>
               {(expanded) => <FeuerwehrStrip expanded={expanded} />}
             </Tile>
           )}
