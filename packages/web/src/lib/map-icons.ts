@@ -309,7 +309,8 @@ export function createVerticalBadgeIcon(
   const textFontSize = 11;
   const lineHeight = 14;
   const textPadY = 4;
-  const textPadX = 4;
+  const textPadX = 6;
+  const gap = 1; // gap between icon block and text block
 
   // Measure text + wrap
   const measure = document.createElement('canvas').getContext('2d')!;
@@ -319,22 +320,34 @@ export function createVerticalBadgeIcon(
   const maxLineW = Math.max(...lineWidths, 0);
 
   const textBlockW = maxLineW + textPadX * 2;
-  const textBlockH = lines.length * lineHeight + textPadY;
+  const textBlockH = lines.length * lineHeight + textPadY * 2;
+  const iconBgSize = iconSize + iconPad * 2;
 
-  const w = Math.max(iconSize + iconPad * 2, textBlockW);
-  const h = iconSize + iconPad * 2 + textBlockH;
+  const w = Math.max(iconBgSize, textBlockW);
+  const h = iconBgSize + gap + textBlockH;
 
   const canvas = document.createElement('canvas');
   canvas.width = w;
   canvas.height = h;
   const ctx = canvas.getContext('2d')!;
 
-  // --- Icon background (rounded square, centered horizontally) ---
-  const iconBgSize = iconSize + iconPad * 2;
-  const iconX = (w - iconBgSize) / 2;
   const r = 6;
+
+  // --- Icon background (rounded top corners, flat bottom) ---
+  const iconX = (w - iconBgSize) / 2;
   ctx.beginPath();
-  ctx.roundRect(iconX, 0, iconBgSize, iconBgSize, r);
+  ctx.roundRect(iconX, 0, iconBgSize, iconBgSize + r, [r, r, 0, 0]);
+  ctx.fillStyle = bgColor;
+  ctx.fill();
+  ctx.strokeStyle = strokeColor;
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // --- Text background (rounded bottom corners, flat top, connected to icon) ---
+  const textX = (w - textBlockW) / 2;
+  const textY = iconBgSize + gap;
+  ctx.beginPath();
+  ctx.roundRect(textX, textY, textBlockW, textBlockH, [0, 0, r, r]);
   ctx.fillStyle = bgColor;
   ctx.fill();
   ctx.strokeStyle = strokeColor;
@@ -359,13 +372,13 @@ export function createVerticalBadgeIcon(
   }
   ctx.restore();
 
-  // --- Text lines below icon ---
+  // --- Text lines (white on colored background) ---
   ctx.font = `bold ${textFontSize}px sans-serif`;
-  ctx.fillStyle = bgColor;
+  ctx.fillStyle = '#ffffff';
   ctx.textBaseline = 'top';
   ctx.textAlign = 'center';
 
-  const textStartY = iconBgSize + 2;
+  const textStartY = textY + textPadY;
   for (let i = 0; i < lines.length; i++) {
     ctx.fillText(lines[i], w / 2, textStartY + i * lineHeight);
   }

@@ -21,6 +21,12 @@ const LAYER_META: { layer: DataLayer; icon: IconNode; color: string; cities?: st
 
 const INACTIVE_COLOR = '#9ca3af';
 
+/** Maps each layer to its keyboard shortcut number (1-9), matching useKeyboardShortcuts.ts LAYER_ORDER */
+const LAYER_SHORTCUT: Partial<Record<DataLayer, number>> = {
+  warnings: 1, news: 2, traffic: 3, weather: 4, 'air-quality': 5,
+  noise: 6, water: 7, emergencies: 8, social: 9,
+};
+
 const NEWS_SUB_META: { key: NewsSubLayer; icon: IconNode; color: string }[] = [
   { key: 'news', icon: Newspaper as IconNode, color: '#6366f1' },
   { key: 'police', icon: Siren as IconNode, color: '#f97316' },
@@ -146,6 +152,9 @@ export function DataLayerToggles() {
           </span>
         </button>
       </div>
+      <h3 className="text-xs font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-1">
+        {t('sidebar.layers.label')}
+      </h3>
       <div className="space-y-0.5">
         {LAYER_META.filter(({ cities }) => !cities || cities.includes(city.id)).map(({ layer, icon, color }) => {
           const active = activeLayers.has(layer);
@@ -267,7 +276,14 @@ export function DataLayerToggles() {
                 }`}
                 style={active ? { backgroundColor: `${color}18` } : undefined}
               >
-                <LayerBadge icon={icon} color={color} active={active} />
+                <span className="relative">
+                  <LayerBadge icon={icon} color={color} active={active} />
+                  {LAYER_SHORTCUT[layer] != null && (
+                    <span className="absolute -top-1.5 -right-1.5 w-4 h-4 flex items-center justify-center rounded-full bg-gray-200 dark:bg-gray-700 text-[9px] font-bold text-gray-500 dark:text-gray-400 leading-none">
+                      {LAYER_SHORTCUT[layer]}
+                    </span>
+                  )}
+                </span>
                 <span className="text-sm text-gray-700 dark:text-gray-300">
                   {t(`sidebar.layers.${layer}`)}
                 </span>
