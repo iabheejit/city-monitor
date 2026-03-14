@@ -21,6 +21,23 @@
     <link rel="preconnect" href="https://api.citymonitor.app" crossorigin />
     <link rel="preconnect" href="https://basemaps.cartocdn.com" crossorigin />
 
+    <!-- Preload CARTO map style based on theme preference -->
+    <script>
+      (function() {
+        var t = localStorage.getItem('theme');
+        var dark = t === 'dark' || (!t && matchMedia('(prefers-color-scheme:dark)').matches);
+        var style = dark
+          ? 'https://basemaps.cartocdn.com/gl/dark-matter-nolabels-gl-style/style.json'
+          : 'https://basemaps.cartocdn.com/gl/positron-nolabels-gl-style/style.json';
+        var link = document.createElement('link');
+        link.rel = 'preload';
+        link.as = 'fetch';
+        link.crossOrigin = 'anonymous';
+        link.href = style;
+        document.head.appendChild(link);
+      })();
+    </script>
+
     <!-- PWA -->
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#E2001A" />

@@ -86,7 +86,7 @@ export function HeaderControls() {
           {languageButtons('px-2 py-1 text-xs')}
         </div>
         <button
-          onClick={toggle}
+          onClick={(e) => toggle(e)}
           className="px-2 rounded border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer flex items-center"
           aria-label={theme === 'light' ? t('topbar.theme.switchDark') : t('topbar.theme.switchLight')}
         >
@@ -115,8 +115,8 @@ export function HeaderControls() {
               {languageButtons('flex-1 px-2 py-1.5 text-xs', () => setMenuOpen(false))}
             </div>
             <button
-              onClick={() => {
-                toggle();
+              onClick={(e) => {
+                toggle(e);
                 setMenuOpen(false);
               }}
               className="w-full flex items-center gap-2 px-2 py-1.5 text-xs rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-left cursor-pointer"

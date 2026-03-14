@@ -137,6 +137,27 @@
   border-left-color: var(--surface-1);
 }
 
+/* View Transitions API — circular wipe for theme toggle */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+::view-transition-new(root) {
+  animation: 400ms ease-out circle-expand;
+}
+@keyframes circle-expand {
+  from { clip-path: circle(0% at var(--toggle-x, 50%) var(--toggle-y, 50%)); }
+  to { clip-path: circle(150% at var(--toggle-x, 50%) var(--toggle-y, 50%)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
+  }
+}
+
 /* Global focus-visible indicator for keyboard users (WCAG 2.4.7) */
 button:focus-visible,
 a:focus-visible,
