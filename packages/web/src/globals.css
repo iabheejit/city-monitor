@@ -189,6 +189,25 @@ select:focus-visible,
   animation: scroll-dot 1.5s ease-in-out infinite;
 }
 
+/* News marquee — continuous horizontal scroll */
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.marquee-track {
+  animation: marquee var(--marquee-speed, 30s) linear infinite;
+}
+.marquee-container:hover .marquee-track {
+  animation-play-state: paused;
+}
+
+/* Respect reduced-motion for marquee */
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track {
+    animation: none;
+  }
+}
+
 /* Hide map zoom controls on mobile — finger gestures handle zoom */
 @media (max-width: 1023px) {
   .maplibregl-ctrl-top-right .maplibregl-ctrl-group {

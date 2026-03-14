@@ -1,12 +1,14 @@
 import { type ReactNode, useState, useRef, useEffect } from 'react';
 
 type TileSpan = 1 | 2 | 'full';
+type TileRowSpan = 1 | 2;
 type TileHeight = 'auto' | 'sm' | 'md' | 'lg';
 
 interface TileProps {
   title: string;
   titleBadge?: ReactNode;
   span?: TileSpan;
+  rowSpan?: TileRowSpan;
   height?: TileHeight;
   expandable?: boolean;
   defaultExpanded?: boolean;
@@ -29,7 +31,12 @@ const SPAN_CLASSES: Record<TileSpan, string> = {
   full: 'col-span-full',
 };
 
-export function Tile({ title, titleBadge, span = 1, height = 'auto', expandable, defaultExpanded, children, className, revealIndex = 0 }: TileProps) {
+const ROW_SPAN_CLASSES: Record<TileRowSpan, string> = {
+  1: '',
+  2: 'xl:row-span-2',
+};
+
+export function Tile({ title, titleBadge, span = 1, rowSpan = 1, height = 'auto', expandable, defaultExpanded, children, className, revealIndex = 0 }: TileProps) {
   const [expanded, setExpanded] = useState(defaultExpanded ?? false);
   const ref = useRef<HTMLDivElement>(null);
   const [revealed, setRevealed] = useState(false);
@@ -70,7 +77,7 @@ export function Tile({ title, titleBadge, span = 1, height = 'auto', expandable,
   return (
     <div
       ref={ref}
-      className={`col-span-1 ${SPAN_CLASSES[span]} flex flex-col rounded-lg border border-[var(--border)] bg-[var(--surface-1)] card-glow overflow-hidden tile-reveal ${revealed ? 'tile-revealed' : ''} hover:scale-[1.01] hover:shadow-md transition-[transform,box-shadow] duration-200 ease-out ${className ?? ''}`}
+      className={`col-span-1 ${SPAN_CLASSES[span]} ${ROW_SPAN_CLASSES[rowSpan]} flex flex-col rounded-lg border border-[var(--border)] bg-[var(--surface-1)] card-glow overflow-hidden tile-reveal ${revealed ? 'tile-revealed' : ''} hover:scale-[1.01] hover:shadow-md transition-[transform,box-shadow] duration-200 ease-out ${className ?? ''}`}
       style={{ '--reveal-delay': `${delay}ms` } as React.CSSProperties}
     >
       {expandable ? (

@@ -90,11 +90,9 @@ export function CommandLayout() {
           <NinaBanner />
         </div>
         <DashboardGrid>
-          <Tile title={t('panel.news.briefing')} span={2}>
+          {/* Row 1-2: Hero briefing + Weather + AQI + Transit */}
+          <Tile title={t('panel.news.briefing')} span={2} rowSpan={2}>
             <BriefingStrip />
-          </Tile>
-          <Tile title={t('panel.news.title')} span={2}>
-            <NewsStrip />
           </Tile>
           <Tile title={t('panel.weather.title')} span={1} expandable defaultExpanded={isDesktop}>
             {(expanded) => <WeatherStrip expanded={expanded} />}
@@ -102,6 +100,11 @@ export function CommandLayout() {
           <Tile title={t('panel.airQuality.title')} span={1} expandable defaultExpanded={isDesktop}>
             {(expanded) => <AirQualityStrip expanded={expanded} />}
           </Tile>
+          <Tile title={t('panel.transit.title')} span={2} expandable defaultExpanded={isDesktop}>
+            {(expanded, setExpanded) => <TransitStrip expanded={expanded} onExpand={() => setExpanded(true)} />}
+          </Tile>
+
+          {/* Row 3: Environment */}
           <Tile title={t('panel.pollen.title')} span={1} expandable defaultExpanded={isDesktop}>
             {(expanded) => <PollenStrip expanded={expanded} />}
           </Tile>
@@ -110,18 +113,25 @@ export function CommandLayout() {
               {(expanded) => <WastewaterStrip expanded={expanded} />}
             </Tile>
           )}
-          <Tile title={t('panel.transit.title')} span={1} expandable defaultExpanded={isDesktop}>
-            {(expanded, setExpanded) => <TransitStrip expanded={expanded} onExpand={() => setExpanded(true)} />}
-          </Tile>
-          <Tile title={t('panel.appointments.title')} span={1} expandable defaultExpanded={isDesktop}>
-            {(expanded, setExpanded) => <AppointmentsStrip expanded={expanded} onExpand={() => setExpanded(true)} />}
-          </Tile>
           {cityId === 'berlin' && (
             <Tile title={t('panel.feuerwehr.title')} span={1} expandable defaultExpanded>
               {(expanded) => <FeuerwehrStrip expanded={expanded} />}
             </Tile>
           )}
           <BathingTile isDesktop={isDesktop} />
+
+          {/* Row 4: Information */}
+          <Tile title={t('panel.news.title')} span={2}>
+            <NewsStrip />
+          </Tile>
+          <Tile title={t('panel.events.title')} span={2}>
+            <EventsStrip />
+          </Tile>
+
+          {/* Row 5: Services */}
+          <Tile title={t('panel.appointments.title')} span={1} expandable defaultExpanded={isDesktop}>
+            {(expanded, setExpanded) => <AppointmentsStrip expanded={expanded} onExpand={() => setExpanded(true)} />}
+          </Tile>
           {cityId === 'berlin' && (
             <Tile title={t('panel.laborMarket.title')} span={1} expandable defaultExpanded={isDesktop}>
               {() => <LaborMarketStrip />}
@@ -161,6 +171,18 @@ export function CommandLayout() {
               <TileFooter>{t('support.footer')}</TileFooter>
             </>
           </Tile>
+
+          {/* Row 6: Governance */}
+          <Tile title={t('panel.budget.title')} span={2}>
+            <BudgetStrip />
+          </Tile>
+          {cityId === 'berlin' && (
+            <Tile title={t('panel.councilMeetings.title')} span={2}>
+              <CouncilMeetingsStrip />
+            </Tile>
+          )}
+
+          {/* Row 7: Safety */}
           {cityId === 'berlin' && (
             <Tile title={t('panel.crisis.title')} span={1} expandable defaultExpanded={isDesktop}>
               {(expanded, setExpanded) => <CrisisStrip expanded={expanded} onExpand={() => setExpanded(true)} />}
@@ -171,17 +193,6 @@ export function CommandLayout() {
           </Tile>
           <Tile title={t('sidebar.layers.political')} expandable>
             {(expanded, setExpanded) => <PoliticalStrip expanded={expanded} onExpand={() => setExpanded(true)} />}
-          </Tile>
-          <Tile title={t('panel.budget.title')} span={2}>
-            <BudgetStrip />
-          </Tile>
-          {cityId === 'berlin' && (
-            <Tile title={t('panel.councilMeetings.title')} span={2}>
-              <CouncilMeetingsStrip />
-            </Tile>
-          )}
-          <Tile title={t('panel.events.title')} span={2}>
-            <EventsStrip />
           </Tile>
         </DashboardGrid>
       </div>

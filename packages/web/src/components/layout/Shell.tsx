@@ -1,6 +1,7 @@
 import { type ReactNode, useState, useEffect } from 'react';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { TopBar } from './TopBar.js';
+import { NewsMarquee } from './NewsMarquee.js';
 import { Footer } from './Footer.js';
 
 export function Shell({ children }: { children: ReactNode }) {
@@ -22,6 +23,7 @@ export function Shell({ children }: { children: ReactNode }) {
         className={`fixed top-0 left-0 right-0 z-50 transition-transform motion-reduce:transition-none duration-300 ease-out ${topBarVisible ? 'translate-y-0' : '-translate-y-full'}`}
       >
         <TopBar />
+        <NewsMarquee />
       </div>
       <main className="flex-1">
         <h1 className="sr-only">City Monitor — {city.name}</h1>
