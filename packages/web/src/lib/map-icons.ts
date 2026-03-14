@@ -310,8 +310,6 @@ export function createVerticalBadgeIcon(
   const lineHeight = 14;
   const textPadY = 4;
   const textPadX = 6;
-  const gap = 1; // gap between icon block and text block
-
   // Measure text + wrap
   const measure = document.createElement('canvas').getContext('2d')!;
   measure.font = `bold ${textFontSize}px sans-serif`;
@@ -324,7 +322,7 @@ export function createVerticalBadgeIcon(
   const iconBgSize = iconSize + iconPad * 2;
 
   const w = Math.max(iconBgSize, textBlockW);
-  const h = iconBgSize + gap + textBlockH;
+  const h = iconBgSize + textBlockH;
 
   const canvas = document.createElement('canvas');
   canvas.width = w;
@@ -333,28 +331,29 @@ export function createVerticalBadgeIcon(
 
   const r = 6;
 
-  // --- Icon background (rounded top corners, flat bottom) ---
-  const iconX = (w - iconBgSize) / 2;
+  // --- Single connected background (rounded all corners) ---
+  // Draw as one shape so there's no gap between icon and text
+  const bgW = Math.max(iconBgSize, textBlockW);
+  const bgX = (w - bgW) / 2;
   ctx.beginPath();
-  ctx.roundRect(iconX, 0, iconBgSize, iconBgSize + r, [r, r, 0, 0]);
+  ctx.roundRect(bgX, 0, bgW, h, r);
   ctx.fillStyle = bgColor;
   ctx.fill();
   ctx.strokeStyle = strokeColor;
   ctx.lineWidth = 1.5;
   ctx.stroke();
 
-  // --- Text background (rounded bottom corners, flat top, connected to icon) ---
-  const textX = (w - textBlockW) / 2;
-  const textY = iconBgSize + gap;
+  // --- Divider line between icon and text areas ---
+  const textY = iconBgSize;
   ctx.beginPath();
-  ctx.roundRect(textX, textY, textBlockW, textBlockH, [0, 0, r, r]);
-  ctx.fillStyle = bgColor;
-  ctx.fill();
-  ctx.strokeStyle = strokeColor;
-  ctx.lineWidth = 1.5;
+  ctx.moveTo(bgX + 4, textY);
+  ctx.lineTo(bgX + bgW - 4, textY);
+  ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+  ctx.lineWidth = 1;
   ctx.stroke();
 
   // --- Lucide icon (centered in icon background) ---
+  const iconX = (w - iconBgSize) / 2;
   const lucideSize = iconSize * 0.55;
   const scale = lucideSize / 24;
   const lucideOffsetX = iconX + (iconBgSize - lucideSize) / 2;

@@ -24,7 +24,7 @@ export function ScrollIndicator({ targetRef }: ScrollIndicatorProps) {
     <button
       type="button"
       onClick={handleClick}
-      className={`absolute bottom-6 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-2 cursor-pointer transition-opacity duration-500 ${visible ? 'opacity-70 hover:opacity-100' : 'opacity-0 pointer-events-none'}`}
+      className={`absolute top-0 left-1/2 -translate-x-1/2 -translate-y-full z-20 pb-4 flex flex-col items-center gap-2 cursor-pointer transition-opacity duration-500 ${visible ? 'opacity-70 hover:opacity-100' : 'opacity-0 pointer-events-none'}`}
       aria-label="Scroll to dashboard"
     >
       {/* Mouse outline with animated scroll dot */}
@@ -33,7 +33,7 @@ export function ScrollIndicator({ targetRef }: ScrollIndicatorProps) {
         height="38"
         viewBox="0 0 24 38"
         fill="none"
-        className="text-white drop-shadow-lg"
+        className="text-gray-800 dark:text-white drop-shadow-lg"
       >
         {/* Mouse body */}
         <rect

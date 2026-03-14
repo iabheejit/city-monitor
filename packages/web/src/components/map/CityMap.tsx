@@ -269,8 +269,8 @@ export function CityMap() {
   politicalLayerRef.current = politicalLayer;
 
   // Fly-in animation: start zoomed out, fly to city bounds
-  const FLY_IN_ZOOM = 7;
-  const FLY_IN_DURATION = 1500;
+  const FLY_IN_ZOOM = 4;
+  const FLY_IN_DURATION = 2500;
   const mapReadyRef = useRef(false);
 
   // Create map once

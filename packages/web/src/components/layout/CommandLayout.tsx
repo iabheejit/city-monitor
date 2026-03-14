@@ -80,12 +80,14 @@ export function CommandLayout() {
             </Suspense>
           </ErrorBoundary>
           <MobileLayerDrawer />
-          <ScrollIndicator targetRef={dashboardRef} />
         </div>
       </div>
 
-      {/* Skyline separator between map and dashboard */}
-      <SkylineSeparator cityId={cityId} />
+      {/* Scroll indicator + skyline separator between map and dashboard */}
+      <div className="relative">
+        <ScrollIndicator targetRef={dashboardRef} />
+        <SkylineSeparator cityId={cityId} />
+      </div>
 
       {/* Lower zone: dashboard tiles */}
       <div ref={dashboardRef} className="bg-surface-0">
@@ -174,6 +176,12 @@ export function CommandLayout() {
               <PopulationStrip />
             </Tile>
           )}
+          {cityId === 'berlin' && (
+            <Tile title={t('panel.crisis.title')} span={1} expandable defaultExpanded={isDesktop}>
+              {(expanded, setExpanded) => <CrisisStrip expanded={expanded} onExpand={() => setExpanded(true)} />}
+            </Tile>
+          )}
+
           {/* Row 6: Governance */}
           <Tile title={t('panel.budget.title')} span={2}>
             <BudgetStrip />
@@ -184,17 +192,12 @@ export function CommandLayout() {
             </Tile>
           )}
 
-          {/* Row 7: Safety */}
-          {cityId === 'berlin' && (
-            <Tile title={t('panel.crisis.title')} span={1} expandable defaultExpanded={isDesktop}>
-              {(expanded, setExpanded) => <CrisisStrip expanded={expanded} onExpand={() => setExpanded(true)} />}
-            </Tile>
-          )}
-          <Tile title={t('panel.waterLevels.title')} span={1}>
-            <WaterLevelStrip />
-          </Tile>
+          {/* Row 7: Safety & Infrastructure */}
           <Tile title={t('sidebar.layers.political')} expandable>
             {(expanded, setExpanded) => <PoliticalStrip expanded={expanded} onExpand={() => setExpanded(true)} />}
+          </Tile>
+          <Tile title={t('panel.waterLevels.title')} span={1}>
+            <WaterLevelStrip />
           </Tile>
         </DashboardGrid>
       </div>
