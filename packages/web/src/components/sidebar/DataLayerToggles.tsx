@@ -137,7 +137,10 @@ export function DataLayerToggles() {
 
   return (
     <div>
-      <div className="flex items-center justify-end mb-2">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-[11px] text-gray-500 dark:text-gray-400">
+          {t('shortcuts.title')}
+        </span>
         <button
           onClick={toggleSingleView}
           aria-pressed={singleView}
@@ -152,9 +155,6 @@ export function DataLayerToggles() {
           </span>
         </button>
       </div>
-      <h3 className="text-xs font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-1">
-        {t('sidebar.layers.label')}
-      </h3>
       <div className="space-y-0.5">
         {LAYER_META.filter(({ cities }) => !cities || cities.includes(city.id)).map(({ layer, icon, color }) => {
           const active = activeLayers.has(layer);

@@ -95,10 +95,16 @@
 }
 
 /* MapLibre popup */
+.maplibregl-popup {
+  max-width: calc(100vw - 24px) !important;
+}
 .maplibregl-popup-content {
   border-radius: 8px !important;
   padding: 10px 12px !important;
   box-shadow: 0 3px 14px rgba(0, 0, 0, 0.15) !important;
+  max-width: calc(100vw - 24px) !important;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .maplibregl-popup-close-button {
