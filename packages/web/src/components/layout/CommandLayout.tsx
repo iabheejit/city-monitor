@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Sidebar } from '../sidebar/Sidebar.js';
 import { MobileLayerDrawer } from '../sidebar/MobileLayerDrawer.js';
@@ -26,6 +26,8 @@ import { PollenStrip } from '../strips/PollenStrip.js';
 import { CouncilMeetingsStrip } from '../strips/CouncilMeetingsStrip.js';
 import { PopulationStrip } from '../strips/PopulationStrip.js';
 import { Skeleton } from './Skeleton.js';
+import { ScrollIndicator } from './ScrollIndicator.js';
+import { SkylineSeparator } from './SkylineSeparator.js';
 import { ErrorBoundary } from 'react-error-boundary';
 import { MapErrorFallback } from '../ErrorFallback.js';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
@@ -61,10 +63,12 @@ export function CommandLayout() {
   // (traffic + weather + warnings) are set in useCommandCenter defaults.
   useNina(cityId);
 
+  const dashboardRef = useRef<HTMLDivElement>(null);
+
   return (
     <>
-      {/* Upper zone: sidebar + map filling viewport height */}
-      <div className="flex h-[50vh] lg:h-[calc(100vh-37px)]">
+      {/* Upper zone: full-bleed hero map (100vh) */}
+      <div className="relative flex h-screen">
         <Sidebar />
         <div className="flex-1 min-w-0 relative">
           <ErrorBoundary FallbackComponent={MapErrorFallback}>
@@ -73,11 +77,15 @@ export function CommandLayout() {
             </Suspense>
           </ErrorBoundary>
           <MobileLayerDrawer />
+          <ScrollIndicator targetRef={dashboardRef} />
         </div>
       </div>
 
+      {/* Skyline separator between map and dashboard */}
+      <SkylineSeparator cityId={cityId} />
+
       {/* Lower zone: dashboard tiles */}
-      <div className="bg-gray-50 dark:bg-gray-950">
+      <div ref={dashboardRef} className="bg-gray-50 dark:bg-gray-950">
         <div className="px-4 pt-4">
           <NinaBanner />
         </div>
