@@ -2,6 +2,15 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createCache } from '../lib/cache.js';
 import { createEventsIngestion, type CityEvent } from './ingest-events.js';
 
+// Use future dates relative to now so the future-events filter doesn't discard them
+function futureDate(daysFromNow: number, time = '12:00:00'): string {
+  const d = new Date(Date.now() + daysFromNow * 86400_000);
+  return `${d.toISOString().slice(0, 10)}T${time}`;
+}
+function futureDateOnly(daysFromNow: number): string {
+  return new Date(Date.now() + daysFromNow * 86400_000).toISOString().slice(0, 10);
+}
+
 const mockKulturdatenResponse = {
   success: true,
   data: {
@@ -12,7 +21,7 @@ const mockKulturdatenResponse = {
       {
         identifier: 'E_ABC123',
         status: 'event.published',
-        schedule: { startDate: '2026-03-05', startTime: '19:00:00' },
+        schedule: { startDate: futureDateOnly(1), startTime: '19:00:00' },
         attractions: [{ referenceLabel: { de: 'Berliner Philharmoniker – Konzert' } }],
         locations: [{ referenceLabel: { de: 'Philharmonie' } }],
         admission: { ticketType: 'ticketType.paid' },
@@ -20,7 +29,7 @@ const mockKulturdatenResponse = {
       {
         identifier: 'E_DEF456',
         status: 'event.published',
-        schedule: { startDate: '2026-03-06', startTime: '17:00:00' },
+        schedule: { startDate: futureDateOnly(2), startTime: '17:00:00' },
         attractions: [{ referenceLabel: { de: 'Street Food Thursday' } }],
         locations: [{ referenceLabel: { de: 'Markthalle Neun' } }],
         admission: { ticketType: 'ticketType.freeOfCharge' },
@@ -28,7 +37,7 @@ const mockKulturdatenResponse = {
       {
         identifier: 'E_DRAFT',
         status: 'event.draft',
-        schedule: { startDate: '2026-03-07' },
+        schedule: { startDate: futureDateOnly(3) },
         attractions: [{ referenceLabel: { de: 'Unpublished Event' } }],
         locations: [],
         admission: {},
@@ -44,7 +53,7 @@ const mockTicketmasterResponse = {
         id: 'TM_001',
         name: 'Rock Concert Berlin',
         url: 'https://ticketmaster.com/event/TM_001',
-        dates: { start: { localDate: '2026-03-07', localTime: '20:00:00' } },
+        dates: { start: { localDate: futureDateOnly(3), localTime: '20:00:00' } },
         classifications: [{ segment: { name: 'Music' } }],
         priceRanges: [{ min: 29, max: 89, currency: 'EUR' }],
         _embedded: { venues: [{ name: 'Mercedes-Benz Arena' }] },
@@ -61,7 +70,7 @@ const mockGomusResponse = {
       sub_title: 'Führung',
       description: '<p>A guided tour through the exhibition.</p>',
       entry_fee: true,
-      upcoming_bookings_start_times: ['2026-03-08T14:00:00Z'],
+      upcoming_bookings_start_times: [futureDate(4)],
       location: { name: 'Pergamonmuseum', address: 'Bodestraße 1-3' },
     },
   ],

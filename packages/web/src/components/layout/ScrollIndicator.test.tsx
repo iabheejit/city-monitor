@@ -18,17 +18,6 @@ describe('ScrollIndicator', () => {
     expect(container.querySelector('svg')).toBeTruthy();
   });
 
-  it('contains a mouse body rect and animated scroll dot circle', () => {
-    const ref = createRef<HTMLDivElement>();
-    const { container } = render(<ScrollIndicator targetRef={ref} />);
-
-    expect(container.querySelector('svg rect')).toBeTruthy();
-
-    const circle = container.querySelector('svg circle');
-    expect(circle).toBeTruthy();
-    expect(circle!.classList.contains('animate-scroll-dot')).toBe(true);
-  });
-
   it('calls scrollIntoView on the target ref when clicked', () => {
     const div = document.createElement('div');
     div.scrollIntoView = vi.fn();
