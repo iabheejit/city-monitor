@@ -4,16 +4,16 @@
   "license": "AGPL-3.0-or-later",
   "type": "module",
   "scripts": {
-    "dev": "tsx watch --env-file=.env src/index.ts",
+    "dev": "tsx watch --env-file-if-exists=.env src/index.ts",
     "build": "tsc",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src/",
     "test": "vitest run",
     "test:watch": "vitest",
-    "db:generate": "node --env-file=.env ../../node_modules/drizzle-kit/bin.cjs generate",
-    "db:migrate": "node --env-file=.env ../../node_modules/drizzle-kit/bin.cjs migrate",
-    "db:push": "node --env-file=.env ../../node_modules/drizzle-kit/bin.cjs push",
-    "db:studio": "node --env-file=.env ../../node_modules/drizzle-kit/bin.cjs studio"
+    "db:generate": "node --env-file-if-exists=.env ../../node_modules/drizzle-kit/bin.cjs generate",
+    "db:migrate": "node --env-file-if-exists=.env ../../node_modules/drizzle-kit/bin.cjs migrate",
+    "db:push": "node --env-file-if-exists=.env ../../node_modules/drizzle-kit/bin.cjs push",
+    "db:studio": "node --env-file-if-exists=.env ../../node_modules/drizzle-kit/bin.cjs studio"
   },
   "dependencies": {
     "@city-monitor/shared": "*",

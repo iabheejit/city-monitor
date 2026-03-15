@@ -39,25 +39,16 @@ const ROW_SPAN_CLASSES: Record<TileRowSpan, string> = {
 export function Tile({ title, titleBadge, span = 1, rowSpan = 1, height = 'auto', expandable, defaultExpanded, children, className, revealIndex = 0 }: TileProps) {
   const [expanded, setExpanded] = useState(defaultExpanded ?? false);
   const ref = useRef<HTMLDivElement>(null);
-  const [revealed, setRevealed] = useState(false);
+  const skipAnimation =
+    typeof IntersectionObserver === 'undefined' ||
+    (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  const [revealed, setRevealed] = useState(skipAnimation);
 
   // Reveal on scroll via IntersectionObserver
   useEffect(() => {
+    if (revealed) return;
     const el = ref.current;
     if (!el) return;
-
-    // Guard: IntersectionObserver not available (SSR / jsdom)
-    if (typeof IntersectionObserver === 'undefined') {
-      setRevealed(true);
-      return;
-    }
-
-    // Check prefers-reduced-motion
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (prefersReducedMotion) {
-      setRevealed(true);
-      return;
-    }
 
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -70,7 +61,7 @@ export function Tile({ title, titleBadge, span = 1, rowSpan = 1, height = 'auto'
     );
     observer.observe(el);
     return () => observer.disconnect();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- runs once on mount; revealed guard is intentional
 
   const delay = Math.min(revealIndex * 50, 400);
 
