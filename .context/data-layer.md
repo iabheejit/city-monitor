@@ -49,7 +49,7 @@ Factory: `createCache()` returns a `Cache` object. Adapted from worldmonitor's R
 | `{cityId}:aqi:history:{N}d` | 1800s (30 min) | history endpoint (lazy) |
 | `{cityId}:water-levels:history:{N}d` | 1800s (30 min) | history endpoint (lazy) |
 | `{cityId}:labor-market:history:{N}d` | 1800s (30 min) | history endpoint (lazy) |
-| `feed:{hash}` | 600s (10 min) | ingest-feeds (raw feed XML) |
+| `feed:{hash}` | 1200s (20 min) | ingest-feeds (raw feed XML) |
 
 ## Database (`packages/server/src/db/`)
 

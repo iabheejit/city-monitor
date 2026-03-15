@@ -86,6 +86,8 @@ There are three ways to use this:
 
 8. **Add to Sources page** — create a sources array for your city in `packages/web/src/pages/SourcesPage.tsx` listing all data sources with attribution links.
 
+9. *(Optional)* **Add a city skyline** — add an SVG skyline function in `packages/web/src/components/layout/SkylineSeparator.tsx` and wire it to your city ID. This renders a silhouette separator between the hero map and the dashboard tiles. If omitted, a generic skyline is used. You can also delete the skyline entirely if you prefer a clean edge.
+
 ### How it works under the hood
 
 - **Server:** `getActiveCities()` reads `ACTIVE_CITIES` and returns configs from `ALL_CITIES`. Every cron job iterates over active cities. The `validateCity` middleware rejects requests for unknown or inactive city IDs.
