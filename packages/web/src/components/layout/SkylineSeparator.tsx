@@ -4,15 +4,43 @@
  * Hamburg: placeholder for future implementation.
  */
 
+import { useEffect, useState, useCallback } from 'react';
+
 interface SkylineSeparatorProps {
   cityId: string;
 }
 
 export function SkylineSeparator({ cityId }: SkylineSeparatorProps) {
+  const [opacity, setOpacity] = useState(1);
+
+  const handleScroll = useCallback(() => {
+    const vh = window.innerHeight;
+    const start = 50;
+    const end = vh * 0.4;
+    const scrollY = window.scrollY;
+
+    if (scrollY <= start) {
+      setOpacity(1);
+    } else if (scrollY >= end) {
+      setOpacity(0);
+    } else {
+      setOpacity(1 - (scrollY - start) / (end - start));
+    }
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [handleScroll]);
+
   return (
-    <div className="relative w-full overflow-hidden -mt-16 pointer-events-none" aria-hidden="true">
+    <div
+      className="relative w-full overflow-hidden -mt-16 pointer-events-none z-0"
+      aria-hidden="true"
+      style={{ opacity }}
+    >
       {/* Gradient backdrop so the silhouette contrasts against the map above */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent dark:from-black/60" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent dark:from-white/15 dark:to-transparent" />
       <svg
         viewBox="0 0 1200 120"
         preserveAspectRatio="xMidYMax slice"

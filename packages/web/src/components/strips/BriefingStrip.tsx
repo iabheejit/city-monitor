@@ -11,7 +11,7 @@ function BriefingContent({ text }: { text: string }) {
   const paragraphs = text.split(/\n\s*\n/).map(p => p.trim()).filter(Boolean);
 
   return (
-    <div className="text-base leading-relaxed text-gray-700 dark:text-gray-300 space-y-3">
+    <div className="text-base lg:text-xl leading-relaxed text-gray-700 dark:text-gray-300 space-y-3">
       {paragraphs.map((p, i) => (
         <p key={i}>{p}</p>
       ))}

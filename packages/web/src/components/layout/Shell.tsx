@@ -1,4 +1,4 @@
-import { type ReactNode, useState, useEffect } from 'react';
+import { type ReactNode, useState, useEffect, useRef, useCallback } from 'react';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts.js';
 import { TopBar } from './TopBar.js';
@@ -9,22 +9,39 @@ import { Footer } from './Footer.js';
 
 export function Shell({ children }: { children: ReactNode }) {
   const city = useCityConfig();
-  const [topBarVisible, setTopBarVisible] = useState(false);
   const { hintsOpen, closeHints } = useKeyboardShortcuts();
+  const barRef = useRef<HTMLDivElement>(null);
+  const [offsetY, setOffsetY] = useState('-100%');
 
-  // Show TopBar after user scrolls past the hero map (100vh)
+  // Progressively slide the top bar in/out based on scroll position.
+  // Starts appearing at 40% viewport height, fully visible at 90%.
+  const handleScroll = useCallback(() => {
+    const scrollY = window.scrollY;
+    const vh = window.innerHeight;
+    const start = vh * 0.4;
+    const end = vh * 0.9;
+
+    if (scrollY <= start) {
+      setOffsetY('-100%');
+    } else if (scrollY >= end) {
+      setOffsetY('0%');
+    } else {
+      const progress = (scrollY - start) / (end - start);
+      setOffsetY(`${-100 + progress * 100}%`);
+    }
+  }, []);
+
   useEffect(() => {
-    const handleScroll = () => {
-      setTopBarVisible(window.scrollY > window.innerHeight * 0.5);
-    };
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  }, [handleScroll]);
 
   return (
     <div className="min-h-screen flex flex-col bg-surface-0 dark:bg-[radial-gradient(ellipse_80%_50%_at_50%_0%,rgba(var(--accent-rgb),0.04),var(--surface-0))] text-gray-900 dark:text-gray-100">
       <div
-        className={`fixed top-0 left-0 right-0 z-50 transition-transform motion-reduce:transition-none duration-300 ease-out ${topBarVisible ? 'translate-y-0' : '-translate-y-full'}`}
+        ref={barRef}
+        className="fixed top-0 left-0 right-0 z-50"
+        style={{ translate: `0 ${offsetY}` }}
       >
         <TopBar />
         <NewsMarquee />

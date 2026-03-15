@@ -239,7 +239,7 @@ select:focus-visible,
 /* Scroll indicator — animated dot inside mouse icon */
 @keyframes scroll-dot {
   0% { transform: translateY(0); opacity: 1; }
-  50% { transform: translateY(8px); opacity: 0.4; }
+  50% { transform: translateY(10px); opacity: 0.3; }
   100% { transform: translateY(0); opacity: 1; }
 }
 .animate-scroll-dot {
@@ -281,11 +281,9 @@ select:focus-visible,
   }
 }
 
-/* Lift attribution above the skyline separator (which overlaps via -mt-16) */
-.maplibregl-ctrl-bottom-right {
-  bottom: 4.5rem;
-}
+/* Keep any remaining bottom controls above the skyline separator */
+.maplibregl-ctrl-bottom-right,
 .maplibregl-ctrl-bottom-left {
-  bottom: 4.5rem;
+  bottom: 5rem;
 }
 
