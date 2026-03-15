@@ -30,7 +30,7 @@ import { useCommandCenter } from '../../hooks/useCommandCenter.js';
 import { registerAllMapIcons } from '../../lib/map-icons.js';
 
 import { DARK_STYLE, LIGHT_STYLE, EMPTY_AQ, EMPTY_WL, DISTRICT_URLS, POLITICAL_MARKER_LAYER, type SocialAtlasMetric, type PopulationMetric } from './constants.js';
-import { simplifyMap, setTrafficRoadVisibility, setWaterAreaVisibility, setWeatherOverlay, setNoiseOverlay, setRentMapOverlay } from './base.js';
+import { simplifyMap, setTrafficRoadVisibility, setWaterAreaVisibility, setWeatherOverlay, setNoiseOverlay, setRentMapOverlay, loadStyle } from './base.js';
 import { showMapPopup, scheduleHoverClose } from './popups.js';
 import { addDistrictLayer, applyPoliticalStyling, setupDistrictHover, updatePoliticalMarkers, removePoliticalMarkers, buildPoliticalPopupHtml } from './layers/political.js';
 import { filterNewsForMap, updateNewsMarkers, updateSafetyMarkers } from './layers/news-safety.js';
@@ -268,58 +268,46 @@ export function CityMap() {
   const politicalLayerRef = useRef(politicalLayer);
   politicalLayerRef.current = politicalLayer;
 
-  // Fly-in animation: start zoomed out, fly to city bounds
-  const FLY_IN_ZOOM = 4;
-  const FLY_IN_DURATION = 2500;
   const mapReadyRef = useRef(false);
 
   // Create map once
   useEffect(() => {
     if (!containerRef.current) return;
+    let cancelled = false;
 
     const bounds = mapConfig.bounds as maplibregl.LngLatBoundsLike;
-    const cityCenter: [number, number] = [city.coordinates.lon, city.coordinates.lat];
+    const styleUrl = isDarkRef.current ? DARK_STYLE : LIGHT_STYLE;
 
-    const map = new maplibregl.Map({
-      container: containerRef.current,
-      style: isDarkRef.current ? DARK_STYLE : LIGHT_STYLE,
-      center: cityCenter,
-      zoom: FLY_IN_ZOOM,
-      minZoom: mapConfig.minZoom ?? 9,
-      maxZoom: mapConfig.maxZoom ?? 16,
-      maxBounds: undefined, // allow fly-in from outside bounds
-      attributionControl: false,
-    });
+    loadStyle(styleUrl).then((style) => {
+      if (cancelled || !containerRef.current) return;
 
-    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
-    map.addControl(
-      new maplibregl.AttributionControl({ compact: true }),
-      'bottom-right',
-    );
-
-    map.on('load', () => {
-      simplifyMap(map);
-      setTrafficRoadVisibility(map, roadsActiveRef.current, isDarkRef.current);
-      setWaterAreaVisibility(map, waterActiveRef.current, isDarkRef.current);
-      registerAllMapIcons(map, isDarkRef.current);
-      addDistrictLayer(map, cityIdRef.current, isDarkRef.current);
-      setupDistrictHover(map);
-
-      // Fly in to city bounds
-      map.fitBounds(bounds, {
-        padding: 20,
-        duration: FLY_IN_DURATION,
-        essential: true,
-        easing: (t: number) => 1 - (1 - t) * (1 - t), // ease-out quad
+      const map = new maplibregl.Map({
+        container: containerRef.current,
+        style,
+        bounds: bounds,
+        fitBoundsOptions: { padding: 20 },
+        minZoom: mapConfig.minZoom ?? 9,
+        maxZoom: mapConfig.maxZoom ?? 16,
+        maxBounds: bounds,
+        attributionControl: false,
       });
 
-      // After fly-in completes, render data layers with staggered animation
-      map.once('moveend', () => {
-        // Lock bounds after fly-in
-        map.setMaxBounds(bounds);
-        mapReadyRef.current = true;
+      map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+      map.addControl(
+        new maplibregl.AttributionControl({ compact: true }),
+        'top-right',
+      );
 
-        // Render all data layers
+      map.on('load', () => {
+        simplifyMap(map);
+        setTrafficRoadVisibility(map, roadsActiveRef.current, isDarkRef.current);
+        setWaterAreaVisibility(map, waterActiveRef.current, isDarkRef.current);
+        registerAllMapIcons(map, isDarkRef.current);
+        addDistrictLayer(map, cityIdRef.current, isDarkRef.current);
+        setupDistrictHover(map);
+
+        // Render data layers immediately and animate markers in
+        mapReadyRef.current = true;
         updateTrafficLayers(map, trafficItemsRef.current, isDarkRef.current);
         updateConstructionLayers(map, constructionItemsRef.current, isDarkRef.current);
         updateTransitMarkers(map, transitItemsRef.current ?? [], isDarkRef.current);
@@ -340,20 +328,23 @@ export function CityMap() {
 
         // Animate marker layers: fade in opacity over 500ms
         animateMarkerEntrance(map);
+
+        // Collapse the attribution control (MapLibre opens it by default)
+        containerRef.current
+          ?.querySelector('.maplibregl-ctrl-attrib')
+          ?.classList.remove('maplibregl-compact-show');
       });
 
-      // Collapse the attribution control (MapLibre opens it by default)
-      containerRef.current
-        ?.querySelector('.maplibregl-ctrl-attrib')
-        ?.classList.remove('maplibregl-compact-show');
+      mapRef.current = map;
     });
 
-    mapRef.current = map;
-
     return () => {
-      map.remove();
-      mapRef.current = null;
-      mapReadyRef.current = false;
+      cancelled = true;
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+        mapReadyRef.current = false;
+      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -368,7 +359,8 @@ export function CityMap() {
     }
     const map = mapRef.current;
     if (!map) return;
-    map.setStyle(isDark ? DARK_STYLE : LIGHT_STYLE);
+    const styleUrl = isDark ? DARK_STYLE : LIGHT_STYLE;
+    loadStyle(styleUrl).then((style) => map.setStyle(style));
     map.once('style.load', () => {
       simplifyMap(map);
       setTrafficRoadVisibility(map, roadsActiveRef.current, isDark);
