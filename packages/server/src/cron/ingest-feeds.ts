@@ -180,7 +180,7 @@ async function fetchOneFeed(
   const timeout = Math.min(PER_FEED_TIMEOUT, remaining);
 
   try {
-    return await cache.fetch<NewsItem[]>(cacheKey, 600, async () => {
+    return await cache.fetch<NewsItem[]>(cacheKey, 1200, async () => {
       const res = await log.fetch(feed.url, {
         signal: AbortSignal.timeout(timeout),
         headers: { 'User-Agent': 'CityMonitor/1.0' },

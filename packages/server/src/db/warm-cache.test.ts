@@ -121,7 +121,7 @@ describe('findStaleJobs', () => {
   });
 
   it('marks job fresh when fetched_at is within maxAge', async () => {
-    const db = mockDb({ rows: [{ fetched_at: new Date().toISOString() }] });
+    const db = mockDb({ rows: [{ epoch: Date.now() / 1000 }] });
     const specs: FreshnessSpec[] = [
       { jobName: 'test-job', tableName: 'test_table', maxAgeSeconds: 3600 },
     ];
@@ -130,8 +130,7 @@ describe('findStaleJobs', () => {
   });
 
   it('marks job stale when fetched_at exceeds maxAge', async () => {
-    const old = new Date(Date.now() - 7200_000).toISOString(); // 2 hours ago
-    const db = mockDb({ rows: [{ fetched_at: old }] });
+    const db = mockDb({ rows: [{ epoch: (Date.now() - 7200_000) / 1000 }] });
     const specs: FreshnessSpec[] = [
       { jobName: 'test-job', tableName: 'test_table', maxAgeSeconds: 3600 },
     ];
@@ -140,7 +139,7 @@ describe('findStaleJobs', () => {
   });
 
   it('includes filter column in query when spec has filter', async () => {
-    const executeFn = vi.fn().mockResolvedValue({ rows: [{ fetched_at: new Date().toISOString() }] });
+    const executeFn = vi.fn().mockResolvedValue({ rows: [{ epoch: Date.now() / 1000 }] });
     const db = { execute: executeFn } as unknown as Db;
 
     const specs: FreshnessSpec[] = [
@@ -167,6 +166,24 @@ describe('findStaleJobs', () => {
     ];
     const stale = await findStaleJobs(db, specs);
     expect(stale.has('ingest-political')).toBe(true);
+  });
+
+  it('uses custom timestampColumn when specified', async () => {
+    const executeFn = vi.fn().mockResolvedValue({ rows: [{ epoch: Date.now() / 1000 }] });
+    const db = { execute: executeFn } as unknown as Db;
+
+    const specs: FreshnessSpec[] = [
+      { jobName: 'summarize-news', tableName: 'ai_summaries', maxAgeSeconds: 21600, timestampColumn: 'generated_at' },
+    ];
+    const stale = await findStaleJobs(db, specs);
+    expect(stale.has('summarize-news')).toBe(false);
+
+    // The SQL template should reference generated_at, not fetched_at
+    const sqlArg = executeFn.mock.calls[0][0];
+    const queryChunks = sqlArg.queryChunks ?? sqlArg.value ?? [];
+    const sqlString = JSON.stringify(queryChunks);
+    expect(sqlString).toContain('generated_at');
+    expect(sqlString).not.toContain('fetched_at');
   });
 
   it('marks job stale when DB throws', async () => {

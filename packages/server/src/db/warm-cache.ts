@@ -181,6 +181,8 @@ export interface FreshnessSpec {
   jobName: string;
   tableName: string;
   maxAgeSeconds: number;
+  /** Override the timestamp column name (default: 'fetched_at') */
+  timestampColumn?: string;
   /** Optional column + value filter so the freshness check targets a specific row subset */
   filter?: { column: string; value: string };
 }
@@ -196,21 +198,23 @@ export async function findStaleJobs(db: Db, specs: FreshnessSpec[]): Promise<Set
 
   await Promise.allSettled(specs.map(async (spec) => {
     try {
+      const tsCol = spec.timestampColumn ?? 'fetched_at';
       const query = spec.filter
-        ? sql`SELECT fetched_at FROM ${sql.identifier(spec.tableName)} WHERE ${sql.identifier(spec.filter.column)} = ${spec.filter.value} ORDER BY fetched_at DESC LIMIT 1`
-        : sql`SELECT fetched_at FROM ${sql.identifier(spec.tableName)} ORDER BY fetched_at DESC LIMIT 1`;
+        ? sql`SELECT EXTRACT(EPOCH FROM ${sql.identifier(tsCol)}) AS epoch FROM ${sql.identifier(spec.tableName)} WHERE ${sql.identifier(spec.filter.column)} = ${spec.filter.value} ORDER BY ${sql.identifier(tsCol)} DESC LIMIT 1`
+        : sql`SELECT EXTRACT(EPOCH FROM ${sql.identifier(tsCol)}) AS epoch FROM ${sql.identifier(spec.tableName)} ORDER BY ${sql.identifier(tsCol)} DESC LIMIT 1`;
       const result = await db.execute(query);
       const rows = Array.isArray(result) ? result : (result as { rows?: unknown[] }).rows ?? [];
-      const row = rows[0] as { fetched_at?: string | Date } | undefined;
-      if (!row || !row.fetched_at) {
+      const row = rows[0] as { epoch?: string | number } | undefined;
+      if (!row || row.epoch == null) {
         stale.add(spec.jobName);
         return;
       }
-      const ageSeconds = (now - new Date(row.fetched_at).getTime()) / 1000;
+      const ageSeconds = (now / 1000) - Number(row.epoch);
       if (ageSeconds > spec.maxAgeSeconds) {
         stale.add(spec.jobName);
       }
-    } catch {
+    } catch (err) {
+      log.error(`${spec.jobName}: freshness check failed`, err);
       stale.add(spec.jobName);
     }
   }));

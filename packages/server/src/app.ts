@@ -100,8 +100,8 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
   // Max age is roughly the cron interval — data older than that is overdue.
   const FRESHNESS_SPECS: FreshnessSpec[] = [
     // Non-snapshot tables
-    { jobName: 'ingest-feeds',        tableName: 'news_items',    maxAgeSeconds: 600 },
-    { jobName: 'summarize-news',      tableName: 'ai_summaries',  maxAgeSeconds: 1200 },
+    { jobName: 'ingest-feeds',        tableName: 'news_items',    maxAgeSeconds: 3600 },
+    { jobName: 'summarize-news',      tableName: 'ai_summaries',  maxAgeSeconds: 21600, timestampColumn: 'generated_at' },
     { jobName: 'ingest-events',       tableName: 'events',        maxAgeSeconds: 21600 },
     { jobName: 'ingest-safety',       tableName: 'safety_reports', maxAgeSeconds: 600 },
 
