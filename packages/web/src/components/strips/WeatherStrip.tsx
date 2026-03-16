@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useWeather } from '../../hooks/useWeather.js';
@@ -62,6 +63,13 @@ export function WeatherStrip({ expanded }: { expanded: boolean }) {
   const { t, i18n } = useTranslation();
   const { isStale, agoText } = useFreshness(fetchedAt, FRESH_MAX_AGE);
 
+  const rawHourly = data?.hourly;
+  const sampledHourly = useMemo(() => {
+    if (!rawHourly || rawHourly.length === 0) return [];
+    const nowStr = new Date().toISOString().slice(0, 16);
+    return sampleHourly(rawHourly, nowStr);
+  }, [rawHourly]);
+
   if (isLoading) return <Skeleton lines={2} />;
   if (isError) return <StripErrorFallback domain="Weather" onRetry={refetch} />;
 
@@ -70,12 +78,8 @@ export function WeatherStrip({ expanded }: { expanded: boolean }) {
 
   const weatherInfo = getWeatherInfo(current.weatherCode);
   const locale = i18n.language;
-  const hourly = data?.hourly ?? [];
   const daily = data?.daily ?? [];
   const alerts = data?.alerts ?? [];
-
-  const nowStr = new Date().toISOString().slice(0, 16);
-  const sampledHourly = sampleHourly(hourly, nowStr);
 
   return (
     <>

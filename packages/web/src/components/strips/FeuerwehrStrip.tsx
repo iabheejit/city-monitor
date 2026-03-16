@@ -2,29 +2,10 @@ import { useTranslation } from 'react-i18next';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useFeuerwehr } from '../../hooks/useFeuerwehr.js';
 import { useFreshness } from '../../hooks/useFreshness.js';
+import { formatDelta, formatTime } from '../../lib/format-stats.js';
 import { StripErrorFallback } from '../ErrorFallback.js';
 import { Skeleton } from '../layout/Skeleton.js';
 import { TileFooter } from '../layout/TileFooter.js';
-
-function formatTime(seconds: number): string {
-  const mins = Math.floor(seconds / 60);
-  const secs = Math.round(seconds % 60);
-  return `${mins}:${secs.toString().padStart(2, '0')}`;
-}
-
-function formatDelta(current: number, previous: number | undefined, invert = false): { text: string; color: string } | null {
-  if (previous === undefined || previous === 0) return null;
-  const pct = ((current - previous) / previous) * 100;
-  const sign = pct > 0 ? '+' : '';
-  const value = Math.abs(pct) < 10 ? pct.toFixed(1) : Math.round(pct).toString();
-  const isWorse = invert ? pct < 0 : pct > 0;
-  const color = isWorse
-    ? 'text-red-500 dark:text-red-400'
-    : pct === 0
-      ? 'text-gray-400'
-      : 'text-green-500 dark:text-green-400';
-  return { text: `${sign}${value}%`, color };
-}
 
 function StatRow({
   label,

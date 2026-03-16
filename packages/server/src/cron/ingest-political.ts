@@ -15,6 +15,10 @@ const API_BASE = 'https://www.abgeordnetenwatch.de/api/v2';
 const TIMEOUT_MS = 30_000;
 const TTL_SECONDS = 604800; // 7 days
 
+/** Date the BEZIRKSBUERGERMEISTER data was last manually verified. */
+const BEZIRKSBUERGERMEISTER_LAST_VERIFIED = new Date('2026-03-02');
+const STALENESS_THRESHOLD_DAYS = 180;
+
 /**
  * Hardcoded Bezirksbürgermeister per city.
  * Source: https://berlin.de/rbmskzl/regierender-buergermeister/buergermeister-von-berlin/rat-der-buergermeister/
@@ -110,6 +114,15 @@ export function preCacheBezirke(cache: Cache): void {
     if (bmData) {
       cache.set(CK.political(city.id, 'bezirke'), bmData, TTL_SECONDS);
     }
+  }
+
+  const ageMs = Date.now() - BEZIRKSBUERGERMEISTER_LAST_VERIFIED.getTime();
+  const ageDays = Math.round(ageMs / 86_400_000);
+  if (ageDays > STALENESS_THRESHOLD_DAYS) {
+    log.warn(
+      `Bezirksbuergermeister data was last verified ${ageDays} days ago (${BEZIRKSBUERGERMEISTER_LAST_VERIFIED.toISOString().slice(0, 10)}). ` +
+      `Please re-verify at https://berlin.de/rbmskzl/regierender-buergermeister/buergermeister-von-berlin/rat-der-buergermeister/`
+    );
   }
 }
 

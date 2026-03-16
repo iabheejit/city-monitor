@@ -2,20 +2,10 @@ import { useTranslation } from 'react-i18next';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useLaborMarket } from '../../hooks/useLaborMarket.js';
 import { useFreshness } from '../../hooks/useFreshness.js';
+import { formatYoy } from '../../lib/format-stats.js';
 import { StripErrorFallback } from '../ErrorFallback.js';
 import { Skeleton } from '../layout/Skeleton.js';
 import { TileFooter } from '../layout/TileFooter.js';
-
-function formatYoy(percent: number): { text: string; color: string } {
-  const sign = percent > 0 ? '+' : '';
-  const value = Number.isInteger(percent) ? percent : percent.toFixed(1);
-  const color = percent > 0
-    ? 'text-red-500 dark:text-red-400'
-    : percent < 0
-      ? 'text-green-500 dark:text-green-400'
-      : 'text-gray-400';
-  return { text: `${sign}${value}%`, color };
-}
 
 const FRESH_MAX_AGE = 36 * 60 * 60 * 1000; // 36h (cron daily)
 
