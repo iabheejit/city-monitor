@@ -196,9 +196,9 @@ Summary of each find → plan → implement cycle.
 - **Plan:** `.plans/24-frontend-refactors.md`
 - **Controversial decisions:**
   1. Kept `formatYoy` as a separate function rather than unifying with `formatDelta`. They have different signatures (pre-computed percentage vs. two raw values). Forcing unification would require reverse-engineering raw values from the percentage.
-  2. `useMemo` dependency uses `[hourly]` (the derived variable) not `[data?.hourly]`. The component early-returns before this code runs when data is null/loading, so `hourly` is referentially stable from React Query.
+  2. Moved `useMemo` before early returns (using `data?.hourly` as `rawHourly`) to satisfy the `react-hooks/rules-of-hooks` lint rule. The plan placed it after early returns, but hooks must be called unconditionally. The memo handles null/empty input with an early `return []`.
 - **Suggested follow-up work:**
-  - Add unit tests for `format-stats.ts` (similar to existing `format-time.test.ts`).
+  - Unit tests for `format-stats.ts` were added (15 tests). No further action needed.
   - The `BEZIRKSBUERGERMEISTER_LAST_VERIFIED` date needs manual updates when re-verified. Consider a CI check or automated scrape.
 
 ### More Test Coverage
