@@ -2,6 +2,7 @@ import { lazy, Suspense, useRef } from 'react';
 import { useIsDesktop } from '../../hooks/useMediaQuery.js';
 import { useScrollParallax } from '../../hooks/useScrollParallax.js';
 import { useTranslation } from 'react-i18next';
+import { SUPPORT_URL } from '../../lib/constants.js';
 import { Sidebar } from '../sidebar/Sidebar.js';
 import { MobileLayerDrawer } from '../sidebar/MobileLayerDrawer.js';
 import { NinaBanner } from '../alerts/NinaBanner.js';
@@ -119,7 +120,7 @@ export function CommandLayout() {
                   ))}
                 </div>
                 <a
-                  href="https://ko-fi.com/OdinMB"
+                  href={SUPPORT_URL}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex flex-col items-center hover:text-gray-900 dark:hover:text-white transition-colors"

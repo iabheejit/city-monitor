@@ -23,21 +23,13 @@ export interface SafetyReport {
 
 const SAFETY_TIMEOUT_MS = 10_000;
 
-const BERLIN_DISTRICTS = [
-  'Mitte', 'Friedrichshain', 'Kreuzberg', 'Pankow', 'Prenzlauer Berg',
-  'Charlottenburg', 'Wilmersdorf', 'Spandau', 'Steglitz', 'Zehlendorf',
-  'Tempelhof', 'Schöneberg', 'Neukölln', 'Treptow', 'Köpenick',
-  'Marzahn', 'Hellersdorf', 'Lichtenberg', 'Reinickendorf', 'Wedding',
-  'Moabit', 'Tiergarten',
-];
-
 export function createSafetyIngestion(cache: Cache, db: Db | null = null) {
   return async function ingestSafety(): Promise<void> {
     const cities = getActiveCities();
     for (const city of cities) {
       if (!city.dataSources.police) continue;
       try {
-        await ingestCitySafety(city.id, city.name, city.dataSources.police.url, cache, db);
+        await ingestCitySafety(city.id, city.name, city.dataSources.police, cache, db);
       } catch (err) {
         log.error(`${city.id} failed`, err);
       }
@@ -45,8 +37,8 @@ export function createSafetyIngestion(cache: Cache, db: Db | null = null) {
   };
 }
 
-async function ingestCitySafety(cityId: string, cityName: string, feedUrl: string, cache: Cache, db: Db | null): Promise<void> {
-  const response = await log.fetch(feedUrl, {
+async function ingestCitySafety(cityId: string, cityName: string, policeConfig: { url: string; districts?: string[] }, cache: Cache, db: Db | null): Promise<void> {
+  const response = await log.fetch(policeConfig.url, {
     signal: AbortSignal.timeout(SAFETY_TIMEOUT_MS),
     headers: { 'User-Agent': 'CityMonitor/1.0' },
   });
@@ -62,7 +54,7 @@ async function ingestCitySafety(cityId: string, cityName: string, feedUrl: strin
     description: item.description || '',
     publishedAt: item.publishedAt,
     url: item.url,
-    district: extractDistrict(item.title),
+    district: extractDistrict(item.title, policeConfig.districts),
   }));
 
   // Carry over coordinates from DB for already-geocoded items
@@ -120,8 +112,9 @@ async function ingestCitySafety(cityId: string, cityName: string, feedUrl: strin
   log.info(`${cityId}: ${reports.length} reports`);
 }
 
-function extractDistrict(title: string): string | undefined {
-  for (const district of BERLIN_DISTRICTS) {
+function extractDistrict(title: string, districts?: string[]): string | undefined {
+  if (!districts) return undefined;
+  for (const district of districts) {
     if (title.includes(district)) return district;
   }
   return undefined;

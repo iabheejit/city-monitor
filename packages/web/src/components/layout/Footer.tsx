@@ -1,6 +1,7 @@
 import { Link, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { getCityConfig } from '../../config/index.js';
+import { SUPPORT_URL } from '../../lib/constants.js';
 
 export function Footer() {
   const { t } = useTranslation();
@@ -17,7 +18,7 @@ export function Footer() {
           {t('footer.inspiredBy')}
         </a>
         <span>{t('footer.license')}</span>
-        <a href="https://ko-fi.com/OdinMB" target="_blank" rel="noopener noreferrer" className="hover:underline">
+        <a href={SUPPORT_URL} target="_blank" rel="noopener noreferrer" className="hover:underline">
           {t('support.title')}
         </a>
       </nav>

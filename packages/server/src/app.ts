@@ -211,6 +211,11 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
   if (!isDev) {
     const bootstrapLimit = rateLimit({ windowMs: 60_000, max: 10, standardHeaders: true, legacyHeaders: false });
     app.use('/api/:city/bootstrap', bootstrapLimit);
+
+    // Stricter rate limit for heavy GeoJSON payloads
+    const geojsonLimit = rateLimit({ windowMs: 60_000, max: 10, standardHeaders: true, legacyHeaders: false });
+    app.use('/api/:city/social-atlas', geojsonLimit);
+    app.use('/api/:city/population', geojsonLimit);
   }
 
   app.use('/api', cacheFor(300), createNewsRouter(cache, db));

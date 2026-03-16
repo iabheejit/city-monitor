@@ -65,7 +65,7 @@ export interface CityDataSources {
     stations?: Array<{ id: string; name: string }>;
   };
   events?: EventSourceConfig[];
-  police?: { provider: 'rss'; url: string };
+  police?: { provider: 'rss'; url: string; districts?: string[] };
   nina?: { ars: string }; // Amtlicher Regionalschlüssel for NINA warnings
   roadworks?: { url: string };
   openData?: { provider: 'ckan'; baseUrl: string };

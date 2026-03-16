@@ -74,7 +74,17 @@ export const berlin: CityConfig = {
       { source: 'ticketmaster', url: 'https://app.ticketmaster.com/discovery/v2/events.json' },
       { source: 'gomus', url: 'https://smb.gomus.de/api/v4/events' },
     ],
-    police: { provider: 'rss', url: 'https://www.berlin.de/presse/pressemitteilungen/index/feed?institutions[]=Polizei+Berlin' },
+    police: {
+      provider: 'rss',
+      url: 'https://www.berlin.de/presse/pressemitteilungen/index/feed?institutions[]=Polizei+Berlin',
+      districts: [
+        'Mitte', 'Friedrichshain', 'Kreuzberg', 'Pankow', 'Prenzlauer Berg',
+        'Charlottenburg', 'Wilmersdorf', 'Spandau', 'Steglitz', 'Zehlendorf',
+        'Tempelhof', 'Schöneberg', 'Neukölln', 'Treptow', 'Köpenick',
+        'Marzahn', 'Hellersdorf', 'Lichtenberg', 'Reinickendorf', 'Wedding',
+        'Moabit', 'Tiergarten',
+      ],
+    },
     nina: { ars: '110000000000' },
     roadworks: { url: 'https://api.viz.berlin.de/daten/baustellen_sperrungen.json' },
     waterLevels: {
