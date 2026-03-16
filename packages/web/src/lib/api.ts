@@ -9,7 +9,7 @@ async function fetchJson<T>(url: string): Promise<T> {
 }
 
 export type { WeatherData, ApiResponse, HistoryPoint } from '@city-monitor/shared';
-import type { WeatherData, ApiResponse, HistoryPoint, NewsItem, NewsDigest } from '@city-monitor/shared';
+import type { WeatherData, ApiResponse, HistoryPoint, NewsDigest } from '@city-monitor/shared';
 
 export type { NewsItem, NewsDigest } from '@city-monitor/shared';
 
