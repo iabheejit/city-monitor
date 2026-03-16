@@ -19,6 +19,10 @@ const PHARMACY_TIMEOUT_MS = 15_000;
  */
 const APONET_TOKEN = process.env.APONET_TOKEN ?? '216823d96ea25c051509d935955c130fbc72680fc1d3040fe3e8ca0e25f9cd02';
 
+if (!process.env.APONET_TOKEN) {
+  log.warn('APONET_TOKEN not set — using hardcoded fallback token. Set APONET_TOKEN env var if the fallback stops working.');
+}
+
 interface AponetPharmacy {
   name: string;
   strasse: string;

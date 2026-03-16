@@ -1,6 +1,6 @@
 import type { Cache } from '../lib/cache.js';
 import type { Db } from '../db/index.js';
-import type { EventSourceConfig } from '@city-monitor/shared';
+import type { CityEvent, EventSourceConfig } from '@city-monitor/shared';
 import { saveEvents } from '../db/writes.js';
 import { getActiveCities } from '../config/index.js';
 import { createLogger } from '../lib/logger.js';
@@ -8,19 +8,7 @@ import { CK } from '../lib/cache-keys.js';
 
 const log = createLogger('ingest-events');
 
-export interface CityEvent {
-  id: string;
-  title: string;
-  venue?: string;
-  date: string;
-  endDate?: string;
-  category: 'music' | 'art' | 'theater' | 'food' | 'market' | 'sport' | 'community' | 'museum' | 'other';
-  url: string;
-  description?: string;
-  free?: boolean;
-  source: 'kulturdaten' | 'ticketmaster' | 'gomus';
-  price?: string;
-}
+export type { CityEvent };
 
 const EVENTS_TIMEOUT_MS = 15_000;
 const EVENTS_PAGE_SIZE = 50;

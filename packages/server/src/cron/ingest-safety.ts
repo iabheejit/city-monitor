@@ -1,5 +1,6 @@
 import type { Cache } from '../lib/cache.js';
 import type { Db } from '../db/index.js';
+import type { SafetyReport } from '@city-monitor/shared';
 import { saveSafetyReports } from '../db/writes.js';
 import { loadSafetyCoords } from '../db/reads.js';
 import { parseFeed } from '../lib/rss-parser.js';
@@ -11,15 +12,7 @@ import { geolocateReports } from '../lib/openai.js';
 
 const log = createLogger('ingest-safety');
 
-export interface SafetyReport {
-  id: string;
-  title: string;
-  description: string;
-  publishedAt: string;
-  url: string;
-  district?: string;
-  location?: { lat: number; lon: number; label?: string };
-}
+export type { SafetyReport };
 
 const SAFETY_TIMEOUT_MS = 10_000;
 

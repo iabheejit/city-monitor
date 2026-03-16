@@ -104,6 +104,16 @@ async function geocodeLocationIQ(query: string): Promise<GeocodeResult | null> {
 // In-process cache — location names are stable landmarks, cache indefinitely
 // ---------------------------------------------------------------------------
 const geocodeCache = new Map<string, GeocodeResult | null>();
+const MAX_ENTRIES = 10_000;
+
+/** Set a cache entry, evicting the oldest if at capacity (FIFO via Map insertion order). */
+function cacheSet(key: string, value: GeocodeResult | null): void {
+  if (geocodeCache.size >= MAX_ENTRIES) {
+    const oldest = geocodeCache.keys().next().value;
+    if (oldest !== undefined) geocodeCache.delete(oldest);
+  }
+  geocodeCache.set(key, value);
+}
 
 export function clearGeocodeCache(): void {
   geocodeCache.clear();
@@ -111,7 +121,7 @@ export function clearGeocodeCache(): void {
 
 /** Populate the in-process Map from DB rows (used by warm-cache). */
 export function setGeocodeCacheEntry(key: string, result: GeocodeResult): void {
-  geocodeCache.set(key, result);
+  cacheSet(key, result);
 }
 
 // ---------------------------------------------------------------------------
@@ -160,7 +170,7 @@ export async function geocode(
       const dbRow = await loadGeocodeLookup(_db, cacheKey);
       if (dbRow) {
         const result: GeocodeResult = { lat: dbRow.lat, lon: dbRow.lon, displayName: dbRow.displayName };
-        geocodeCache.set(cacheKey, result);
+        cacheSet(cacheKey, result);
         return result;
       }
     } catch {
@@ -194,7 +204,7 @@ export async function geocode(
       provider = 'nominatim';
     }
 
-    geocodeCache.set(cacheKey, result);
+    cacheSet(cacheKey, result);
 
     // Persist successful results to DB (failed lookups stay in-process only)
     if (result && _db) {

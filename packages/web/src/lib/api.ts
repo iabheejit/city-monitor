@@ -50,29 +50,8 @@ export interface TransitAlert {
   affectedStops: string[];
 }
 
-export interface CityEvent {
-  id: string;
-  title: string;
-  venue?: string;
-  date: string;
-  endDate?: string;
-  category: 'music' | 'art' | 'theater' | 'food' | 'market' | 'sport' | 'community' | 'museum' | 'other';
-  url: string;
-  description?: string;
-  free?: boolean;
-  source: 'kulturdaten' | 'ticketmaster' | 'gomus';
-  price?: string;
-}
-
-export interface SafetyReport {
-  id: string;
-  title: string;
-  description: string;
-  publishedAt: string;
-  url: string;
-  district?: string;
-  location?: { lat: number; lon: number; label?: string };
-}
+export type { CityEvent, SafetyReport } from '@city-monitor/shared';
+import type { CityEvent, SafetyReport } from '@city-monitor/shared';
 
 export interface AirQuality {
   current: {

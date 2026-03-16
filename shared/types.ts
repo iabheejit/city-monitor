@@ -474,5 +474,31 @@ export interface NewsDigest {
   updatedAt: string;
 }
 
+// City events (kulturdaten.berlin, Ticketmaster, go~mus)
+export interface CityEvent {
+  id: string;
+  title: string;
+  venue?: string;
+  date: string;
+  endDate?: string;
+  category: 'music' | 'art' | 'theater' | 'food' | 'market' | 'sport' | 'community' | 'museum' | 'other';
+  url: string;
+  description?: string;
+  free?: boolean;
+  source: 'kulturdaten' | 'ticketmaster' | 'gomus';
+  price?: string;
+}
+
+// Safety / police reports
+export interface SafetyReport {
+  id: string;
+  title: string;
+  description: string;
+  publishedAt: string;
+  url: string;
+  district?: string;
+  location?: { lat: number; lon: number; label?: string };
+}
+
 // Council meetings (BVV OParl + PARDOK)
 export type { CouncilMeeting } from './schemas.js';
