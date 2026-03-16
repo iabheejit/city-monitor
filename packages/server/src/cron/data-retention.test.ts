@@ -5,8 +5,8 @@ vi.mock('drizzle-orm', () => ({
   lt: vi.fn((col, val) => ({ op: 'lt', col, val })),
   and: vi.fn((...args: unknown[]) => ({ op: 'and', args })),
   eq: vi.fn((col, val) => ({ op: 'eq', col, val })),
-  notInArray: vi.fn((col, subquery) => ({ op: 'notInArray', col, subquery })),
-  sql: vi.fn(),
+  notExists: vi.fn((subquery) => ({ op: 'notExists', subquery })),
+  sql: vi.fn(() => ({ __sql: true })),
 }));
 
 import { createDataRetention } from './data-retention.js';
@@ -15,7 +15,9 @@ import type { Db } from '../db/index.js';
 function createMockDb() {
   const where = vi.fn().mockResolvedValue([]);
   const deleteFn = vi.fn().mockReturnValue({ where });
-  const from = vi.fn().mockReturnValue([]);
+  // Sub-select chain: db.select().from().where() used inside notExists
+  const subWhere = vi.fn().mockReturnValue({ __subquery: true });
+  const from = vi.fn().mockReturnValue({ where: subWhere });
   const select = vi.fn().mockReturnValue({ from });
   return {
     db: { delete: deleteFn, select } as unknown as Db,
@@ -53,7 +55,8 @@ describe('data-retention', () => {
       .mockRejectedValueOnce(new Error('DB error')) // second table fails
       .mockResolvedValue([]);       // rest OK
     const deleteFn = vi.fn().mockReturnValue({ where });
-    const from = vi.fn().mockReturnValue([]);
+    const subWhere = vi.fn().mockReturnValue({ __subquery: true });
+    const from = vi.fn().mockReturnValue({ where: subWhere });
     const select = vi.fn().mockReturnValue({ from });
     const db = { delete: deleteFn, select } as unknown as Db;
 

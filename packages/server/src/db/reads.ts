@@ -244,7 +244,8 @@ export async function loadEvents(db: Db, cityId: string): Promise<DbResult<CityE
     .select()
     .from(events)
     .where(eq(events.cityId, cityId))
-    .orderBy(events.date);
+    .orderBy(events.date)
+    .limit(500);
 
   if (rows.length === 0) return null;
 
@@ -305,7 +306,8 @@ export async function loadSafetyReports(db: Db, cityId: string): Promise<DbResul
     .select()
     .from(safetyReports)
     .where(eq(safetyReports.cityId, cityId))
-    .orderBy(desc(safetyReports.publishedAt));
+    .orderBy(desc(safetyReports.publishedAt))
+    .limit(200);
 
   if (rows.length === 0) return null;
 
