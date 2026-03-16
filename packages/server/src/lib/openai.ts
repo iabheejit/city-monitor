@@ -32,6 +32,20 @@ function trackUsage(key: string, model: string, input: number, output: number): 
 }
 
 // ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+/** Discard bare city-name labels that would resolve to city center. */
+function stripBareCityLabel(label: string | null | undefined, cityLower: string): string | undefined {
+  if (!label) return undefined;
+  const lower = label.toLowerCase().trim();
+  if (lower === cityLower || lower.startsWith(cityLower + ',') || lower.startsWith(cityLower + ' (')) {
+    return undefined;
+  }
+  return label;
+}
+
+// ---------------------------------------------------------------------------
 // Configuration
 // ---------------------------------------------------------------------------
 
@@ -246,14 +260,7 @@ export async function filterAndGeolocateNews(
       const category = VALID_CATEGORIES.has(item.category) ? item.category : 'local';
       const importance = Math.max(0, Math.min(1, item.importance));
 
-      // Discard bare city name labels — they resolve to city center and are useless
-      let label = item.locationLabel ?? undefined;
-      if (label) {
-        const lower = label.toLowerCase().trim();
-        if (lower === cityLower || lower.startsWith(cityLower + ',') || lower.startsWith(cityLower + ' (')) {
-          label = undefined;
-        }
-      }
+      const label = stripBareCityLabel(item.locationLabel, cityLower);
 
       const filtered: FilteredItem = {
         index: item.index,
@@ -338,14 +345,7 @@ export async function geolocateReports(
     const cityLower = cityName.toLowerCase();
     const results: GeolocatedReport[] = [];
     for (const item of llmItems) {
-      // Discard bare city name labels — they resolve to city center and are useless
-      let label = item.locationLabel ?? undefined;
-      if (label) {
-        const lower = label.toLowerCase().trim();
-        if (lower === cityLower || lower.startsWith(cityLower + ',') || lower.startsWith(cityLower + ' (')) {
-          label = undefined;
-        }
-      }
+      const label = stripBareCityLabel(item.locationLabel, cityLower);
 
       const geoResult: GeolocatedReport = {
         index: item.index,
