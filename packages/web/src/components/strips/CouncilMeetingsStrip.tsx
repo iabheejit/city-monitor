@@ -17,7 +17,7 @@ function dayKey(isoDate: string): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-function formatDayHeader(isoDate: string, t: (key: string) => string): string {
+function formatDayHeader(isoDate: string, t: (key: string) => string, locale: string): string {
   const date = new Date(isoDate);
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -27,11 +27,11 @@ function formatDayHeader(isoDate: string, t: (key: string) => string): string {
   if (meetingDay.getTime() === today.getTime()) return t('panel.councilMeetings.today');
   if (meetingDay.getTime() === tomorrow.getTime()) return t('panel.councilMeetings.tomorrow');
 
-  return date.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
+  return date.toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long' });
 }
 
-function formatTime(isoDate: string): string {
-  return new Date(isoDate).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+function formatTime(isoDate: string, locale: string): string {
+  return new Date(isoDate).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
 }
 
 function groupByDay(meetings: CouncilMeeting[]): Array<{ day: string; meetings: CouncilMeeting[] }> {
@@ -49,7 +49,7 @@ const PARLIAMENT_KEY = 'parliament';
 
 // ── Meeting row ─────────────────────────────────────────────────
 
-function MeetingRow({ meeting, t }: { meeting: CouncilMeeting; t: (key: string, opts?: Record<string, unknown>) => string }) {
+function MeetingRow({ meeting, t, locale }: { meeting: CouncilMeeting; t: (key: string, opts?: Record<string, unknown>) => string; locale: string }) {
   const isBvv = meeting.source === 'bvv';
   const sourceBadge = isBvv ? t('panel.councilMeetings.bvv') : t('panel.councilMeetings.parliament');
   const badgeColor = isBvv
@@ -65,7 +65,7 @@ function MeetingRow({ meeting, t }: { meeting: CouncilMeeting; t: (key: string, 
               {sourceBadge}
             </span>
             <span className="text-xs text-gray-400 dark:text-gray-500 tabular-nums">
-              {formatTime(meeting.start)}
+              {formatTime(meeting.start, locale)}
             </span>
           </div>
           <p className="text-sm font-medium text-gray-800 dark:text-gray-200 mt-0.5 line-clamp-2">
@@ -106,7 +106,7 @@ function MeetingRow({ meeting, t }: { meeting: CouncilMeeting; t: (key: string, 
 export function CouncilMeetingsStrip() {
   const { id: cityId } = useCityConfig();
   const { data, fetchedAt, isLoading, isError, refetch } = useCouncilMeetings(cityId);
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { isStale, agoText } = useFreshness(fetchedAt, FRESH_MAX_AGE);
   const [filter, setFilter] = useState<MeetingFilter>(PARLIAMENT_KEY);
 
@@ -155,13 +155,13 @@ export function CouncilMeetingsStrip() {
             <div key={group.day}>
               <div className="sticky top-0 z-10 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm px-1 py-1.5 border-b border-gray-200 dark:border-gray-700">
                 <span className="text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide">
-                  {formatDayHeader(group.meetings[0].start, t)}
+                  {formatDayHeader(group.meetings[0].start, t, i18n.language)}
                 </span>
                 <span className="text-[10px] text-gray-400 dark:text-gray-500 ml-2">{group.meetings.length}</span>
               </div>
               <div className="divide-y divide-gray-100 dark:divide-gray-800">
                 {group.meetings.map((meeting) => (
-                  <MeetingRow key={meeting.id} meeting={meeting} t={t} />
+                  <MeetingRow key={meeting.id} meeting={meeting} t={t} locale={i18n.language} />
                 ))}
               </div>
             </div>

@@ -23,7 +23,7 @@ export function LaborMarketStrip() {
   const { id: cityId } = useCityConfig();
   const isBerlin = cityId === 'berlin';
   const { data, fetchedAt, isLoading, isError, refetch } = useLaborMarket(cityId, isBerlin);
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { isStale, agoText } = useFreshness(fetchedAt, FRESH_MAX_AGE);
 
   if (!isBerlin) return null;
@@ -48,7 +48,7 @@ export function LaborMarketStrip() {
           </span>
           <div className="flex items-center gap-1.5 mt-1.5 text-xs">
             <span className="text-gray-500 dark:text-gray-400 tabular-nums">
-              {data.totalUnemployed.toLocaleString('de-DE')}
+              {data.totalUnemployed.toLocaleString(i18n.language)}
             </span>
             <span className="text-gray-300 dark:text-gray-600">&middot;</span>
             <span className={`font-medium ${totalYoy.color}`}>
@@ -67,7 +67,7 @@ export function LaborMarketStrip() {
           </span>
           <div className="flex items-center gap-1.5 mt-1.5 text-xs">
             <span className="text-gray-500 dark:text-gray-400 tabular-nums">
-              {data.underemploymentCount.toLocaleString('de-DE')}
+              {data.underemploymentCount.toLocaleString(i18n.language)}
             </span>
             <span className="text-gray-300 dark:text-gray-600">&middot;</span>
             <span className={`font-medium ${underemploymentYoy.color}`}>
@@ -86,7 +86,7 @@ export function LaborMarketStrip() {
           </span>
           <div className="flex items-center gap-1.5 mt-1.5 text-xs">
             <span className="text-gray-500 dark:text-gray-400 tabular-nums">
-              {data.sgbIICount.toLocaleString('de-DE')}
+              {data.sgbIICount.toLocaleString(i18n.language)}
             </span>
             <span className="text-gray-300 dark:text-gray-600">&middot;</span>
             <span className={`font-medium ${sgbIIYoy.color}`}>

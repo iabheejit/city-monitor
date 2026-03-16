@@ -24,7 +24,7 @@ export function WeatherPopover() {
   }
 
   const weatherInfo = getWeatherInfo(current.weatherCode);
-  const locale = i18n.language === 'de' ? 'de' : 'en';
+  const locale = i18n.language;
 
   const futureHourly = hourly
     .filter((h) => h.time >= new Date().toISOString().slice(0, 16))
@@ -114,7 +114,7 @@ export function WeatherPopover() {
           {/* Desktop: horizontal columns */}
           <div className="hidden sm:flex gap-3 overflow-x-auto pb-1">
             {daily.map((d) => {
-              const dayName = formatDayName(d.date, locale);
+              const dayName = formatDayName(d.date, locale, t);
               const info = getWeatherInfo(d.weatherCode);
               return (
                 <div key={d.date} className="shrink-0 text-center text-xs min-w-[3rem]">
@@ -133,7 +133,7 @@ export function WeatherPopover() {
           {/* Mobile: vertical list */}
           <div className="sm:hidden space-y-1.5">
             {daily.map((d) => {
-              const dayName = formatDayName(d.date, locale);
+              const dayName = formatDayName(d.date, locale, t);
               const info = getWeatherInfo(d.weatherCode);
               return (
                 <div key={d.date} className="flex items-center gap-2 text-sm">
@@ -154,15 +154,15 @@ export function WeatherPopover() {
   );
 }
 
-function formatDayName(dateStr: string, locale: string): string {
+function formatDayName(dateStr: string, locale: string, t: (key: string) => string): string {
   try {
     const date = new Date(dateStr + 'T00:00:00Z');
     const now = new Date();
     const todayUtc = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
 
     const diff = (date.getTime() - todayUtc) / 86400_000;
-    if (diff >= 0 && diff < 1) return locale === 'de' ? 'Heute' : 'Today';
-    if (diff >= 1 && diff < 2) return locale === 'de' ? 'Morgen' : 'Tmrw';
+    if (diff >= 0 && diff < 1) return t('panel.weather.today');
+    if (diff >= 1 && diff < 2) return t('panel.weather.tomorrow');
 
     return date.toLocaleDateString(locale, { weekday: 'short', timeZone: 'UTC' });
   } catch {

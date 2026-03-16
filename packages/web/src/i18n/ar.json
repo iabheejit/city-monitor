@@ -53,6 +53,8 @@
         "veryHigh": "مرتفع جداً",
         "extreme": "شديد"
       },
+      "today": "اليوم",
+      "tomorrow": "غداً",
       "dwdForecast": "توقعات DWD"
     },
     "transit": {

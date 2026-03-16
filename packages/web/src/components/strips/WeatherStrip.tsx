@@ -69,7 +69,7 @@ export function WeatherStrip({ expanded }: { expanded: boolean }) {
   if (!current) return null;
 
   const weatherInfo = getWeatherInfo(current.weatherCode);
-  const locale = i18n.language === 'de' ? 'de' : 'en';
+  const locale = i18n.language;
   const hourly = data?.hourly ?? [];
   const daily = data?.daily ?? [];
   const alerts = data?.alerts ?? [];

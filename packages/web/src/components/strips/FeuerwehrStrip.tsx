@@ -65,7 +65,7 @@ const FRESH_MAX_AGE = 36 * 60 * 60 * 1000; // 36h (cron daily)
 export function FeuerwehrStrip({ expanded }: { expanded: boolean }) {
   const { id: cityId } = useCityConfig();
   const { data, fetchedAt, isLoading, isError, refetch } = useFeuerwehr(cityId);
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { isStale, agoText } = useFreshness(fetchedAt, FRESH_MAX_AGE);
 
   if (isLoading) return <Skeleton lines={2} />;
@@ -81,8 +81,8 @@ export function FeuerwehrStrip({ expanded }: { expanded: boolean }) {
         <div className="flex flex-col gap-3 py-1">
           <StatRow
             label={t('panel.feuerwehr.missions')}
-            current={current.missionCountAll.toLocaleString('de-DE')}
-            partial={partial ? partial.missionCountAll.toLocaleString('de-DE') : null}
+            current={current.missionCountAll.toLocaleString(i18n.language)}
+            partial={partial ? partial.missionCountAll.toLocaleString(i18n.language) : null}
             accent="text-red-600 dark:text-red-400"
             delta={formatDelta(current.missionCountAll, previous?.missionCountAll)}
           />
@@ -112,8 +112,8 @@ export function FeuerwehrStrip({ expanded }: { expanded: boolean }) {
   // Expanded: row-based layout — left has number + label + delta, right has just the number
   const stats = [
     {
-      left: current.missionCountAll.toLocaleString('de-DE'),
-      right: partial?.missionCountAll.toLocaleString('de-DE'),
+      left: current.missionCountAll.toLocaleString(i18n.language),
+      right: partial?.missionCountAll.toLocaleString(i18n.language),
       label: t('panel.feuerwehr.missions'),
       delta: formatDelta(current.missionCountAll, previous?.missionCountAll),
       accent: 'text-red-600 dark:text-red-400',

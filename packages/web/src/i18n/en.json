@@ -53,6 +53,8 @@
         "veryHigh": "Very High",
         "extreme": "Extreme"
       },
+      "today": "Today",
+      "tomorrow": "Tmrw",
       "dwdForecast": "DWD Forecast"
     },
     "transit": {

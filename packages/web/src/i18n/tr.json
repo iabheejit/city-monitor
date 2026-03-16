@@ -53,6 +53,8 @@
         "veryHigh": "Çok Yüksek",
         "extreme": "Aşırı"
       },
+      "today": "Bugün",
+      "tomorrow": "Yarın",
       "dwdForecast": "DWD Tahmini"
     },
     "transit": {
