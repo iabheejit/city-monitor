@@ -21,12 +21,10 @@ const FRESH_MAX_AGE = 36 * 60 * 60 * 1000; // 36h (cron daily)
 
 export function LaborMarketStrip() {
   const { id: cityId } = useCityConfig();
-  const isBerlin = cityId === 'berlin';
-  const { data, fetchedAt, isLoading, isError, refetch } = useLaborMarket(cityId, isBerlin);
+  const { data, fetchedAt, isLoading, isError, refetch } = useLaborMarket(cityId);
   const { t, i18n } = useTranslation();
   const { isStale, agoText } = useFreshness(fetchedAt, FRESH_MAX_AGE);
 
-  if (!isBerlin) return null;
   if (isLoading) return <Skeleton lines={2} />;
   if (isError) return <StripErrorFallback domain="Unemployment" onRetry={refetch} />;
   if (!data) return <p className="text-sm text-gray-400 py-2 text-center">{t('panel.laborMarket.empty')}</p>;

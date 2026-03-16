@@ -318,6 +318,10 @@
     "other": "Diğer",
     "museum": "Müze"
   },
+  "tile": {
+    "expand": "genislet",
+    "collapse": "daralt"
+  },
   "stale": {
     "updated": "Güncellendi {{time}}"
   },

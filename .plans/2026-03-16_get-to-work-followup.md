@@ -145,3 +145,41 @@ Summary of each find → plan → implement cycle.
 - **Suggested follow-up work:**
   - `berlinUtcOffset()` returns wrong offset on Windows because `Intl.DateTimeFormat` returns "GMT+2" instead of "CEST". Fix by checking for both names or parsing the numeric offset.
   - `parsePardokXml()` returns empty array when PARDOK XML contains exactly one `<row>` because `fast-xml-parser` returns an object (not array) for single elements. Fix with `const rows = Array.isArray(rawRows) ? rawRows : rawRows ? [rawRows] : [];`.
+
+### PoliticalStrip A11Y
+- **Plan:** `.plans/19-political-strip-a11y.md`
+- **No controversial decisions, no user input needed.**
+- **Suggested follow-up work:**
+  - Audit other components for missing ARIA tabs patterns. A codebase-wide grep for tab-like UI that lacks `role="tablist"` could surface other accessibility gaps beyond PoliticalStrip.
+
+### Quick Fixes Batch (6 targeted fixes)
+- **Plan:** `.plans/17-quick-fixes-batch.md`
+- **Controversial decisions:**
+  1. MOD-2 i18n values copied from transit.more: The new `panel.appointments.more` translations use identical values to `panel.transit.more`. Each domain should own its key for future independent changes, even though the values are currently the same.
+  2. MOD-8 regex uses `\w+` for city name: The `(?:\w+,\s+)?` pattern won't match city names with spaces, hyphens, or umlauts (e.g., "Frankfurt am Main"). Current WAQI station data uses single-word city identifiers so this works. If multi-word city names appear, the regex would need `[^,]+` instead of `\w+`.
+- **No user input needed, no suggested follow-up work.**
+
+### Missing Route Test: construction
+- **Plan:** `.plans/20-missing-route-tests.md`
+- **Controversial decisions:**
+  1. Only creating `construction.test.ts`, not `noise-sensors.test.ts`. The task asked for both but `noise-sensors.test.ts` already exists with the full 3-test pattern. Creating it again would overwrite existing tests.
+- **Suggested follow-up work:**
+  - Add tests for `weather-tiles.ts` -- the other route without test coverage. It has a different pattern (tile proxy, no cache/city lookup, external HTTP) and needs a different test approach (mocking fetch, testing coordinate validation, 503 when no radar path).
+
+### Misc Frontend Fixes
+- **Plan:** `.plans/21-misc-frontend-fixes.md`
+- **Controversial decisions:**
+  1. SafetyStrip is orphaned (not imported anywhere) but still being fixed per the task request. When re-integrated it will match the other strips' pattern.
+  2. No new tests for useFreshness visibilitychange -- the addition is 3 lines in an existing effect; test would require document.visibilityState mocking for minimal value.
+  3. Turkish translations for expand/collapse used "genislet"/"daralt" -- reasonable but a native speaker may prefer alternatives.
+- **Suggested follow-up work:**
+  - Re-integrate or remove SafetyStrip. The component is exported but not imported anywhere. It should either be wired into CommandLayout or deleted.
+
+### i18n Locale Fixes
+- **Plan:** `.plans/18-i18n-locale-fixes.md`
+- **Controversial decisions:**
+  1. Used `i18n.language` directly rather than `undefined` (browser locale) for `toLocaleString` calls. `i18n.language` keeps formatting consistent with the user's explicit language choice in the app. A Turkish user with an English browser locale would still see Turkish formatting when they select Turkish. Using `undefined` would defer to OS/browser settings which may mismatch the app language.
+  2. Used abbreviated "Tmrw" for English weather today/tomorrow labels to match the compact weekday column widths in the forecast UI (matching the existing hardcoded behavior). Other languages use full words since their weekday abbreviations vary in length.
+- **Suggested follow-up work:**
+  - Audit other components for similar hardcoded locale patterns (search for `'de-DE'` and `'de' ? 'de'` across the codebase).
+  - The WeatherPopover `formatDayName` function duplicates logic from WeatherStrip's `formatDayName` -- consider extracting a shared utility.

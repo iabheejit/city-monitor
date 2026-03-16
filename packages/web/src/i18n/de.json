@@ -318,6 +318,10 @@
     "other": "Sonstiges",
     "museum": "Museum"
   },
+  "tile": {
+    "expand": "aufklappen",
+    "collapse": "zuklappen"
+  },
   "stale": {
     "updated": "Aktualisiert {{time}}"
   },

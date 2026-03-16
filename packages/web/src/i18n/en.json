@@ -318,6 +318,10 @@
     "other": "Other",
     "museum": "Museum"
   },
+  "tile": {
+    "expand": "expand",
+    "collapse": "collapse"
+  },
   "stale": {
     "updated": "Updated {{time}}"
   },

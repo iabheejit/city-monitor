@@ -1,4 +1,5 @@
 import { type ReactNode, useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 
 type TileSpan = 1 | 2 | 'full';
 type TileRowSpan = 1 | 2;
@@ -37,6 +38,7 @@ const ROW_SPAN_CLASSES: Record<TileRowSpan, string> = {
 };
 
 export function Tile({ title, titleBadge, span = 1, rowSpan = 1, height = 'auto', expandable, defaultExpanded, children, className, revealIndex = 0 }: TileProps) {
+  const { t } = useTranslation();
   const [expanded, setExpanded] = useState(defaultExpanded ?? false);
   const ref = useRef<HTMLDivElement>(null);
   const skipAnimation =
@@ -77,7 +79,7 @@ export function Tile({ title, titleBadge, span = 1, rowSpan = 1, height = 'auto'
           className="w-full px-4 py-3 border-b border-border-subtle flex items-center justify-between cursor-pointer select-none appearance-none bg-transparent text-left"
           onClick={() => setExpanded((v) => !v)}
           aria-expanded={expanded}
-          aria-label={`${title} — ${expanded ? 'collapse' : 'expand'}`}
+          aria-label={`${title} — ${expanded ? t('tile.collapse') : t('tile.expand')}`}
         >
           <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
             {title}{titleBadge}

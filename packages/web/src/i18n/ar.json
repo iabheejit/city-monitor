@@ -318,6 +318,10 @@
     "other": "أخرى",
     "museum": "متحف"
   },
+  "tile": {
+    "expand": "توسيع",
+    "collapse": "طي"
+  },
   "stale": {
     "updated": "تم التحديث {{time}}"
   },
