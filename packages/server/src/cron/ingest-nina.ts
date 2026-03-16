@@ -11,7 +11,7 @@ const log = createLogger('ingest-nina');
 const NINA_BASE = 'https://warnung.bund.de/api31';
 const NINA_TIMEOUT_MS = 10_000;
 
-interface DashboardWarning {
+export interface DashboardWarning {
   id: string;
   version: number;
   startDate: string;
@@ -115,13 +115,13 @@ async function ingestCityNina(cityId: string, ars: string, cache: Cache, db: Db 
   log.info(`${cityId}: ${warnings.length} NINA warnings (${rawWarnings.length - nonDwdWarnings.length} DWD skipped)`);
 }
 
-function isDwdSource(warning: DashboardWarning): boolean {
+export function isDwdSource(warning: DashboardWarning): boolean {
   return warning.id?.startsWith('dwd.') ||
     warning.type?.toLowerCase().includes('dwd') ||
     warning.transKeys?.event?.startsWith('BBK-EVC-0') === false && warning.id?.includes('.dwd.') === true;
 }
 
-function parseDashboardWarning(raw: DashboardWarning): NinaWarning | null {
+export function parseDashboardWarning(raw: DashboardWarning): NinaWarning | null {
   try {
     const headline = raw.i18nTitle?.de;
     if (!headline) return null;
@@ -144,7 +144,7 @@ function parseDashboardWarning(raw: DashboardWarning): NinaWarning | null {
   }
 }
 
-function detectSource(id: string): NinaWarning['source'] {
+export function detectSource(id: string): NinaWarning['source'] {
   if (id.startsWith('mow.')) return 'mowas';
   if (id.startsWith('biwapp.')) return 'biwapp';
   if (id.startsWith('katwarn.')) return 'katwarn';
@@ -154,7 +154,7 @@ function detectSource(id: string): NinaWarning['source'] {
   return 'mowas'; // default
 }
 
-function mapSeverity(raw: string): NinaWarning['severity'] {
+export function mapSeverity(raw: string): NinaWarning['severity'] {
   const lower = raw?.toLowerCase() ?? '';
   if (lower.includes('extreme')) return 'extreme';
   if (lower.includes('severe')) return 'severe';

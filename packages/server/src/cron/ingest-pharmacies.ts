@@ -48,7 +48,7 @@ export function createPharmacyIngestion(cache: Cache, db: Db | null = null) {
   };
 }
 
-function formatDateDE(date: Date): string {
+export function formatDateDE(date: Date): string {
   const d = date.getDate().toString().padStart(2, '0');
   const m = (date.getMonth() + 1).toString().padStart(2, '0');
   const y = date.getFullYear();
@@ -122,7 +122,7 @@ async function ingestCityPharmacies(city: CityConfig, cache: Cache, db: Db | nul
 }
 
 /** Parse "DD.MM.YYYY" + "HH:MM" into ISO string */
-function parseDateTimeDE(date: string, time: string): string {
+export function parseDateTimeDE(date: string, time: string): string {
   const [d, m, y] = date.split('.');
   return `${y}-${m}-${d}T${time || '00:00'}:00`;
 }

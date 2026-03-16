@@ -41,14 +41,14 @@ interface OparlResponse {
   links?: { next?: string };
 }
 
-function extractCommittee(name: string): string {
+export function extractCommittee(name: string): string {
   // OParl names are like "77. Sitzung in der IX. Wahlperiode des Ausschusses ..."
   // Try to extract the committee name after "des/der"
   const match = name.match(/(?:des|der)\s+(.+)$/i);
   return match ? match[1] : name;
 }
 
-function buildLocation(loc: OparlMeeting['location']): string | undefined {
+export function buildLocation(loc: OparlMeeting['location']): string | undefined {
   if (!loc) return undefined;
   const parts = [loc.room, loc.streetAddress ?? loc.description].filter(Boolean);
   return parts.length > 0 ? parts.join(', ') : undefined;
@@ -129,7 +129,7 @@ async function fetchOparlMeetings(
 // ── PARDOK XML ingestion ────────────────────────────────────────
 
 /** Determine CET (+01:00) or CEST (+02:00) offset for a given date in Europe/Berlin */
-function berlinUtcOffset(dateStr: string): string {
+export function berlinUtcOffset(dateStr: string): string {
   // Parse as UTC first to get a Date object for DST detection
   const d = new Date(dateStr.replace(' ', 'T') + 'Z');
   const parts = new Intl.DateTimeFormat('en', { timeZone: 'Europe/Berlin', timeZoneName: 'short' }).formatToParts(d);
@@ -146,7 +146,7 @@ interface PardokRow {
   title: string;
 }
 
-function parsePardokXml(xmlText: string, type: 'committee' | 'plenary', now: number, windowMs: number): CouncilMeeting[] {
+export function parsePardokXml(xmlText: string, type: 'committee' | 'plenary', now: number, windowMs: number): CouncilMeeting[] {
   const parsed = xmlParser.parse(xmlText);
   const rows: PardokRow[] = [];
 

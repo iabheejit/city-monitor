@@ -19,6 +19,8 @@ Schema changes that need to be applied.
 ## Files to Delete
 Files that should be removed (agent does not delete files autonomously).
 
+- `packages/server/src/cron/tz-check.test.ts` -- Diagnostic placeholder file created during Plan 15 implementation. Contains a single trivial passthrough test. Should be deleted.
+
 ## Implementation Issues
 Problems encountered during implementation.
 
@@ -140,4 +142,6 @@ Summary of each find → plan → implement cycle.
   1. Exporting private functions for testability. The 12 target functions are all module-private. Rather than testing indirectly through the ingestion factory (which would require mocking fetch, DB, and city config), chose to add `export` to each function. This is the same pattern used by `ingest-pollen.ts` which exports `parseDwdPollenJson` specifically for testing. The alternative (integration-style tests with mocks) was rejected because the task explicitly says "don't mock fetch or DB."
   2. Exporting `ICON_TO_TYPE` as a const. This is a `const` record, not a function. Exporting it allows tests to verify the mapping table directly. Low-risk since it is `const` and cannot be mutated by consumers.
   3. Exporting `isDwdSource` and `parseDashboardWarning` from ingest-nina. These are slightly more complex than pure mappers -- `parseDashboardWarning` calls `detectSource` and `mapSeverity` internally. Testing them directly still qualifies as "pure function" testing since they have no side effects.
-- **No user input needed, no suggested follow-up work.**
+- **Suggested follow-up work:**
+  - `berlinUtcOffset()` returns wrong offset on Windows because `Intl.DateTimeFormat` returns "GMT+2" instead of "CEST". Fix by checking for both names or parsing the numeric offset.
+  - `parsePardokXml()` returns empty array when PARDOK XML contains exactly one `<row>` because `fast-xml-parser` returns an object (not array) for single elements. Fix with `const rows = Array.isArray(rawRows) ? rawRows : rawRows ? [rawRows] : [];`.
