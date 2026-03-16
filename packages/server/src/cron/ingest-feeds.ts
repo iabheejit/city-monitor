@@ -43,11 +43,13 @@ export interface NewsDigest {
 export function createFeedIngestion(cache: Cache, db: Db | null = null) {
   return async function ingestFeeds(): Promise<void> {
     const cities = getActiveCities();
-    for (const city of cities) {
-      try {
-        await ingestCityFeeds(city, cache, db);
-      } catch (err) {
-        log.error(`${city.id} failed`, err);
+    const results = await Promise.allSettled(
+      cities.map((city) => ingestCityFeeds(city, cache, db)),
+    );
+    for (let i = 0; i < results.length; i++) {
+      const r = results[i];
+      if (r.status === 'rejected') {
+        log.error(`${cities[i].id} failed`, r.reason);
       }
     }
   };

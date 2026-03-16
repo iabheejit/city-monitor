@@ -5,6 +5,7 @@ import { saveCouncilMeetings } from '../db/writes.js';
 import { createLogger } from '../lib/logger.js';
 import { CK } from '../lib/cache-keys.js';
 import { getActiveCities } from '../config/index.js';
+import { createRateGate } from '../lib/rate-gate.js';
 import { XMLParser } from 'fast-xml-parser';
 
 const log = createLogger('ingest-council-meetings');
@@ -204,17 +205,25 @@ async function fetchPardokSchedules(
 ): Promise<CouncilMeeting[]> {
   const meetings: CouncilMeeting[] = [];
 
-  for (const [url, type] of [[committeeUrl, 'committee'], [plenaryUrl, 'plenary']] as const) {
-    try {
-      const res = await log.fetch(url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
-      if (!res.ok) {
-        log.warn(`PARDOK ${type} returned ${res.status}`);
-        continue;
-      }
-      const text = await res.text();
-      meetings.push(...parsePardokXml(text, type, now, windowMs));
-    } catch (err) {
-      log.warn(`PARDOK ${type} fetch failed: ${err instanceof Error ? err.message : String(err)}`);
+  const fetches = ([
+    [committeeUrl, 'committee'],
+    [plenaryUrl, 'plenary'],
+  ] as const).map(async ([url, type]) => {
+    const res = await log.fetch(url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
+    if (!res.ok) {
+      log.warn(`PARDOK ${type} returned ${res.status}`);
+      return [];
+    }
+    const text = await res.text();
+    return parsePardokXml(text, type, now, windowMs);
+  });
+
+  const results = await Promise.allSettled(fetches);
+  for (const r of results) {
+    if (r.status === 'fulfilled') {
+      meetings.push(...r.value);
+    } else {
+      log.warn(`PARDOK fetch failed: ${r.reason instanceof Error ? r.reason.message : String(r.reason)}`);
     }
   }
 
@@ -222,10 +231,6 @@ async function fetchPardokSchedules(
 }
 
 // ── Main ingestion factory ──────────────────────────────────────
-
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
 
 export function createCouncilMeetingIngestion(cache: Cache, db: Db | null = null) {
   return async function ingestCouncilMeetings(): Promise<void> {
@@ -240,16 +245,24 @@ export function createCouncilMeetingIngestion(cache: Cache, db: Db | null = null
 
         const allMeetings: CouncilMeeting[] = [];
 
-        // Fetch BVV OParl districts
-        for (const district of cfg.bvv) {
-          try {
+        // Fetch BVV OParl districts (rate-gated concurrent)
+        const gate = createRateGate(DELAY_BETWEEN_DISTRICTS_MS);
+
+        const bvvResults = await Promise.allSettled(
+          cfg.bvv.map(async (district) => {
+            await gate();
             const meetings = await fetchOparlMeetings(district.baseUrl, district.district, now, windowMs);
-            allMeetings.push(...meetings);
             log.info(`${city.id} ${district.district}: ${meetings.length} meetings`);
-          } catch (err) {
-            log.warn(`${city.id} ${district.district} OParl failed: ${err instanceof Error ? err.message : String(err)}`);
+            return meetings;
+          }),
+        );
+
+        for (const r of bvvResults) {
+          if (r.status === 'fulfilled') {
+            allMeetings.push(...r.value);
+          } else {
+            log.warn(`BVV OParl failed: ${r.reason instanceof Error ? r.reason.message : String(r.reason)}`);
           }
-          await delay(DELAY_BETWEEN_DISTRICTS_MS);
         }
 
         // Fetch PARDOK (parliament)
