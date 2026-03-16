@@ -116,9 +116,8 @@ async function ingestCityNina(cityId: string, ars: string, cache: Cache, db: Db 
 }
 
 export function isDwdSource(warning: DashboardWarning): boolean {
-  return warning.id?.startsWith('dwd.') ||
-    warning.type?.toLowerCase().includes('dwd') ||
-    warning.transKeys?.event?.startsWith('BBK-EVC-0') === false && warning.id?.includes('.dwd.') === true;
+  return (warning.id?.startsWith('dwd.') ?? false) ||
+    (warning.type?.toLowerCase().includes('dwd') ?? false);
 }
 
 export function parseDashboardWarning(raw: DashboardWarning): NinaWarning | null {

@@ -697,7 +697,7 @@ export function CityMap() {
         }
       } catch (e: unknown) {
         if (e instanceof Error && e.name === 'AbortError') return;
-        console.warn('[political] GeoJSON swap error:', e);
+        // Swap failure is non-critical — falls back to default district layer
       }
     })();
 
