@@ -183,3 +183,29 @@ Summary of each find → plan → implement cycle.
 - **Suggested follow-up work:**
   - Audit other components for similar hardcoded locale patterns (search for `'de-DE'` and `'de' ? 'de'` across the codebase).
   - The WeatherPopover `formatDayName` function duplicates logic from WeatherStrip's `formatDayName` -- consider extracting a shared utility.
+
+### Small Fixes Batch 2
+- **Plan:** `.plans/23-small-fixes-batch-2.md`
+- **Controversial decisions:**
+  1. Fix 3 (isDwdSource): Added `?? false` null coalescing to both conditions for strict boolean return. Alternative was relying on `undefined || ...` implicit coercion, which works identically but is less explicit.
+  2. Fix 5 (useFreshness): Added `fetchedAt` to the useEffect dependency array so the effect re-runs when data arrives. Cannot move the null check before hooks due to React rules. The early return inside the effect body is the standard React pattern for conditional effects.
+- **Suggested follow-up work:**
+  - The warm-cache Berlin-only block could be extended when Hamburg gains these data sources -- the guard already uses `cityId` after this fix.
+
+### Frontend Refactors
+- **Plan:** `.plans/24-frontend-refactors.md`
+- **Controversial decisions:**
+  1. Kept `formatYoy` as a separate function rather than unifying with `formatDelta`. They have different signatures (pre-computed percentage vs. two raw values). Forcing unification would require reverse-engineering raw values from the percentage.
+  2. `useMemo` dependency uses `[hourly]` (the derived variable) not `[data?.hourly]`. The component early-returns before this code runs when data is null/loading, so `hourly` is referentially stable from React Query.
+- **Suggested follow-up work:**
+  - Add unit tests for `format-stats.ts` (similar to existing `format-time.test.ts`).
+  - The `BEZIRKSBUERGERMEISTER_LAST_VERIFIED` date needs manual updates when re-verified. Consider a CI check or automated scrape.
+
+### More Test Coverage
+- **Plan:** `.plans/22-more-test-coverage.md`
+- **Controversial decisions:**
+  1. Exporting 7 private functions for testability (`normalizeParty`, `normalizeConstituencyName`, `mandateToRepresentative`, `filterBundestagForCity`, `deduplicateMandates`, `constituencyToBezirk`, `stripBareCityLabel`). These are pure utility functions in internal server modules with no external consumers. Direct export is zero-cost and avoids heavy mocking. Alternative: test indirectly through cron jobs (rejected -- requires mocking fetch, DB, cache for no benefit).
+  2. Not exporting `BERLIN_BEZIRKE` for `constituencyToBezirk` tests. Tests pass their own bezirk arrays to test the algorithm, not the data. This keeps tests decoupled from the hardcoded constant.
+- **Suggested follow-up work:**
+  - The `ingest-political.ts` cron job orchestration (`ingestCityPolitical`, `fetchMandates`, `fetchCurrentPeriod`) has no tests. Integration-style tests with mocked fetch would cover the orchestration logic.
+  - The `openai.ts` module's `classifyBatch` and `filterAndGeolocateNews` are only tested for the "not configured" path. Integration tests with a mocked LangChain model would cover structured output parsing and batch logic.

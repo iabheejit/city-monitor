@@ -36,7 +36,7 @@ function trackUsage(key: string, model: string, input: number, output: number): 
 // ---------------------------------------------------------------------------
 
 /** Discard bare city-name labels that would resolve to city center. */
-function stripBareCityLabel(label: string | null | undefined, cityLower: string): string | undefined {
+export function stripBareCityLabel(label: string | null | undefined, cityLower: string): string | undefined {
   if (!label) return undefined;
   const lower = label.toLowerCase().trim();
   if (lower === cityLower || lower.startsWith(cityLower + ',') || lower.startsWith(cityLower + ' (')) {
