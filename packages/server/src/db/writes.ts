@@ -38,6 +38,7 @@ export type PersistedNewsItem = NewsItem & { assessment?: NewsItemAssessment };
 // ---------------------------------------------------------------------------
 
 async function saveSnapshot(db: Db, cityId: string, type: SnapshotType, data: unknown): Promise<void> {
+  if (data == null) return;                 // guard: skip insert for null/undefined
   await db.insert(snapshots).values({ cityId, type, data });
 }
 

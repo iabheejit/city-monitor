@@ -238,6 +238,8 @@ export async function filterAndGeolocateNews(
     const { geocode } = await import('./geocode.js');
     const cityLower = cityName.toLowerCase();
     const results: FilteredItem[] = [];
+    // Serial loop is intentional: Nominatim enforces a strict 1 QPS rate limit,
+    // so parallel requests would be rejected. See geocode.ts for the rate-limiter.
     for (const item of allLlmItems) {
       const category = VALID_CATEGORIES.has(item.category) ? item.category : 'local';
       const importance = Math.max(0, Math.min(1, item.importance));

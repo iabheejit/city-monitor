@@ -104,6 +104,9 @@ export function createNewsRouter(cache: Cache, db: Db | null = null) {
     });
   });
 
+  // Bootstrap endpoint: returns all cached city data in one response.
+  // NOTE: Unlike individual routes (e.g., /news/digest, /news/summary), bootstrap
+  // is cache-only with no DB fallback. If the cache is cold, slots return null.
   router.get('/:city/bootstrap', (req, res) => {
     const city = getCityConfig(req.params.city);
     if (!city) {

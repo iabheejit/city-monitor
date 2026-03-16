@@ -61,7 +61,6 @@ async function geocodeNominatim(query: string): Promise<GeocodeResult | null> {
 // ---------------------------------------------------------------------------
 // Provider: LocationIQ (fallback) — requires LOCATIONIQ_TOKEN
 // ---------------------------------------------------------------------------
-const LOCATIONIQ_TOKEN = process.env.LOCATIONIQ_TOKEN;
 const LOCATIONIQ_BASE = 'https://us1.locationiq.com/v1/search';
 const LOCATIONIQ_GAP_MS = 500; // free tier: 2 QPS
 let locationiqLastRequest = 0;
@@ -74,6 +73,7 @@ async function waitForLocationIQ(): Promise<void> {
 }
 
 async function geocodeLocationIQ(query: string): Promise<GeocodeResult | null> {
+  const LOCATIONIQ_TOKEN = process.env.LOCATIONIQ_TOKEN;
   if (!LOCATIONIQ_TOKEN) return null;
 
   await waitForLocationIQ();
@@ -177,7 +177,7 @@ export async function geocode(
     if (nominatimAvailable()) {
       result = await geocodeNominatim(query);
       provider = 'nominatim';
-    } else if (LOCATIONIQ_TOKEN) {
+    } else if (process.env.LOCATIONIQ_TOKEN) {
       // Nominatim busy — try LocationIQ if available
       result = await geocodeLocationIQ(query);
       provider = 'locationiq';

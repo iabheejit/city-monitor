@@ -751,7 +751,7 @@ export function CityMap() {
         }
       } catch (e: unknown) {
         if (e instanceof Error && e.name === 'AbortError') return;
-        console.error('[political] GeoJSON swap error:', e);
+        console.warn('[political] GeoJSON swap error:', e);
       }
     })();
 
