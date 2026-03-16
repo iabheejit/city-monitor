@@ -104,6 +104,57 @@ export async function addDistrictLayer(map: maplibregl.Map, cityId: string, isDa
   }, beforeId);
 }
 
+/**
+ * Add the districts GeoJSON source and three layers (fill, line, label)
+ * with flat fill-opacity for political mode. Does NOT fetch GeoJSON or
+ * remove existing layers — callers handle those concerns differently.
+ */
+export function addDistrictSource(
+  map: maplibregl.Map,
+  geojson: GeoJSON.FeatureCollection,
+  nameField: string,
+  isDark: boolean,
+): void {
+  map.addSource('districts', { type: 'geojson', data: geojson, generateId: true });
+  map.addLayer({
+    id: 'district-fill',
+    type: 'fill',
+    source: 'districts',
+    paint: {
+      'fill-color': isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)',
+      'fill-opacity': 0.35,
+    },
+  });
+  map.addLayer({
+    id: 'district-line',
+    type: 'line',
+    source: 'districts',
+    paint: {
+      'line-color': isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.25)',
+      'line-width': 1.5,
+      'line-dasharray': [4, 2],
+    },
+  });
+  map.addLayer({
+    id: 'district-label',
+    type: 'symbol',
+    source: 'districts',
+    layout: {
+      'text-field': ['get', nameField],
+      'text-size': 14,
+      'text-font': ['Open Sans Regular', 'Arial Unicode MS Regular'],
+      'text-anchor': 'center',
+      'text-allow-overlap': false,
+    },
+    paint: {
+      'text-color': isDark ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.7)',
+      'text-halo-color': isDark ? 'rgba(0,0,0,0.7)' : 'rgba(255,255,255,0.9)',
+      'text-halo-width': 1.5,
+    },
+  });
+  ensureDistrictLabelsBelow(map);
+}
+
 export function applyPoliticalStyling(
   map: maplibregl.Map,
   districts: PoliticalDistrict[],

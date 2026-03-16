@@ -32,7 +32,7 @@ import { registerAllMapIcons } from '../../lib/map-icons.js';
 import { DARK_STYLE, LIGHT_STYLE, EMPTY_AQ, EMPTY_WL, DISTRICT_URLS, POLITICAL_MARKER_LAYER, type SocialAtlasMetric, type PopulationMetric } from './constants.js';
 import { simplifyMap, setTrafficRoadVisibility, setWaterAreaVisibility, setWeatherOverlay, setNoiseOverlay, setRentMapOverlay, loadStyle } from './base.js';
 import { showMapPopup, scheduleHoverClose } from './popups.js';
-import { addDistrictLayer, ensureDistrictLabelsBelow, applyPoliticalStyling, setupDistrictHover, updatePoliticalMarkers, removePoliticalMarkers, buildPoliticalPopupHtml } from './layers/political.js';
+import { addDistrictLayer, addDistrictSource, ensureDistrictLabelsBelow, applyPoliticalStyling, setupDistrictHover, updatePoliticalMarkers, removePoliticalMarkers, buildPoliticalPopupHtml } from './layers/political.js';
 import { filterNewsForMap, updateNewsMarkers, updateSafetyMarkers } from './layers/news-safety.js';
 import { updateTransitMarkers } from './layers/transit.js';
 import { updateWarningPolygons } from './layers/warnings.js';
@@ -378,24 +378,7 @@ export function CityMap() {
             .then((r) => r.json())
             .then((geojson: GeoJSON.FeatureCollection) => {
               if (map.getSource('districts')) return; // already added
-              map.addSource('districts', { type: 'geojson', data: geojson, generateId: true });
-              map.addLayer({
-                id: 'district-fill', type: 'fill', source: 'districts',
-                paint: {
-                  'fill-color': isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)',
-                  'fill-opacity': 0.35,
-                },
-              });
-              map.addLayer({
-                id: 'district-line', type: 'line', source: 'districts',
-                paint: { 'line-color': isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.25)', 'line-width': 1.5, 'line-dasharray': [4, 2] },
-              });
-              map.addLayer({
-                id: 'district-label', type: 'symbol', source: 'districts',
-                layout: { 'text-field': ['get', resolved.nameField], 'text-size': 14, 'text-font': ['Open Sans Regular', 'Arial Unicode MS Regular'], 'text-anchor': 'center', 'text-allow-overlap': false },
-                paint: { 'text-color': isDark ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.7)', 'text-halo-color': isDark ? 'rgba(0,0,0,0.7)' : 'rgba(255,255,255,0.9)', 'text-halo-width': 1.5 },
-              });
-              ensureDistrictLabelsBelow(map);
+              addDistrictSource(map, geojson, resolved.nameField, isDark);
               activeNameFieldRef.current = resolved.nameField;
               const freshData = politicalDataRef.current;
               if (freshData) applyPoliticalStyling(map, freshData, isDark, resolved.nameField);
@@ -701,44 +684,7 @@ export function CityMap() {
         }
         if (map.getSource('districts')) map.removeSource('districts');
 
-        map.addSource('districts', { type: 'geojson', data: geojson, generateId: true });
-        map.addLayer({
-          id: 'district-fill',
-          type: 'fill',
-          source: 'districts',
-          paint: {
-            'fill-color': isDarkRef.current ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)',
-            'fill-opacity': 0.35,
-          },
-        });
-        map.addLayer({
-          id: 'district-line',
-          type: 'line',
-          source: 'districts',
-          paint: {
-            'line-color': isDarkRef.current ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.25)',
-            'line-width': 1.5,
-            'line-dasharray': [4, 2],
-          },
-        });
-        map.addLayer({
-          id: 'district-label',
-          type: 'symbol',
-          source: 'districts',
-          layout: {
-            'text-field': ['get', resolved.nameField],
-            'text-size': 14,
-            'text-font': ['Open Sans Regular', 'Arial Unicode MS Regular'],
-            'text-anchor': 'center',
-            'text-allow-overlap': false,
-          },
-          paint: {
-            'text-color': isDarkRef.current ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.7)',
-            'text-halo-color': isDarkRef.current ? 'rgba(0,0,0,0.7)' : 'rgba(255,255,255,0.9)',
-            'text-halo-width': 1.5,
-          },
-        });
-        ensureDistrictLabelsBelow(map);
+        addDistrictSource(map, geojson, resolved.nameField, isDarkRef.current);
 
         // Store GeoJSON features for marker creation
         politicalGeoFeaturesRef.current = geojson.features;
