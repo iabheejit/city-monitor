@@ -58,7 +58,6 @@ const SNAPSHOT_RETENTION: Array<{ type: SnapshotType; retentionMs: number }> = [
 export function createDataRetention(db: Db) {
   return async () => {
     const now = Date.now();
-    let cleaned = 0;
 
     // Snapshot retention (config-driven)
     const snapshotTasks = SNAPSHOT_RETENTION.map(({ type, retentionMs }) => ({
@@ -89,12 +88,14 @@ export function createDataRetention(db: Db) {
 
     const tasks = [...snapshotTasks, ...otherTasks];
 
-    for (const task of tasks) {
-      try {
-        await task.fn();
+    const results = await Promise.allSettled(tasks.map((t) => t.fn()));
+    let cleaned = 0;
+    for (let i = 0; i < results.length; i++) {
+      const r = results[i];
+      if (r.status === 'fulfilled') {
         cleaned++;
-      } catch (err) {
-        log.error(`cleanup ${task.name} failed`, err);
+      } else {
+        log.error(`cleanup ${tasks[i].name} failed`, r.reason);
       }
     }
 

@@ -25,13 +25,16 @@ const SAFETY_TIMEOUT_MS = 10_000;
 
 export function createSafetyIngestion(cache: Cache, db: Db | null = null) {
   return async function ingestSafety(): Promise<void> {
-    const cities = getActiveCities();
-    for (const city of cities) {
-      if (!city.dataSources.police) continue;
-      try {
-        await ingestCitySafety(city.id, city.name, city.dataSources.police, cache, db);
-      } catch (err) {
-        log.error(`${city.id} failed`, err);
+    const eligible = getActiveCities().filter((city) => city.dataSources.police);
+    const results = await Promise.allSettled(
+      eligible.map((city) =>
+        ingestCitySafety(city.id, city.name, city.dataSources.police!, cache, db),
+      ),
+    );
+    for (let i = 0; i < results.length; i++) {
+      const r = results[i];
+      if (r.status === 'rejected') {
+        log.error(`${eligible[i].id} failed`, r.reason);
       }
     }
   };
