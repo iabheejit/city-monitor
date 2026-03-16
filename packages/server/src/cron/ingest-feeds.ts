@@ -1,4 +1,4 @@
-import type { CityConfig, FeedConfig } from '@city-monitor/shared';
+import type { CityConfig, FeedConfig, NewsItem, NewsDigest } from '@city-monitor/shared';
 import type { Cache } from '../lib/cache.js';
 import type { Db } from '../db/index.js';
 import { saveNewsItems, type PersistedNewsItem } from '../db/writes.js';
@@ -19,26 +19,7 @@ const CITY_DEADLINE = 30_000;
 /** Max feeds fetched concurrently. */
 const CONCURRENCY = 8;
 
-export interface NewsItem {
-  id: string;
-  title: string;
-  url: string;
-  publishedAt: string;
-  sourceName: string;
-  sourceUrl: string;
-  description?: string;
-  category: string;
-  tier: number;
-  lang: string;
-  location?: { lat: number; lon: number; label?: string };
-  importance?: number;
-}
-
-export interface NewsDigest {
-  items: NewsItem[];
-  categories: Record<string, NewsItem[]>;
-  updatedAt: string;
-}
+export type { NewsItem, NewsDigest } from '@city-monitor/shared';
 
 export function createFeedIngestion(cache: Cache, db: Db | null = null) {
   return async function ingestFeeds(): Promise<void> {

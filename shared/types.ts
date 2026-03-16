@@ -452,5 +452,27 @@ export interface PollenForecast {
   pollen: Record<PollenType, PollenTypeForecast>;
 }
 
+// News feed items
+export interface NewsItem {
+  id: string;
+  title: string;
+  url: string;
+  publishedAt: string;
+  sourceName: string;
+  sourceUrl: string;
+  description?: string;
+  category: string;
+  tier: number;
+  lang: string;
+  location?: { lat: number; lon: number; label?: string };
+  importance?: number;
+}
+
+export interface NewsDigest {
+  items: NewsItem[];
+  categories: Record<string, NewsItem[]>;
+  updatedAt: string;
+}
+
 // Council meetings (BVV OParl + PARDOK)
 export type { CouncilMeeting } from './schemas.js';

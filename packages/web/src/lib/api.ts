@@ -9,7 +9,9 @@ async function fetchJson<T>(url: string): Promise<T> {
 }
 
 export type { WeatherData, ApiResponse, HistoryPoint } from '@city-monitor/shared';
-import type { WeatherData, ApiResponse, HistoryPoint } from '@city-monitor/shared';
+import type { WeatherData, ApiResponse, HistoryPoint, NewsItem, NewsDigest } from '@city-monitor/shared';
+
+export type { NewsItem, NewsDigest } from '@city-monitor/shared';
 
 export interface BootstrapData {
   news: ApiResponse<NewsDigest> | null;
@@ -33,25 +35,6 @@ export interface BootstrapData {
   pollen: ApiResponse<PollenForecast | null> | null;
   noiseSensors: ApiResponse<NoiseSensor[] | null> | null;
   councilMeetings: ApiResponse<CouncilMeeting[] | null> | null;
-}
-
-export interface NewsDigest {
-  items: NewsItem[];
-  categories: Record<string, NewsItem[]>;
-  updatedAt: string;
-}
-
-export interface NewsItem {
-  id: string;
-  title: string;
-  url: string;
-  publishedAt: string;
-  sourceName: string;
-  category: string;
-  tier: number;
-  description?: string;
-  location?: { lat: number; lon: number; label?: string };
-  importance?: number;
 }
 
 export interface TransitAlert {
