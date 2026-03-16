@@ -166,7 +166,7 @@ export function AirQualityStrip({ expanded }: { expanded: boolean }) {
                 {stations.map((s) => (
                   <StationEntry
                     key={s.url ?? s.station}
-                    name={s.station.replace(/, Berlin, Germany$/, '').replace(/, Germany$/, '')}
+                    name={s.station.replace(/,\s+(?:\w+,\s+)?Germany$/, '')}
                     aqi={s.europeanAqi}
                   />
                 ))}

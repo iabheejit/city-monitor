@@ -125,6 +125,7 @@ export function CrisisStrip({ expanded, onExpand }: { expanded: boolean; onExpan
             ))}
             {!expanded && SERVICES.length > COLLAPSED_COUNT && (
               <button
+                type="button"
                 onClick={onExpand}
                 className="w-full pt-2 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors cursor-pointer"
               >

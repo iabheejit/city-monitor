@@ -18,10 +18,7 @@ function formatDayName(dateStr: string, locale: string): string {
 }
 
 function isToday(dateStr: string): boolean {
-  const now = new Date();
-  const todayUtc = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
-  const date = new Date(dateStr + 'T00:00:00Z');
-  return Math.abs(date.getTime() - todayUtc) < 86400_000;
+  return dateStr === new Date().toISOString().slice(0, 10);
 }
 
 /** Step size (hours) by time-of-day bucket: 0-6→4h, 6-12→3h, 12-18→2h, 18-24→1h */
