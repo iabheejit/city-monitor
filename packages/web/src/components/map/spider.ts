@@ -3,7 +3,7 @@
  * outward with connecting legs. Click elsewhere to collapse.
  */
 
-import maplibregl from 'maplibre-gl';
+import maplibregl, { type Listener } from 'maplibre-gl';
 import { SPIDER_BASE_RADIUS, SPIDER_PER_ITEM } from './constants.js';
 
 // --- Types -------------------------------------------------------------------
@@ -14,8 +14,7 @@ export interface SpiderState {
   expandedKey: string | null;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export interface SpiderHandlerSet { handlers: Array<{ event: string; layer?: string; fn: any }> }
+export interface SpiderHandlerSet { handlers: Array<{ event: string; layer?: string; fn: Listener }> }
 
 // --- Module-level state for news & safety spider groups ----------------------
 
@@ -132,8 +131,7 @@ export function updateSpiderSources(
   if (lineSrc) lineSrc.setData(lines);
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function addSpiderHandler(map: maplibregl.Map, hset: SpiderHandlerSet, event: string, layerOrFn: string | ((...a: any[]) => void), fn?: (...a: any[]) => void) {
+export function addSpiderHandler(map: maplibregl.Map, hset: SpiderHandlerSet, event: string, layerOrFn: string | Listener, fn?: Listener) {
   if (typeof layerOrFn === 'string') {
     map.on(event as 'click', layerOrFn, fn!);
     hset.handlers.push({ event, layer: layerOrFn, fn: fn! });

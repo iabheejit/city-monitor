@@ -74,21 +74,6 @@ export interface SafetyReport {
   location?: { lat: number; lon: number; label?: string };
 }
 
-export interface NinaWarning {
-  id: string;
-  version: number;
-  startDate: string;
-  expiresAt?: string;
-  severity: 'minor' | 'moderate' | 'severe' | 'extreme';
-  urgency?: string;
-  type: string;
-  source: string;
-  headline: string;
-  description?: string;
-  instruction?: string;
-  area?: { type: string; geometry: unknown; properties?: unknown };
-}
-
 export interface AirQuality {
   current: {
     europeanAqi: number;
@@ -106,51 +91,9 @@ export interface AirQuality {
   }>;
 }
 
-export interface Representative {
-  name: string;
-  party: string;
-  role: string;
-  photoUrl?: string;
-  profileUrl?: string;
-  constituency?: string;
-}
 
-export interface PoliticalDistrict {
-  id: string;
-  name: string;
-  level: 'bezirk' | 'bundestag' | 'landesparlament';
-  representatives: Representative[];
-}
-
-export interface TrafficIncident {
-  id: string;
-  type: 'jam' | 'closure' | 'construction' | 'accident' | 'other';
-  severity: 'low' | 'moderate' | 'major' | 'critical';
-  description: string;
-  road?: string;
-  from?: string;
-  to?: string;
-  delay?: number;
-  length?: number;
-  geometry: { type: string; coordinates: number[][] };
-  startTime?: string;
-  endTime?: string;
-}
-
-export interface EmergencyPharmacy {
-  id: string;
-  name: string;
-  address: string;
-  district?: string;
-  phone?: string;
-  location: { lat: number; lon: number };
-  validFrom: string;
-  validUntil: string;
-  distance?: number;
-}
-
-export type { AirQualityGridPoint, ConstructionSite, WaterLevelData, WaterLevelStation, AedLocation, BathingSpot, BudgetSummary, BudgetAreaSummary, BudgetCategoryAmount, BuergeramtData, BuergeramtService, SocialAtlasFeatureProps, LaborMarketSummary, WastewaterSummary, WastewaterPathogen, PopulationFeatureProps, PopulationSummary, FeuerwehrSummary, FeuerwehrMonthData, PollenForecast, PollenType, PollenIntensity, PollenTypeForecast, NoiseSensor, CouncilMeeting } from '@city-monitor/shared';
-import type { AirQualityGridPoint, ConstructionSite, WaterLevelData, AedLocation, BathingSpot, BudgetSummary, BuergeramtData, LaborMarketSummary, WastewaterSummary, PopulationSummary, FeuerwehrSummary, PollenForecast, NoiseSensor, CouncilMeeting } from '@city-monitor/shared';
+export type { AirQualityGridPoint, ConstructionSite, WaterLevelData, WaterLevelStation, AedLocation, BathingSpot, BudgetSummary, BudgetAreaSummary, BudgetCategoryAmount, BuergeramtData, BuergeramtService, SocialAtlasFeatureProps, LaborMarketSummary, WastewaterSummary, WastewaterPathogen, PopulationFeatureProps, PopulationSummary, FeuerwehrSummary, FeuerwehrMonthData, PollenForecast, PollenType, PollenIntensity, PollenTypeForecast, NoiseSensor, CouncilMeeting, NinaWarning, TrafficIncident, EmergencyPharmacy, Representative, PoliticalDistrict } from '@city-monitor/shared';
+import type { AirQualityGridPoint, ConstructionSite, WaterLevelData, AedLocation, BathingSpot, BudgetSummary, BuergeramtData, LaborMarketSummary, WastewaterSummary, PopulationSummary, FeuerwehrSummary, PollenForecast, NoiseSensor, CouncilMeeting, NinaWarning, TrafficIncident, EmergencyPharmacy, PoliticalDistrict } from '@city-monitor/shared';
 
 export type NewsSummaryData = { briefing: string | null; generatedAt: string | null; headlineCount: number; cached: boolean };
 
