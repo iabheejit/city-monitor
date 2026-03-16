@@ -1,4 +1,5 @@
 import { lazy, Suspense, useRef } from 'react';
+import { useIsDesktop } from '../../hooks/useMediaQuery.js';
 import { useScrollParallax } from '../../hooks/useScrollParallax.js';
 import { useTranslation } from 'react-i18next';
 import { Sidebar } from '../sidebar/Sidebar.js';
@@ -57,8 +58,7 @@ function BathingTile({ isDesktop }: { isDesktop: boolean }) {
 export function CommandLayout() {
   const { t } = useTranslation();
   const { id: cityId } = useCityConfig();
-  const isDesktop = typeof window !== 'undefined'
-    && window.matchMedia('(min-width: 640px)').matches;
+  const isDesktop = useIsDesktop();
 
   // NINA warnings are fetched for the topbar badge; the default active layers
   // (traffic + weather + warnings) are set in useCommandCenter defaults.
