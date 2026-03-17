@@ -32,9 +32,43 @@ export const hamburg: CityConfig = {
       provider: 'rss',
       url: 'https://www.presseportal.de/rss/dienststelle_6013.rss2',
       districts: [
-        'Altona', 'Bergedorf', 'Eimsbüttel', 'Harburg', 'Mitte',
-        'Nord', 'Wandsbek', 'St. Pauli', 'Ottensen', 'Barmbek',
-        'Blankenese', 'Winterhude', 'Eppendorf', 'Bramfeld', 'Rahlstedt',
+        // Bezirke (longer compound names before shorter substrings)
+        'Hamburg-Mitte', 'Hamburg-Nord',
+        'Altona-Altstadt', 'Altona-Nord', 'Altona',
+        'Bergedorf', 'Eimsbüttel', 'Harburg', 'Wandsbek',
+
+        // Altona Stadtteile
+        'Ottensen', 'Bahrenfeld', 'Blankenese', 'Osdorf', 'Lurup',
+        'Sülldorf', 'Rissen', 'Nienstedten', 'Groß Flottbek', 'Othmarschen',
+
+        // Bergedorf Stadtteile
+        'Lohbrügge', 'Allermöhe', 'Billwerder', 'Curslack', 'Kirchwerder',
+        'Neuallermöhe',
+
+        // Eimsbüttel Stadtteile
+        'Eidelstedt', 'Stellingen', 'Lokstedt', 'Niendorf', 'Schnelsen',
+        'Rotherbaum', 'Harvestehude', 'Hoheluft-West',
+
+        // Harburg Stadtteile
+        'Neugraben-Fischbek', 'Hausbruch', 'Heimfeld', 'Moorburg',
+        'Neuland',
+
+        // Hamburg-Mitte Stadtteile
+        'St. Pauli', 'St. Georg', 'HafenCity', 'Hammerbrook', 'Borgfelde',
+        'Hamm', 'Horn', 'Billstedt', 'Billbrook', 'Rothenburgsort',
+        'Veddel', 'Wilhelmsburg', 'Neustadt', 'Finkenwerder',
+
+        // Hamburg-Nord Stadtteile (longer names before shorter substrings)
+        'Barmbek-Nord', 'Barmbek-Süd',
+        'Winterhude', 'Eppendorf', 'Uhlenhorst', 'Hohenfelde', 'Dulsberg',
+        'Alsterdorf', 'Ohlsdorf', 'Fuhlsbüttel', 'Langenhorn',
+        'Groß Borstel', 'Hoheluft-Ost',
+
+        // Wandsbek Stadtteile
+        'Bramfeld', 'Rahlstedt', 'Farmsen-Berne', 'Tonndorf', 'Jenfeld',
+        'Marienthal', 'Steilshoop', 'Wellingsbüttel', 'Sasel',
+        'Poppenbüttel', 'Hummelsbüttel', 'Bergstedt', 'Duvenstedt',
+        'Wohldorf-Ohlstedt', 'Volksdorf', 'Eilbek',
       ],
     },
     nina: { ars: '020000000000' },

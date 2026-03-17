@@ -33,6 +33,7 @@ import { createFeuerwehrRouter } from './routes/feuerwehr.js';
 import { createPollenRouter } from './routes/pollen.js';
 import { createNoiseSensorsRouter } from './routes/noise-sensors.js';
 import { createCouncilMeetingsRouter } from './routes/council-meetings.js';
+import { createBootstrapRouter } from './routes/bootstrap.js';
 import { createFeedIngestion } from './cron/ingest-feeds.js';
 import { createWeatherIngestion } from './cron/ingest-weather.js';
 import { createSummarization } from './cron/summarize.js';
@@ -212,12 +213,15 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
     const bootstrapLimit = rateLimit({ windowMs: 60_000, max: 10, standardHeaders: true, legacyHeaders: false });
     app.use('/api/:city/bootstrap', bootstrapLimit);
 
-    // Stricter rate limit for heavy GeoJSON payloads
-    const geojsonLimit = rateLimit({ windowMs: 60_000, max: 10, standardHeaders: true, legacyHeaders: false });
-    app.use('/api/:city/social-atlas', geojsonLimit);
-    app.use('/api/:city/population', geojsonLimit);
+    // Stricter rate limit for heavy payloads (GeoJSON, large data objects)
+    const heavyPayloadLimit = rateLimit({ windowMs: 60_000, max: 10, standardHeaders: true, legacyHeaders: false });
+    app.use('/api/:city/social-atlas', heavyPayloadLimit);
+    app.use('/api/:city/population', heavyPayloadLimit);
+    app.use('/api/:city/aeds', heavyPayloadLimit);
+    app.use('/api/:city/budget', heavyPayloadLimit);
   }
 
+  app.use('/api', cacheFor(60), createBootstrapRouter(cache));
   app.use('/api', cacheFor(300), createNewsRouter(cache, db));
   app.use('/api', cacheFor(300), createWeatherRouter(cache, db));
   app.use('/api', cacheFor(120), createTransitRouter(cache, db));
