@@ -1,3 +1,5 @@
+import type { CouncilMeeting } from './schemas.js';
+
 /** Standard API response wrapper with freshness metadata */
 export interface ApiResponse<T> {
   data: T;
@@ -500,6 +502,66 @@ export interface SafetyReport {
   district?: string;
   location?: { lat: number; lon: number; label?: string };
 }
+
+// Transit alerts (VBB HAFAS)
+export interface TransitAlert {
+  id: string;
+  line: string;
+  lines: string[];
+  type: 'delay' | 'disruption' | 'cancellation' | 'planned-work';
+  severity: 'low' | 'medium' | 'high';
+  message: string;
+  detail: string;
+  station: string;
+  location: { lat: number; lon: number } | null;
+  affectedStops: string[];
+}
+
+// Air quality (Open-Meteo)
+export interface AirQuality {
+  current: {
+    europeanAqi: number;
+    pm25: number;
+    pm10: number;
+    no2: number;
+    o3: number;
+    updatedAt: string;
+  };
+  hourly: Array<{
+    time: string;
+    europeanAqi: number;
+    pm25: number;
+    pm10: number;
+  }>;
+}
+
+// Bootstrap response (all city data in one response)
+export interface BootstrapData {
+  news: ApiResponse<NewsDigest> | null;
+  weather: ApiResponse<WeatherData> | null;
+  transit: ApiResponse<TransitAlert[]> | null;
+  events: ApiResponse<CityEvent[]> | null;
+  safety: ApiResponse<SafetyReport[]> | null;
+  nina: ApiResponse<NinaWarning[]> | null;
+  airQuality: ApiResponse<AirQuality | null> | null;
+  pharmacies: ApiResponse<EmergencyPharmacy[]> | null;
+  aeds: ApiResponse<AedLocation[]> | null;
+  traffic: ApiResponse<TrafficIncident[]> | null;
+  construction: ApiResponse<ConstructionSite[]> | null;
+  waterLevels: ApiResponse<WaterLevelData> | null;
+  budget: ApiResponse<BudgetSummary | null> | null;
+  appointments: ApiResponse<BuergeramtData> | null;
+  laborMarket: ApiResponse<LaborMarketSummary | null> | null;
+  wastewater: ApiResponse<WastewaterSummary | null> | null;
+  populationSummary: ApiResponse<PopulationSummary | null> | null;
+  feuerwehr: ApiResponse<FeuerwehrSummary | null> | null;
+  pollen: ApiResponse<PollenForecast | null> | null;
+  noiseSensors: ApiResponse<NoiseSensor[] | null> | null;
+  councilMeetings: ApiResponse<CouncilMeeting[] | null> | null;
+}
+
+// News AI summary
+export type NewsSummaryData = { briefing: string | null; generatedAt: string | null; headlineCount: number; cached: boolean };
 
 // Council meetings (BVV OParl + PARDOK)
 export type { CouncilMeeting } from './schemas.js';

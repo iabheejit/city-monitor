@@ -1,4 +1,4 @@
-import type { CityConfig, WeatherData, CurrentWeather, HourlyForecast, DailyForecast, WeatherAlert, DwdUvForecast } from '@city-monitor/shared';
+import type { CityConfig, WeatherData, CurrentWeather, HourlyForecast, DailyForecast, WeatherAlert, DwdUvForecast, AirQuality } from '@city-monitor/shared';
 import type { Cache } from '../lib/cache.js';
 import type { Db } from '../db/index.js';
 import { saveWeather } from '../db/writes.js';
@@ -8,7 +8,7 @@ import { CK } from '../lib/cache-keys.js';
 
 const log = createLogger('ingest-weather');
 
-export type { WeatherData };
+export type { WeatherData, AirQuality };
 
 const WEATHER_TIMEOUT_MS = 10_000;
 
@@ -112,23 +112,6 @@ async function ingestCityWeather(city: CityConfig, cache: Cache, db: Db | null):
   } catch {
     log.warn(`${city.id}: air quality failed`);
   }
-}
-
-export interface AirQuality {
-  current: {
-    europeanAqi: number;
-    pm25: number;
-    pm10: number;
-    no2: number;
-    o3: number;
-    updatedAt: string;
-  };
-  hourly: Array<{
-    time: string;
-    europeanAqi: number;
-    pm25: number;
-    pm10: number;
-  }>;
 }
 
 interface AirQualityResponse {

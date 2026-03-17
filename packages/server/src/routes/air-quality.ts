@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import type { Cache } from '../lib/cache.js';
 import type { Db } from '../db/index.js';
-import type { AirQuality } from '../cron/ingest-weather.js';
+import type { AirQuality } from '@city-monitor/shared';
 import { ingestCityAirQuality } from '../cron/ingest-weather.js';
 import type { AirQualityGridPoint } from '../cron/ingest-air-quality-grid.js';
 import { ingestCityAirQualityGrid } from '../cron/ingest-air-quality-grid.js';
