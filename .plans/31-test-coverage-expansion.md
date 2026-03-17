@@ -1,5 +1,6 @@
 # Plan 31: Test Coverage Expansion
 
+**Status:** completed
 **Type:** feature (test infrastructure)
 **Complexity:** complex (4 bundled items spanning server routes, frontend components, and accessibility audit)
 
