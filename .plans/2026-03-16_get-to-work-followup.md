@@ -3,10 +3,70 @@
 ## Controversial Decisions
 Items where the agent made a judgment call the user should review.
 
+### Plan 27: Event Lookahead Config
+1. **Field placed on `EventSourceConfig` (per-source) rather than as a top-level events config field.**
+   - Reasoning: Only Kulturdaten uses date-range query parameters in the current implementation. Ticketmaster and gomus fetchers don't use a lookahead window. Placing it per-source keeps the config honest and extensible.
+   - Alternative: A top-level `eventsLookaheadDays` on `CityDataSources`. Simpler but semantically wrong since it wouldn't actually affect all sources.
+
+2. **Default changed from 7 to 14 days.**
+   - This is explicitly requested in the task description ("defaulting to 14 days for richer event discovery"). Existing Berlin config has no explicit value, so it will automatically get the new 14-day default.
+
+### Plan 25: Replace xlsx with exceljs
+1. **Chose `exceljs` over lightweight alternatives** (`read-excel-file`, `xlsx-parse-json`). `exceljs` is larger (~2MB) but is the most mature MIT-licensed XLSX library for Node with 10M+ weekly npm downloads. Server-side dependency, so bundle size is irrelevant.
+2. **Refactored parse functions to accept `unknown[][]`** (array-of-arrays) instead of library-specific worksheet objects. This decouples parsing logic from any XLSX library, making future migrations trivial. Alternative was passing ExcelJS worksheet objects directly.
+
+### Plan 26: CSP Header for Static Frontend
+1. **Used `'unsafe-inline'` for script-src instead of nonce/hash.**
+   - Reasoning: Render static sites serve pre-built HTML and cannot inject per-request nonces. A SHA-256 hash would work but is fragile -- any change to the inline script (even whitespace) breaks it, and the hash cannot be auto-generated into render.yaml at build time. The inline script is a small theme-detection snippet that must run before external JS to prevent FOUC.
+   - Alternatives: nonce-based (impossible without dynamic server), hash-based (fragile, manual maintenance), move to external file (loses FOUC prevention).
+
+2. **Deployed as enforcing `Content-Security-Policy` rather than `Content-Security-Policy-Report-Only`.**
+   - Reasoning: The policy was derived from a thorough audit of all external origins in the codebase. Report-Only would require a reporting endpoint that doesn't exist. If issues arise post-deploy, the fix is a one-line edit to render.yaml.
+   - Alternative: Report-Only first (safer rollout but requires reporting infrastructure).
+
+### Plan 29: Type Consolidation
+1. **TransitAlert `lines` field made required (`lines: string[]`) matching the server definition.**
+   - Reasoning: The server always populates the `lines` array. The web's `lines?: string[]` was overly cautious. The web already handles potential absence via `alert.lines ?? [alert.line]`, so the required field is backward-compatible. Alternative: keep optional in shared -- rejected because it would mean the shared type is less accurate than the server's actual output.
+2. **ScSensorData left private to ingest-noise-sensors.ts.**
+   - Reasoning: It models the Sensor.Community external API response shape, not a domain type. Tests already work with plain objects. Exporting it would create a public contract around an unstable external API format. Alternative: export and/or move to shared -- rejected because no consumer needs it.
+
+### Plan 30: Frontend Quality Bundle
+1. **`formatDayName` uses optional string params instead of passing `t` function.**
+   - Reasoning: Keeps the utility i18n-agnostic. Callers resolve `t('panel.weather.today')` and `t('panel.weather.tomorrow')` before calling, so the function only deals with strings and dates.
+   - Alternative: Pass the `t` function directly (couples a date utility to i18next). Another alternative: two separate functions (unnecessary complexity).
+
+2. **Logger wrapper created with no current callers.**
+   - Reasoning: The web `src/` directory has zero `console.*` calls. The logger is infrastructure for future use, as suggested in Plan 01's follow-up. It is trivial (5 lines) so the cost of creating it now is near zero.
+   - Alternative: Wait until the first `console.*` call is needed. Chose to create it now so new code has a clear convention to follow.
+
+3. **District paint constants as a function, not exported.**
+   - Reasoning: Values depend on `isDark` boolean, so a function is more ergonomic than separate light/dark constant objects. Kept file-private since only `political.ts` uses them.
+   - Alternative: Export from `constants.ts` (no other consumers, unnecessary indirection).
+
+4. **Item 4 (de-DE audit): no changes needed.**
+   - The audit found zero `'de-DE'` patterns in the web package. All `toLocale*` calls already use `i18n.language` or `locale` from hooks. Plan 18 already cleaned this up.
+
+### Plan 32: Ops & Maintenance Improvements
+1. **Renamed `Mitte` to `Hamburg-Mitte` and `Nord` to `Hamburg-Nord` in Hamburg districts.**
+   - Reasoning: Bare "Mitte" causes false positives in German police text (common word meaning "middle/center"). Police press releases for Hamburg use "Hamburg-Mitte" as the Bezirk name. Same logic for "Nord" -> "Hamburg-Nord".
+   - Alternative: Keep `Mitte`/`Nord` for simplicity. Rejected due to false-positive risk.
+
+2. **AEDs and budget share the same rate limiter instance as social-atlas/population (10 req/min combined).**
+   - Reasoning: All four are heavy-payload endpoints. A shared counter means 10 total requests across all heavy endpoints per minute per client, which is stricter but prevents abuse patterns that rotate between heavy endpoints.
+   - Alternative: Separate rate limiter instances per endpoint (10 req/min each, independent). Would allow 40 heavy requests/min total. Rejected as overly permissive for the use case.
+
+3. **Bootstrap Cache-Control changed from 300s (inherited from news router) to 60s.**
+   - Reasoning: Bootstrap is an initial-load aggregation endpoint. 300s is too stale for first page load. Individual endpoints handle their own longer caching for polling.
+   - Alternative: Keep 300s for consistency. Rejected because bootstrap serves a different purpose than individual data endpoints.
+
+4. **Hamburg districts list includes ~70 entries (vs. 104 official Stadtteile).**
+   - Reasoning: Many Stadtteile are tiny and never appear in police press releases (e.g., Tatenberg, Spadenland). Including only recognizable ones avoids list bloat. Can always add more if specific Stadtteile are observed in reports.
+   - Alternative: Include all 104. Rejected as unnecessary -- the extraction is a simple string match and obscure names add no value.
+
 ## Skipped Improvements
 Opportunities identified but not implemented, with reasons.
 
-- **C1 (xlsx replacement)**: Dependency upgrade — per autonomous conventions, skip dependency changes.
+- **C1 (xlsx replacement)**: Dependency upgrade -- per autonomous conventions, skip dependency changes.
 - **N7 (CSP header on Render)**: Changes external deployment config, not code.
 - **M4 (event lookahead config)**: Feature addition, not quality improvement.
 
@@ -24,10 +84,14 @@ Files that should be removed (agent does not delete files autonomously).
 ## Implementation Issues
 Problems encountered during implementation.
 
-## Cycle Log
-Summary of each find → plan → implement cycle.
+## Suggested Follow-Up Work
+- Consider adding rate limits to other large-payload endpoints (construction sites, pharmacies) if abuse is observed.
+- The `extractDistrict` function in `ingest-safety.ts` uses a naive `title.includes()` approach. A regex word-boundary match would reduce false positives further (e.g., "Hamm" matching "Hammer Strasse"). Low priority but worth noting.
 
-### Cycle 1 — Full codebase scan (24 items found, 8 plans, 8 implemented)
+## Cycle Log
+Summary of each find -> plan -> implement cycle.
+
+### Cycle 1 -- Full codebase scan (24 items found, 8 plans, 8 implemented)
 
 ### CI Turbo Cache
 - **Plan:** `.plans/04-ci-turbo-cache.md`
@@ -209,3 +273,19 @@ Summary of each find → plan → implement cycle.
 - **Suggested follow-up work:**
   - The `ingest-political.ts` cron job orchestration (`ingestCityPolitical`, `fetchMandates`, `fetchCurrentPeriod`) has no tests. Integration-style tests with mocked fetch would cover the orchestration logic.
   - The `openai.ts` module's `classifyBatch` and `filterAndGeolocateNews` are only tested for the "not configured" path. Integration tests with a mocked LangChain model would cover structured output parsing and batch logic.
+
+### Replace xlsx with exceljs
+- **Plan:** `.plans/25-replace-xlsx-with-exceljs.md`
+- **No user input needed, no suggested follow-up work.**
+
+### CSP Header for Static Frontend
+- **Plan:** `.plans/26-csp-header-render.md`
+- **Suggested follow-up work:**
+  - Add a `Permissions-Policy` header to restrict unused browser features (camera, microphone, geolocation).
+  - Add `X-Content-Type-Options: nosniff` and `Referrer-Policy` headers.
+  - Consider extracting the inline theme-detection script to an external file to allow removing `'unsafe-inline'` from script-src.
+
+### Type Consolidation
+- **Plan:** `.plans/29-type-consolidation.md`
+- **Controversial decisions:** See Plan 29 section above.
+- **No user input needed, no suggested follow-up work.**
