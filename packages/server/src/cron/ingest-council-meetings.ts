@@ -132,9 +132,20 @@ async function fetchOparlMeetings(
 export function berlinUtcOffset(dateStr: string): string {
   // Parse as UTC first to get a Date object for DST detection
   const d = new Date(dateStr.replace(' ', 'T') + 'Z');
-  const parts = new Intl.DateTimeFormat('en', { timeZone: 'Europe/Berlin', timeZoneName: 'short' }).formatToParts(d);
-  const tz = parts.find((p) => p.type === 'timeZoneName')?.value;
-  return tz === 'CEST' ? '+02:00' : '+01:00';
+  // Compare UTC hour to Berlin hour to derive offset numerically.
+  // This avoids platform-dependent timezone name strings (e.g. "CEST" on
+  // Linux vs "GMT+2" on Windows).
+  const utcHour = d.getUTCHours();
+  const berlinHour = Number(
+    new Intl.DateTimeFormat('en', {
+      timeZone: 'Europe/Berlin',
+      hour: 'numeric',
+      hour12: false,
+    }).format(d),
+  );
+  // Handle day wrap (e.g., UTC 23:00 → Berlin 01:00 next day = +2)
+  const diff = ((berlinHour - utcHour) + 24) % 24;
+  return diff === 2 ? '+02:00' : '+01:00';
 }
 
 interface PardokRow {
@@ -152,9 +163,10 @@ export function parsePardokXml(xmlText: string, type: 'committee' | 'plenary', n
 
   // XML structure: resultset.row[].field[]
   const rawRows = parsed?.resultset?.row;
-  if (!Array.isArray(rawRows)) return [];
+  // fast-xml-parser returns an object (not array) for a single <row> element
+  const normalizedRows = Array.isArray(rawRows) ? rawRows : rawRows ? [rawRows] : [];
 
-  for (const row of rawRows) {
+  for (const row of normalizedRows) {
     const fields = Array.isArray(row.field) ? row.field : [];
     const obj: Record<string, string> = {};
     for (const f of fields) {

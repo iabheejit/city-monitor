@@ -59,23 +59,20 @@ describe('berlinUtcOffset', () => {
     expect(berlinUtcOffset('2026-01-15 10:00:00')).toBe('+01:00');
   });
 
-  it('differentiates summer and winter dates', () => {
-    // On Linux, Intl returns "CET"/"CEST" so summer returns "+02:00".
-    // On Windows, Intl returns "GMT+1"/"GMT+2" which the function does not
-    // recognize as CEST, so it falls back to "+01:00" for both.
-    // Test the actual contract: summer offset is either "+02:00" (Linux) or "+01:00" (Windows).
-    const summer = berlinUtcOffset('2026-07-15 10:00:00');
-    expect(['+01:00', '+02:00']).toContain(summer);
+  it('returns "+02:00" for a summer date (CEST)', () => {
+    expect(berlinUtcOffset('2026-07-15 10:00:00')).toBe('+02:00');
+  });
+
+  it('handles DST transition boundary (last Sunday of March)', () => {
+    // 2026-03-29 is the last Sunday of March — clocks spring forward at 02:00 CET
+    // At 01:59 CET (00:59 UTC) it's still CET (+01:00)
+    expect(berlinUtcOffset('2026-03-29 00:30:00')).toBe('+01:00');
+    // At 03:00 CEST (01:00 UTC) it's CEST (+02:00)
+    expect(berlinUtcOffset('2026-03-29 14:00:00')).toBe('+02:00');
   });
 });
 
 describe('parsePardokXml', () => {
-  // Build a minimal PARDOK XML string with meetings.
-  // fast-xml-parser treats a single <row> as an object, not an array.
-  // The source code checks Array.isArray(rawRows), so we always include
-  // a dummy past row to ensure the parser produces an array.
-  const DUMMY_ROW = '<row><field name="Termin_ID">0</field><field name="committee_name">dummy</field><field name="wahlperiode">0</field><field name="date_time">2000-01-01 00:00:00</field><field name="title">dummy</field></row>';
-
   function buildXml(meetings: Array<{ id: string; committee: string; dateTime: string; dateTimeEnd?: string; title?: string }>): string {
     const rows = meetings.map((m) => `
       <row>
@@ -87,7 +84,7 @@ describe('parsePardokXml', () => {
         <field name="title">${m.title ?? ''}</field>
       </row>
     `).join('\n');
-    return `<?xml version="1.0"?><resultset>${DUMMY_ROW}${rows}</resultset>`;
+    return `<?xml version="1.0"?><resultset>${rows}</resultset>`;
   }
 
   // Use a far-future winter date so berlinUtcOffset returns "+01:00" on all platforms
@@ -101,6 +98,16 @@ describe('parsePardokXml', () => {
     const result = parsePardokXml(xml, 'committee', now, windowMs);
     expect(result).toHaveLength(1);
     expect(result[0].committee).toBe('Hauptausschuss');
+  });
+
+  it('parses single-row XML correctly (not dropped as non-array)', () => {
+    // fast-xml-parser returns an object (not array) for a single <row>,
+    // which previously caused parsePardokXml to return []
+    const xml = buildXml([{ id: '999', committee: 'Einzelsitzung', dateTime: futureDate }]);
+    const result = parsePardokXml(xml, 'committee', now, windowMs);
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe('pardok-999');
+    expect(result[0].committee).toBe('Einzelsitzung');
   });
 
   it('filters out meetings outside the time window (past)', () => {
