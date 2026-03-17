@@ -135,7 +135,7 @@ async function ingestCityEvents(
 
       switch (config.source) {
         case 'kulturdaten':
-          fetched = await fetchKulturdaten(config.url, cityId);
+          fetched = await fetchKulturdaten(config.url, cityId, config.lookaheadDays ?? 14);
           break;
         case 'ticketmaster':
           fetched = await fetchTicketmaster(config.url, cityId, cityName, country);
@@ -182,9 +182,9 @@ async function ingestCityEvents(
 // Kulturdaten.berlin fetcher
 // ---------------------------------------------------------------------------
 
-async function fetchKulturdaten(sourceUrl: string, _cityId: string): Promise<CityEvent[]> {
+async function fetchKulturdaten(sourceUrl: string, _cityId: string, lookaheadDays: number): Promise<CityEvent[]> {
   const startDate = new Date().toISOString().slice(0, 10);
-  const endDate = new Date(Date.now() + 7 * 86400_000).toISOString().slice(0, 10);
+  const endDate = new Date(Date.now() + lookaheadDays * 86400_000).toISOString().slice(0, 10);
 
   const allRaw: KulturdatenEvent[] = [];
 

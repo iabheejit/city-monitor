@@ -51,6 +51,7 @@ export interface CityMapLayer {
 export interface EventSourceConfig {
   source: 'kulturdaten' | 'ticketmaster' | 'gomus';
   url: string;
+  lookaheadDays?: number; // Default: 14
 }
 
 export interface CityDataSources {
