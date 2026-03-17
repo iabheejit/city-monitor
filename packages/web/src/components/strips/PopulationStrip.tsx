@@ -84,15 +84,8 @@ export function PopulationStrip() {
   const { t } = useTranslation();
   const { isStale, agoText } = useFreshness(fetchedAt, FRESH_MAX_AGE);
 
-  if (isLoading) return <Skeleton lines={2} />;
-  if (isError) return <StripErrorFallback domain="Population" onRetry={refetch} />;
-  if (!data) return <p className="text-sm text-gray-400 py-2 text-center">{t('panel.population.empty')}</p>;
-
-  const changeColor = data.changeAbsolute >= 0
-    ? 'text-green-600 dark:text-green-400'
-    : 'text-red-600 dark:text-red-400';
-
   const ageSlices = useMemo(() => {
+    if (!data) return [];
     const segments = [
       { key: 'youth' as const, pct: data.youthPct },
       { key: 'workingAge' as const, pct: data.workingAgePct },
@@ -112,7 +105,15 @@ export function PopulationStrip() {
       angle += sweep;
     }
     return result;
-  }, [data.youthPct, data.workingAgePct, data.elderlyPct, t]);
+  }, [data, t]);
+
+  if (isLoading) return <Skeleton lines={2} />;
+  if (isError) return <StripErrorFallback domain="Population" onRetry={refetch} />;
+  if (!data) return <p className="text-sm text-gray-400 py-2 text-center">{t('panel.population.empty')}</p>;
+
+  const changeColor = data.changeAbsolute >= 0
+    ? 'text-green-600 dark:text-green-400'
+    : 'text-red-600 dark:text-red-400';
 
   return (
     <div className="flex flex-col justify-center h-full">
