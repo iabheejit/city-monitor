@@ -13,7 +13,8 @@
     "db:generate": "node --env-file-if-exists=.env ../../node_modules/drizzle-kit/bin.cjs generate",
     "db:migrate": "node --env-file-if-exists=.env ../../node_modules/drizzle-kit/bin.cjs migrate",
     "db:push": "node --env-file-if-exists=.env ../../node_modules/drizzle-kit/bin.cjs push",
-    "db:studio": "node --env-file-if-exists=.env ../../node_modules/drizzle-kit/bin.cjs studio"
+    "db:studio": "node --env-file-if-exists=.env ../../node_modules/drizzle-kit/bin.cjs studio",
+    "db:invalidate": "tsx --env-file-if-exists=.env src/scripts/invalidate-cache.ts"
   },
   "dependencies": {
     "@city-monitor/shared": "*",
