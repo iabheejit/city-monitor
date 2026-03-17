@@ -5,18 +5,10 @@ import { useWeather } from '../../hooks/useWeather.js';
 import { useFreshness } from '../../hooks/useFreshness.js';
 import { getWeatherInfo } from '../../lib/weather-codes.js';
 import { getUvLevel } from '../../lib/uv-levels.js';
+import { formatDayName } from '../../lib/format-day-name.js';
 import { StripErrorFallback } from '../ErrorFallback.js';
 import { Skeleton } from '../layout/Skeleton.js';
 import { TileFooter } from '../layout/TileFooter.js';
-
-function formatDayName(dateStr: string, locale: string): string {
-  try {
-    const date = new Date(dateStr + 'T00:00:00Z');
-    return date.toLocaleDateString(locale, { weekday: 'short', timeZone: 'UTC' });
-  } catch {
-    return dateStr;
-  }
-}
 
 function isToday(dateStr: string): boolean {
   return dateStr === new Date().toISOString().slice(0, 10);

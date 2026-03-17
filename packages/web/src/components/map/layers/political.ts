@@ -10,6 +10,19 @@ import { registerPoliticalIcons, createVerticalBadgeIcon, type IconNode } from '
 import { DISTRICT_URLS, POLITICAL_MARKER_LAYER, POLITICAL_MARKER_SOURCE } from '../constants.js';
 import { normalizePoliticalName } from '../base.js';
 
+/** District paint values derived from dark/light theme. */
+function districtPaint(isDark: boolean) {
+  return {
+    fillColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)',
+    lineColor: isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.25)',
+    lineWidth: 1.5 as const,
+    lineDash: [4, 2] as number[],
+    textColor: isDark ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.7)',
+    textHaloColor: isDark ? 'rgba(0,0,0,0.7)' : 'rgba(255,255,255,0.9)',
+    textHaloWidth: 1.5,
+  };
+}
+
 /** Marker symbol layer IDs — district labels must render below all of these */
 const MARKER_LAYER_IDS = [
   'transit-marker-icon', 'news-marker-icon', 'safety-marker-icon',
@@ -53,12 +66,14 @@ export async function addDistrictLayer(map: maplibregl.Map, cityId: string, isDa
     generateId: true,
   });
 
+  const dp = districtPaint(isDark);
+
   map.addLayer({
     id: 'district-fill',
     type: 'fill',
     source: 'districts',
     paint: {
-      'fill-color': isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)',
+      'fill-color': dp.fillColor,
       'fill-opacity': [
         'case',
         ['boolean', ['feature-state', 'hover'], false],
@@ -73,9 +88,9 @@ export async function addDistrictLayer(map: maplibregl.Map, cityId: string, isDa
     type: 'line',
     source: 'districts',
     paint: {
-      'line-color': isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.25)',
-      'line-width': 1.5,
-      'line-dasharray': [4, 2],
+      'line-color': dp.lineColor,
+      'line-width': dp.lineWidth,
+      'line-dasharray': dp.lineDash,
     },
   });
 
@@ -97,9 +112,9 @@ export async function addDistrictLayer(map: maplibregl.Map, cityId: string, isDa
       'text-allow-overlap': false,
     },
     paint: {
-      'text-color': isDark ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.7)',
-      'text-halo-color': isDark ? 'rgba(0,0,0,0.7)' : 'rgba(255,255,255,0.9)',
-      'text-halo-width': 1.5,
+      'text-color': dp.textColor,
+      'text-halo-color': dp.textHaloColor,
+      'text-halo-width': dp.textHaloWidth,
     },
   }, beforeId);
 }
@@ -115,13 +130,15 @@ export function addDistrictSource(
   nameField: string,
   isDark: boolean,
 ): void {
+  const dp = districtPaint(isDark);
+
   map.addSource('districts', { type: 'geojson', data: geojson, generateId: true });
   map.addLayer({
     id: 'district-fill',
     type: 'fill',
     source: 'districts',
     paint: {
-      'fill-color': isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)',
+      'fill-color': dp.fillColor,
       'fill-opacity': 0.35,
     },
   });
@@ -130,9 +147,9 @@ export function addDistrictSource(
     type: 'line',
     source: 'districts',
     paint: {
-      'line-color': isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.25)',
-      'line-width': 1.5,
-      'line-dasharray': [4, 2],
+      'line-color': dp.lineColor,
+      'line-width': dp.lineWidth,
+      'line-dasharray': dp.lineDash,
     },
   });
   map.addLayer({
@@ -147,9 +164,9 @@ export function addDistrictSource(
       'text-allow-overlap': false,
     },
     paint: {
-      'text-color': isDark ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.7)',
-      'text-halo-color': isDark ? 'rgba(0,0,0,0.7)' : 'rgba(255,255,255,0.9)',
-      'text-halo-width': 1.5,
+      'text-color': dp.textColor,
+      'text-halo-color': dp.textHaloColor,
+      'text-halo-width': dp.textHaloWidth,
     },
   });
   ensureDistrictLabelsBelow(map);
@@ -172,11 +189,12 @@ export function applyPoliticalStyling(
   }
 
   if (colorMap.size > 0) {
+    const dp = districtPaint(isDark);
     const matchExpr: unknown[] = ['match', ['downcase', ['get', nameField]]];
     for (const [name, color] of colorMap) {
       matchExpr.push(name, color);
     }
-    matchExpr.push(isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)');
+    matchExpr.push(dp.fillColor);
 
     map.setPaintProperty('district-fill', 'fill-color', matchExpr as maplibregl.ExpressionSpecification);
     map.setPaintProperty('district-fill', 'fill-opacity', 0.35);
@@ -185,11 +203,8 @@ export function applyPoliticalStyling(
 
 export function resetDistrictStyling(map: maplibregl.Map, isDark: boolean) {
   if (!map.getLayer('district-fill')) return;
-  map.setPaintProperty(
-    'district-fill',
-    'fill-color',
-    isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)',
-  );
+  const dp = districtPaint(isDark);
+  map.setPaintProperty('district-fill', 'fill-color', dp.fillColor);
   map.setPaintProperty('district-fill', 'fill-opacity', [
     'case',
     ['boolean', ['feature-state', 'hover'], false],
