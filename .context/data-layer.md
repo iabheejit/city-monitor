@@ -126,16 +126,17 @@ Runs on server start if DB is connected. Loads all data types for all active cit
 
 ### Data Retention (`cron/data-retention.ts`)
 
-Nightly cron (3am) prunes old data. Config-driven `SNAPSHOT_RETENTION` array handles the unified snapshots table (one delete per type), plus individual entries for events, safetyReports, newsItems, aiSummaries. Each cleanup is independent — one failure doesn't block others.
+Nightly cron (3am) prunes old data in two phases. Phase 1: time-based deletion for all snapshot types + non-snapshot tables. Phase 2: row-count cap (100 rows per cityId/type) for non-history snapshot types, using `ROW_NUMBER() OVER (PARTITION BY city_id)` raw SQL. Each cleanup task is independent — one failure doesn't block others. Config is split into `HISTORY_RETENTION` (4 time-only entries) and `CAPPED_RETENTION` (20 entries: time + row cap).
 
 | Category | Snapshot types / tables | Retention |
 |---|---|---|
-| Frequent | open-meteo, vbb-disruptions, tomtom-traffic, viz-roadworks, bbk-nina, aponet, service-berlin, lageso-wastewater, lageso-bathing, dwd-pollen, sc-dnms, oparl-meetings | 7 days |
-| Extended | aqi-grid, pegelonline | 30 days (trend charts) |
-| Infrequent | berlin-haushalt, osm-aeds, mss-social-atlas, bf-feuerwehr, afstat-population, abgwatch-* | 30 days |
-| Labor market | ba-labor-market | 730 days / ~24 months (trend charts) |
-| Non-snapshot | news, events, safety | 7 days |
-| Summaries | AI summaries + orphan cleanup | 30 days |
+| History | open-meteo | 7 days |
+| History | aqi-grid, pegelonline | 30 days (trend charts) |
+| History | ba-labor-market | 730 days / ~24 months (trend charts) |
+| Non-history (high/med freq) | vbb-disruptions, tomtom-traffic, viz-roadworks, bbk-nina, aponet, service-berlin, lageso-wastewater, lageso-bathing, dwd-pollen, sc-dnms, oparl-meetings | 2 days + 100 row cap |
+| Non-history (infrequent) | berlin-haushalt, osm-aeds, mss-social-atlas, bf-feuerwehr, afstat-population, abgwatch-* | 7 days + 100 row cap |
+| Non-snapshot | news, events, safety | 3 days |
+| Summaries | AI summaries + orphan cleanup | 7 days |
 
 ## Patterns
 
