@@ -59,8 +59,6 @@ export const CAPPED_RETENTION: Array<{ type: SnapshotType; retentionMs: number }
   { type: 'abgwatch-state-bezirke', retentionMs: 7 * DAY_MS },
 ];
 
-const HISTORY_TYPES = new Set(HISTORY_RETENTION.map((h) => h.type));
-
 export function createDataRetention(db: Db) {
   return async () => {
     const now = Date.now();

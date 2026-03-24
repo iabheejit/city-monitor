@@ -30,6 +30,14 @@ export default tseslint.config(
     files: ["packages/server/src/**/*.ts"],
   },
 
+  // Test files: allow `as any` for partial mocks
+  {
+    files: ["packages/*/src/**/*.test.{ts,tsx}"],
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off",
+    },
+  },
+
   // Web config: add React plugins
   {
     files: ["packages/web/src/**/*.{ts,tsx}"],

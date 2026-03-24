@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { usePolitical } from '../../hooks/usePolitical.js';
@@ -182,11 +182,11 @@ export function PoliticalStrip({ expanded, onExpand }: { expanded: boolean; onEx
   const { data, fetchedAt, isLoading, isError, refetch } = usePolitical(cityId, VIEW_LEVELS[view]);
   const { isStale, agoText } = useFreshness(fetchedAt, FRESH_MAX_AGE);
 
-  const views: { key: View; label: string }[] = [
+  const views = useMemo<{ key: View; label: string }[]>(() => [
     { key: 'state', label: t('sidebar.political.landesparlament') },
     { key: 'bezirke', label: t('sidebar.political.bezirke') },
     { key: 'bundestag', label: t('sidebar.political.bundestag') },
-  ];
+  ], [t]);
   const viewIdx = views.findIndex((v) => v.key === view);
   const selectViewByIdx = useCallback((i: number) => setView(views[i]!.key), [views]);
   const { setTabRef, onKeyDown } = useTabKeys(views.length, viewIdx, selectViewByIdx);
