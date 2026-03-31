@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme.js';
-import { useCityConfig } from '../../hooks/useCityConfig.js';
+import { useOptionalCityConfig } from '../../hooks/useCityConfig.js';
 
 /**
  * Language switcher + theme toggle for the header.
@@ -10,10 +10,10 @@ import { useCityConfig } from '../../hooks/useCityConfig.js';
 export function HeaderControls() {
   const { theme, toggle } = useTheme();
   const { t, i18n } = useTranslation();
-  const cityConfig = useCityConfig();
+  const cityConfig = useOptionalCityConfig();
   const languages = useMemo(
-    () => cityConfig.languages.map((code) => ({ code, label: code.toUpperCase() })),
-    [cityConfig.languages],
+    () => (cityConfig?.languages ?? ['de', 'en']).map((code) => ({ code, label: code.toUpperCase() })),
+    [cityConfig?.languages],
   );
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
