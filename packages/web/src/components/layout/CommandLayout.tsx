@@ -99,6 +99,9 @@ export function CommandLayout() {
           <Tile title={t('panel.news.briefing')} span={2} rowSpan={2}>
             <BriefingStrip />
           </Tile>
+          <Tile title={t('panel.news.title')} span={2} className="sm:hidden">
+            <NewsStrip />
+          </Tile>
           <Tile title={t('panel.weather.title')} span={1} expandable defaultExpanded={isDesktop}>
             {(expanded) => <WeatherStrip expanded={expanded} />}
           </Tile>
@@ -155,7 +158,7 @@ export function CommandLayout() {
           <BathingTile isDesktop={isDesktop} />
 
           {/* Row 4: Information */}
-          <Tile title={t('panel.news.title')} span={2}>
+          <Tile title={t('panel.news.title')} span={2} className="hidden sm:block">
             <NewsStrip />
           </Tile>
           <Tile title={t('panel.events.title')} span={2}>
