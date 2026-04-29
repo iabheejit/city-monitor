@@ -133,44 +133,44 @@ async function warmCity(db: Db, cache: Cache, cityId: string): Promise<void> {
     // Wastewater, bathing, and labor market are Berlin-only data sources
     ...(cityId === 'berlin' ? [
       (async () => {
-        const r = await loadWastewater(db, 'berlin');
-        if (r) cache.set(CK.wastewaterSummary('berlin'), r.data, 604800, r.fetchedAt);
-      })().catch((err) => log.error('wastewater failed', err)),
+        const r = await loadWastewater(db, cityId);
+        if (r) cache.set(CK.wastewaterSummary(cityId), r.data, 604800, r.fetchedAt);
+      })().catch((err) => log.error(`${cityId} wastewater failed`, err)),
 
       (async () => {
-        const r = await loadBathingSpots(db, 'berlin');
-        if (r) cache.set(CK.bathingSpots('berlin'), r.data, 86400, r.fetchedAt);
-      })().catch((err) => log.error('bathing failed', err)),
+        const r = await loadBathingSpots(db, cityId);
+        if (r) cache.set(CK.bathingSpots(cityId), r.data, 86400, r.fetchedAt);
+      })().catch((err) => log.error(`${cityId} bathing failed`, err)),
 
       (async () => {
-        const r = await loadLaborMarket(db, 'berlin');
-        if (r) cache.set(CK.laborMarket('berlin'), r.data, 86400, r.fetchedAt);
-      })().catch((err) => log.error('labor-market failed', err)),
+        const r = await loadLaborMarket(db, cityId);
+        if (r) cache.set(CK.laborMarket(cityId), r.data, 86400, r.fetchedAt);
+      })().catch((err) => log.error(`${cityId} labor-market failed`, err)),
 
       (async () => {
-        const r = await loadPopulationGeojson(db, 'berlin');
-        if (r) cache.set(CK.populationGeojson('berlin'), r.data, 2592000, r.fetchedAt);
-      })().catch((err) => log.error('population geojson failed', err)),
+        const r = await loadPopulationGeojson(db, cityId);
+        if (r) cache.set(CK.populationGeojson(cityId), r.data, 2592000, r.fetchedAt);
+      })().catch((err) => log.error(`${cityId} population geojson failed`, err)),
 
       (async () => {
-        const r = await loadPopulationSummary(db, 'berlin');
-        if (r) cache.set(CK.populationSummary('berlin'), r.data, 2592000, r.fetchedAt);
-      })().catch((err) => log.error('population summary failed', err)),
+        const r = await loadPopulationSummary(db, cityId);
+        if (r) cache.set(CK.populationSummary(cityId), r.data, 2592000, r.fetchedAt);
+      })().catch((err) => log.error(`${cityId} population summary failed`, err)),
 
       (async () => {
-        const r = await loadFeuerwehr(db, 'berlin');
-        if (r) cache.set(CK.feuerwehr('berlin'), r.data, 86400, r.fetchedAt);
-      })().catch((err) => log.error('feuerwehr failed', err)),
+        const r = await loadFeuerwehr(db, cityId);
+        if (r) cache.set(CK.feuerwehr(cityId), r.data, 86400, r.fetchedAt);
+      })().catch((err) => log.error(`${cityId} feuerwehr failed`, err)),
 
       (async () => {
-        const r = await loadNoiseSensors(db, 'berlin');
-        if (r) cache.set(CK.noiseSensors('berlin'), r.data, 1200, r.fetchedAt);
-      })().catch((err) => log.error('noise-sensors failed', err)),
+        const r = await loadNoiseSensors(db, cityId);
+        if (r) cache.set(CK.noiseSensors(cityId), r.data, 1200, r.fetchedAt);
+      })().catch((err) => log.error(`${cityId} noise-sensors failed`, err)),
 
       (async () => {
-        const r = await loadCouncilMeetings(db, 'berlin');
-        if (r) cache.set(CK.councilMeetings('berlin'), r.data, 25920, r.fetchedAt);
-      })().catch((err) => log.error('council-meetings failed', err)),
+        const r = await loadCouncilMeetings(db, cityId);
+        if (r) cache.set(CK.councilMeetings(cityId), r.data, 25920, r.fetchedAt);
+      })().catch((err) => log.error(`${cityId} council-meetings failed`, err)),
     ] : []),
 
     // Nagpur India-specific data sources
@@ -199,6 +199,8 @@ export interface FreshnessSpec {
   jobName: string;
   tableName: string;
   maxAgeSeconds: number;
+  /** Override the timestamp column name (default: 'fetched_at') */
+  timestampColumn?: string;
   /** Optional column + value filter so the freshness check targets a specific row subset */
   filter?: { column: string; value: string };
 }
@@ -214,21 +216,23 @@ export async function findStaleJobs(db: Db, specs: FreshnessSpec[]): Promise<Set
 
   await Promise.allSettled(specs.map(async (spec) => {
     try {
+      const tsCol = spec.timestampColumn ?? 'fetched_at';
       const query = spec.filter
-        ? sql`SELECT fetched_at FROM ${sql.identifier(spec.tableName)} WHERE ${sql.identifier(spec.filter.column)} = ${spec.filter.value} ORDER BY fetched_at DESC LIMIT 1`
-        : sql`SELECT fetched_at FROM ${sql.identifier(spec.tableName)} ORDER BY fetched_at DESC LIMIT 1`;
+        ? sql`SELECT EXTRACT(EPOCH FROM ${sql.identifier(tsCol)}) AS epoch FROM ${sql.identifier(spec.tableName)} WHERE ${sql.identifier(spec.filter.column)} = ${spec.filter.value} ORDER BY ${sql.identifier(tsCol)} DESC LIMIT 1`
+        : sql`SELECT EXTRACT(EPOCH FROM ${sql.identifier(tsCol)}) AS epoch FROM ${sql.identifier(spec.tableName)} ORDER BY ${sql.identifier(tsCol)} DESC LIMIT 1`;
       const result = await db.execute(query);
       const rows = Array.isArray(result) ? result : (result as { rows?: unknown[] }).rows ?? [];
-      const row = rows[0] as { fetched_at?: string | Date } | undefined;
-      if (!row || !row.fetched_at) {
+      const row = rows[0] as { epoch?: string | number } | undefined;
+      if (!row || row.epoch == null) {
         stale.add(spec.jobName);
         return;
       }
-      const ageSeconds = (now - new Date(row.fetched_at).getTime()) / 1000;
+      const ageSeconds = (now / 1000) - Number(row.epoch);
       if (ageSeconds > spec.maxAgeSeconds) {
         stale.add(spec.jobName);
       }
-    } catch {
+    } catch (err) {
+      log.error(`${spec.jobName}: freshness check failed`, err);
       stale.add(spec.jobName);
     }
   }));

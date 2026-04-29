@@ -2,7 +2,7 @@ import { Router } from 'express';
 import type { Cache } from '../lib/cache.js';
 import type { Db } from '../db/index.js';
 import { loadConstructionSites } from '../db/reads.js';
-import type { ConstructionSite } from '../cron/ingest-construction.js';
+import type { ConstructionSite } from '@city-monitor/shared';
 import { getCityConfig } from '../config/index.js';
 import { createLogger } from '../lib/logger.js';
 import { CK } from '../lib/cache-keys.js';

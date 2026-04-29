@@ -1,5 +1,8 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useRef } from 'react';
+import { useIsDesktop } from '../../hooks/useMediaQuery.js';
+import { useScrollParallax } from '../../hooks/useScrollParallax.js';
 import { useTranslation } from 'react-i18next';
+import { SUPPORT_URL } from '../../lib/constants.js';
 import { Sidebar } from '../sidebar/Sidebar.js';
 import { MobileLayerDrawer } from '../sidebar/MobileLayerDrawer.js';
 import { NinaBanner } from '../alerts/NinaBanner.js';
@@ -29,6 +32,8 @@ import { MandiStrip } from '../strips/MandiStrip.js';
 import { MgnregaStrip } from '../strips/MgnregaStrip.js';
 import { SchemesStrip } from '../strips/SchemesStrip.js';
 import { Skeleton } from './Skeleton.js';
+import { ScrollIndicator } from './ScrollIndicator.js';
+import { SkylineSeparator } from './SkylineSeparator.js';
 import { ErrorBoundary } from 'react-error-boundary';
 import { MapErrorFallback } from '../ErrorFallback.js';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
@@ -57,19 +62,22 @@ function BathingTile({ isDesktop }: { isDesktop: boolean }) {
 export function CommandLayout() {
   const { t } = useTranslation();
   const { id: cityId, dataSources } = useCityConfig();
-  const isDesktop = typeof window !== 'undefined'
-    && window.matchMedia('(min-width: 640px)').matches;
+  const isDesktop = useIsDesktop();
 
   // NINA warnings are fetched for the topbar badge; the default active layers
   // (traffic + weather + warnings) are set in useCommandCenter defaults.
   useNina(cityId);
 
+  const dashboardRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<HTMLDivElement>(null);
+  useScrollParallax(mapRef, 0.3);
+
   return (
     <>
-      {/* Upper zone: sidebar + map filling viewport height */}
-      <div className="flex h-[50vh] lg:h-[calc(100vh-37px)]">
+      {/* Upper zone: full-bleed hero map (100vh) */}
+      <div className="relative flex h-screen overflow-hidden">
         <Sidebar />
-        <div className="flex-1 min-w-0 relative">
+        <div ref={mapRef} className="flex-1 min-w-0 relative">
           <ErrorBoundary FallbackComponent={MapErrorFallback}>
             <Suspense fallback={<div className="w-full h-full flex items-center justify-center"><Skeleton lines={4} /></div>}>
               <CityMap />
@@ -77,18 +85,24 @@ export function CommandLayout() {
           </ErrorBoundary>
           <MobileLayerDrawer />
         </div>
+        {/* Skyline + scroll indicator overlaid at bottom of hero */}
+        <div className="absolute bottom-0 left-0 right-0 z-10 pointer-events-none">
+          <ScrollIndicator targetRef={dashboardRef} />
+          <SkylineSeparator cityId={cityId} />
+        </div>
       </div>
 
       {/* Lower zone: dashboard tiles */}
-      <div className="bg-gray-50 dark:bg-gray-950">
+      <div ref={dashboardRef} className="bg-surface-0">
         <div className="px-4 pt-4">
           <NinaBanner />
         </div>
         <DashboardGrid>
-          <Tile title={t('panel.news.briefing')} span={2}>
+          {/* Row 1-2: Hero briefing + Weather + AQI + Transit */}
+          <Tile title={t('panel.news.briefing')} span={2} rowSpan={2}>
             <BriefingStrip />
           </Tile>
-          <Tile title={t('panel.news.title')} span={2}>
+          <Tile title={t('panel.news.title')} span={2} className="sm:hidden">
             <NewsStrip />
           </Tile>
           <Tile title={t('panel.weather.title')} span={1} expandable defaultExpanded={isDesktop}>
@@ -97,38 +111,9 @@ export function CommandLayout() {
           <Tile title={t('panel.airQuality.title')} span={1} expandable defaultExpanded={isDesktop}>
             {(expanded) => <AirQualityStrip expanded={expanded} />}
           </Tile>
-          <Tile title={t('panel.pollen.title')} span={1} expandable defaultExpanded={isDesktop}>
-            {(expanded) => <PollenStrip expanded={expanded} />}
-          </Tile>
-          {cityId === 'berlin' && (
-            <Tile title={t('panel.wastewater.title')} span={1} expandable defaultExpanded={isDesktop}>
-              {(expanded) => <WastewaterStrip expanded={expanded} />}
-            </Tile>
-          )}
           <Tile title={t('panel.transit.title')} span={1} expandable defaultExpanded={isDesktop}>
             {(expanded, setExpanded) => <TransitStrip expanded={expanded} onExpand={() => setExpanded(true)} />}
           </Tile>
-          {dataSources.appointments && (
-            <Tile title={t('panel.appointments.title')} span={1} expandable defaultExpanded={isDesktop}>
-              {(expanded, setExpanded) => <AppointmentsStrip expanded={expanded} onExpand={() => setExpanded(true)} />}
-            </Tile>
-          )}
-          {cityId === 'berlin' && (
-            <Tile title={t('panel.feuerwehr.title')} span={1} expandable defaultExpanded={isDesktop}>
-              {(expanded) => <FeuerwehrStrip expanded={expanded} />}
-            </Tile>
-          )}
-          <BathingTile isDesktop={isDesktop} />
-          {cityId === 'berlin' && (
-            <Tile title={t('panel.laborMarket.title')} span={1} expandable defaultExpanded={isDesktop}>
-              {() => <LaborMarketStrip />}
-            </Tile>
-          )}
-          {cityId === 'berlin' && (
-            <Tile title={t('panel.population.title')} span={1}>
-              <PopulationStrip />
-            </Tile>
-          )}
           <Tile title={t('support.title')} span={1}>
             <>
               <div className="flex flex-col items-center justify-center gap-6 h-full pb-4">
@@ -141,7 +126,7 @@ export function CommandLayout() {
                   ))}
                 </div>
                 <a
-                  href="https://ko-fi.com/OdinMB"
+                  href={SUPPORT_URL}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex flex-col items-center hover:text-gray-900 dark:hover:text-white transition-colors"
@@ -158,17 +143,52 @@ export function CommandLayout() {
               <TileFooter>{t('support.footer')}</TileFooter>
             </>
           </Tile>
+
+          {/* Row 3: Environment */}
+          <Tile title={t('panel.pollen.title')} span={1} expandable defaultExpanded={isDesktop}>
+            {(expanded) => <PollenStrip expanded={expanded} />}
+          </Tile>
+          {cityId === 'berlin' && (
+            <Tile title={t('panel.wastewater.title')} span={1} expandable defaultExpanded={isDesktop}>
+              {(expanded) => <WastewaterStrip expanded={expanded} />}
+            </Tile>
+          )}
+          {cityId === 'berlin' && (
+            <Tile title={t('panel.feuerwehr.title')} span={1} expandable defaultExpanded>
+              {(expanded) => <FeuerwehrStrip expanded={expanded} />}
+            </Tile>
+          )}
+          <BathingTile isDesktop={isDesktop} />
+
+          {/* Row 4: Information */}
+          <Tile title={t('panel.news.title')} span={2} className="hidden sm:block">
+            <NewsStrip />
+          </Tile>
+          <Tile title={t('panel.events.title')} span={2}>
+            <EventsStrip />
+          </Tile>
+
+          {/* Row 5: Services */}
+          <Tile title={t('panel.appointments.title')} span={1} expandable defaultExpanded={isDesktop}>
+            {(expanded, setExpanded) => <AppointmentsStrip expanded={expanded} onExpand={() => setExpanded(true)} />}
+          </Tile>
+          {cityId === 'berlin' && (
+            <Tile title={t('panel.laborMarket.title')} span={1} expandable defaultExpanded={isDesktop}>
+              {() => <LaborMarketStrip />}
+            </Tile>
+          )}
+          {cityId === 'berlin' && (
+            <Tile title={t('panel.population.title')} span={1}>
+              <PopulationStrip />
+            </Tile>
+          )}
           {cityId === 'berlin' && (
             <Tile title={t('panel.crisis.title')} span={1} expandable defaultExpanded={isDesktop}>
               {(expanded, setExpanded) => <CrisisStrip expanded={expanded} onExpand={() => setExpanded(true)} />}
             </Tile>
           )}
-          <Tile title={t('panel.waterLevels.title')} span={1}>
-            <WaterLevelStrip />
-          </Tile>
-          <Tile title={t('sidebar.layers.political')} expandable>
-            {(expanded, setExpanded) => <PoliticalStrip expanded={expanded} onExpand={() => setExpanded(true)} />}
-          </Tile>
+
+          {/* Row 6: Governance */}
           <Tile title={t('panel.budget.title')} span={2}>
             <BudgetStrip />
           </Tile>
@@ -177,6 +197,7 @@ export function CommandLayout() {
               <CouncilMeetingsStrip />
             </Tile>
           )}
+          {/* Row 6.5: India-specific data */}
           {dataSources.agmarknet && (
             <Tile title={t('panel.mandi.title')} span={2} expandable defaultExpanded={false}>
               {(expanded) => <MandiStrip expanded={expanded} />}
@@ -192,8 +213,13 @@ export function CommandLayout() {
               {(expanded, setExpanded) => <SchemesStrip expanded={expanded} onExpand={() => setExpanded(true)} />}
             </Tile>
           )}
-          <Tile title={t('panel.events.title')} span={2}>
-            <EventsStrip />
+
+          {/* Row 7: Safety & Infrastructure */}
+          <Tile title={t('sidebar.layers.political')} expandable>
+            {(expanded, setExpanded) => <PoliticalStrip expanded={expanded} onExpand={() => setExpanded(true)} />}
+          </Tile>
+          <Tile title={t('panel.waterLevels.title')} span={1}>
+            <WaterLevelStrip />
           </Tile>
         </DashboardGrid>
       </div>

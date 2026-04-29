@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createCache } from '../lib/cache.js';
-import { createTransitIngestion, type TransitAlert } from './ingest-transit.js';
+import type { TransitAlert } from '@city-monitor/shared';
+import { createTransitIngestion } from './ingest-transit.js';
 
 const mockDeparturesResponse = {
   departures: [

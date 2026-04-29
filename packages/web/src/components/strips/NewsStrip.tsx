@@ -98,8 +98,6 @@ export function NewsStrip() {
   if (isLoading) return <Skeleton lines={6} />;
   if (isError) return <StripErrorFallback domain="News" onRetry={refetch} />;
 
-  const displayItems = filteredItems.slice(0, MAX_ITEMS);
-
   return (
     <>
       <div role="tablist" className="flex gap-0.5 mb-2 bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5">
@@ -127,11 +125,11 @@ export function NewsStrip() {
       </div>
 
       <div id="news-panel" role="tabpanel" aria-labelledby={`news-tab-${resolvedCategory}`} className="flex-1 min-h-0 max-h-[300px] overflow-y-auto scrollbar-thin pr-2">
-        {displayItems.length === 0 ? (
+        {filteredItems.length === 0 ? (
           <p className="text-sm text-gray-400 py-2 text-center">{t('panel.news.empty')}</p>
         ) : (
           <ul className="divide-y divide-gray-100 dark:divide-gray-800">
-            {displayItems.map((item) => (
+            {filteredItems.map((item) => (
               <CompactNewsItem key={item.id} item={item} />
             ))}
           </ul>

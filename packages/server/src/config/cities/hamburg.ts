@@ -28,7 +28,49 @@ export const hamburg: CityConfig = {
   dataSources: {
     weather: { provider: 'open-meteo', lat: 53.5511, lon: 9.9937 },
     // HVV transport.rest API is deprecated and offline (March 2026) — no free alternative
-    police: { provider: 'rss', url: 'https://www.presseportal.de/rss/dienststelle_6013.rss2' },
+    police: {
+      provider: 'rss',
+      url: 'https://www.presseportal.de/rss/dienststelle_6013.rss2',
+      districts: [
+        // Bezirke (longer compound names before shorter substrings)
+        'Hamburg-Mitte', 'Hamburg-Nord',
+        'Altona-Altstadt', 'Altona-Nord', 'Altona',
+        'Bergedorf', 'Eimsbüttel', 'Harburg', 'Wandsbek',
+
+        // Altona Stadtteile
+        'Ottensen', 'Bahrenfeld', 'Blankenese', 'Osdorf', 'Lurup',
+        'Sülldorf', 'Rissen', 'Nienstedten', 'Groß Flottbek', 'Othmarschen',
+
+        // Bergedorf Stadtteile
+        'Lohbrügge', 'Allermöhe', 'Billwerder', 'Curslack', 'Kirchwerder',
+        'Neuallermöhe',
+
+        // Eimsbüttel Stadtteile
+        'Eidelstedt', 'Stellingen', 'Lokstedt', 'Niendorf', 'Schnelsen',
+        'Rotherbaum', 'Harvestehude', 'Hoheluft-West',
+
+        // Harburg Stadtteile
+        'Neugraben-Fischbek', 'Hausbruch', 'Heimfeld', 'Moorburg',
+        'Neuland',
+
+        // Hamburg-Mitte Stadtteile
+        'St. Pauli', 'St. Georg', 'HafenCity', 'Hammerbrook', 'Borgfelde',
+        'Hamm', 'Horn', 'Billstedt', 'Billbrook', 'Rothenburgsort',
+        'Veddel', 'Wilhelmsburg', 'Neustadt', 'Finkenwerder',
+
+        // Hamburg-Nord Stadtteile (longer names before shorter substrings)
+        'Barmbek-Nord', 'Barmbek-Süd',
+        'Winterhude', 'Eppendorf', 'Uhlenhorst', 'Hohenfelde', 'Dulsberg',
+        'Alsterdorf', 'Ohlsdorf', 'Fuhlsbüttel', 'Langenhorn',
+        'Groß Borstel', 'Hoheluft-Ost',
+
+        // Wandsbek Stadtteile
+        'Bramfeld', 'Rahlstedt', 'Farmsen-Berne', 'Tonndorf', 'Jenfeld',
+        'Marienthal', 'Steilshoop', 'Wellingsbüttel', 'Sasel',
+        'Poppenbüttel', 'Hummelsbüttel', 'Bergstedt', 'Duvenstedt',
+        'Wohldorf-Ohlstedt', 'Volksdorf', 'Eilbek',
+      ],
+    },
     nina: { ars: '020000000000' },
     pollen: {
       provider: 'dwd',

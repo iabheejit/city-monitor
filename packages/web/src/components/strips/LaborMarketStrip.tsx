@@ -2,31 +2,19 @@ import { useTranslation } from 'react-i18next';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useLaborMarket } from '../../hooks/useLaborMarket.js';
 import { useFreshness } from '../../hooks/useFreshness.js';
+import { formatYoy } from '../../lib/format-stats.js';
 import { StripErrorFallback } from '../ErrorFallback.js';
 import { Skeleton } from '../layout/Skeleton.js';
 import { TileFooter } from '../layout/TileFooter.js';
-
-function formatYoy(percent: number): { text: string; color: string } {
-  const sign = percent > 0 ? '+' : '';
-  const value = Number.isInteger(percent) ? percent : percent.toFixed(1);
-  const color = percent > 0
-    ? 'text-red-500 dark:text-red-400'
-    : percent < 0
-      ? 'text-green-500 dark:text-green-400'
-      : 'text-gray-400';
-  return { text: `${sign}${value}%`, color };
-}
 
 const FRESH_MAX_AGE = 36 * 60 * 60 * 1000; // 36h (cron daily)
 
 export function LaborMarketStrip() {
   const { id: cityId } = useCityConfig();
-  const isBerlin = cityId === 'berlin';
-  const { data, fetchedAt, isLoading, isError, refetch } = useLaborMarket(cityId, isBerlin);
-  const { t } = useTranslation();
+  const { data, fetchedAt, isLoading, isError, refetch } = useLaborMarket(cityId);
+  const { t, i18n } = useTranslation();
   const { isStale, agoText } = useFreshness(fetchedAt, FRESH_MAX_AGE);
 
-  if (!isBerlin) return null;
   if (isLoading) return <Skeleton lines={2} />;
   if (isError) return <StripErrorFallback domain="Unemployment" onRetry={refetch} />;
   if (!data) return <p className="text-sm text-gray-400 py-2 text-center">{t('panel.laborMarket.empty')}</p>;
@@ -48,7 +36,7 @@ export function LaborMarketStrip() {
           </span>
           <div className="flex items-center gap-1.5 mt-1.5 text-xs">
             <span className="text-gray-500 dark:text-gray-400 tabular-nums">
-              {data.totalUnemployed.toLocaleString('de-DE')}
+              {data.totalUnemployed.toLocaleString(i18n.language)}
             </span>
             <span className="text-gray-300 dark:text-gray-600">&middot;</span>
             <span className={`font-medium ${totalYoy.color}`}>
@@ -67,7 +55,7 @@ export function LaborMarketStrip() {
           </span>
           <div className="flex items-center gap-1.5 mt-1.5 text-xs">
             <span className="text-gray-500 dark:text-gray-400 tabular-nums">
-              {data.underemploymentCount.toLocaleString('de-DE')}
+              {data.underemploymentCount.toLocaleString(i18n.language)}
             </span>
             <span className="text-gray-300 dark:text-gray-600">&middot;</span>
             <span className={`font-medium ${underemploymentYoy.color}`}>
@@ -86,7 +74,7 @@ export function LaborMarketStrip() {
           </span>
           <div className="flex items-center gap-1.5 mt-1.5 text-xs">
             <span className="text-gray-500 dark:text-gray-400 tabular-nums">
-              {data.sgbIICount.toLocaleString('de-DE')}
+              {data.sgbIICount.toLocaleString(i18n.language)}
             </span>
             <span className="text-gray-300 dark:text-gray-600">&middot;</span>
             <span className={`font-medium ${sgbIIYoy.color}`}>

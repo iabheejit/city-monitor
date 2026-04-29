@@ -1,4 +1,4 @@
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 import type { PopulationFeatureProps, PopulationSummary } from '@city-monitor/shared';
 import type { Cache } from '../lib/cache.js';
 import type { Db } from '../db/index.js';
@@ -32,6 +32,17 @@ function parseSpaceNumber(val: unknown): number {
   return isNaN(n) ? 0 : n;
 }
 
+/** Convert an ExcelJS worksheet to a 0-indexed array-of-arrays (same format as SheetJS sheet_to_json with header:1). */
+function sheetToAoa(ws: ExcelJS.Worksheet): unknown[][] {
+  const rows: unknown[][] = [];
+  ws.eachRow({ includeEmpty: true }, (row, rowNumber) => {
+    // ExcelJS row.values is 1-indexed (index 0 is undefined)
+    const values = row.values as unknown[];
+    rows[rowNumber - 1] = values.slice(1);
+  });
+  return rows;
+}
+
 /** Compute geodetic polygon area in km² using the Shoelace formula with latitude correction.
  *  coordinates[0] is the exterior ring; coordinates[1..n] are holes (subtracted). */
 export function polygonAreaKm2(coordinates: number[][][]): number {
@@ -53,8 +64,7 @@ export function polygonAreaKm2(coordinates: number[][][]): number {
   return outer - holes;
 }
 
-function parseT2Sheet(sheet: XLSX.WorkSheet): PlrData[] {
-  const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 }) as unknown as unknown[][];
+function parseT2Sheet(rows: unknown[][]): PlrData[] {
   const results: PlrData[] = [];
 
   // Find the header row containing 'Insgesamt' (may be hyphenated as 'Ins-\ngesamt')
@@ -110,8 +120,7 @@ function parseT2Sheet(sheet: XLSX.WorkSheet): PlrData[] {
   return results;
 }
 
-function parseSchluessel(sheet: XLSX.WorkSheet): Map<string, string> {
-  const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 }) as unknown as unknown[][];
+function parseSchluessel(rows: unknown[][]): Map<string, string> {
   const lookup = new Map<string, string>();
 
   for (let i = 1; i < rows.length; i++) {
@@ -153,8 +162,7 @@ const GERMAN_MONTHS: Record<string, string> = {
   'September': '09', 'Oktober': '10', 'November': '11', 'Dezember': '12',
 };
 
-function extractSnapshotDate(sheet: XLSX.WorkSheet): string {
-  const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 }) as unknown as unknown[][];
+function extractSnapshotDate(rows: unknown[][]): string {
   for (let i = 0; i < Math.min(5, rows.length); i++) {
     const row = rows[i];
     if (!Array.isArray(row)) continue;
@@ -186,24 +194,27 @@ export function createPopulationIngestion(cache: Cache, db: Db | null = null) {
       }
 
       const buffer = await res.arrayBuffer();
-      const wb = XLSX.read(new Uint8Array(buffer), { type: 'array' });
+      const wb = new ExcelJS.Workbook();
+      // @ts-expect-error ExcelJS typings use old Buffer definition incompatible with Node 22+
+      await wb.xlsx.load(Buffer.from(new Uint8Array(buffer)));
 
-      const t2Sheet = wb.Sheets['T2'];
-      const schluesselSheet = wb.Sheets['Schlüssel'];
+      const t2Sheet = wb.getWorksheet('T2');
+      const schluesselSheet = wb.getWorksheet('Schlüssel');
 
       if (!t2Sheet) {
         log.warn('No T2 sheet found in XLSX');
         return;
       }
 
-      const plrDataList = parseT2Sheet(t2Sheet);
+      const t2Rows = sheetToAoa(t2Sheet);
+      const plrDataList = parseT2Sheet(t2Rows);
       if (plrDataList.length === 0) {
         log.warn('No PLR data rows found in T2 sheet');
         return;
       }
 
-      const nameMap = schluesselSheet ? parseSchluessel(schluesselSheet) : new Map<string, string>();
-      const snapshotDate = extractSnapshotDate(t2Sheet);
+      const nameMap = schluesselSheet ? parseSchluessel(sheetToAoa(schluesselSheet)) : new Map<string, string>();
+      const snapshotDate = extractSnapshotDate(t2Rows);
 
       // Get PLR geometry from social atlas cache
       const socialAtlasGeojson = cache.get<{ features?: Array<{ geometry: unknown; properties?: { plrId?: string } }> }>(

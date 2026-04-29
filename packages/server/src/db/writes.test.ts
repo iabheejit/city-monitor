@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { saveWeather, saveTransitAlerts, saveEvents, saveSafetyReports, saveSummary, saveAirQualityGrid } from './writes.js';
 import type { Db } from './index.js';
 import type { WeatherData } from '../cron/ingest-weather.js';
-import type { TransitAlert } from '../cron/ingest-transit.js';
+import type { TransitAlert } from '@city-monitor/shared';
 import type { CityEvent } from '../cron/ingest-events.js';
 import type { SafetyReport } from '../cron/ingest-safety.js';
 

@@ -3,8 +3,30 @@
 /* Use .dark class on <html> instead of prefers-color-scheme */
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* Register surface colors as Tailwind theme tokens → bg-surface-0, border-border, etc. */
+@theme {
+  --color-surface-0: var(--surface-0);
+  --color-surface-1: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+  --color-border: var(--border);
+  --color-border-subtle: var(--border-subtle);
+}
+
 :root {
   --accent: #3b82f6;
+  --accent-rgb: 59, 130, 246;
+  --surface-0: #f9fafb;      /* page background (gray-50) */
+  --surface-1: #ffffff;      /* card background */
+  --surface-2: #f3f4f6;      /* elevated surface */
+  --border: #e5e7eb;         /* borders (gray-200) */
+  --border-subtle: #f3f4f6;  /* subtle borders (gray-100) */
+}
+.dark {
+  --surface-0: #0c0f14;      /* deep blue-black */
+  --surface-1: #141820;      /* slightly lifted blue-gray */
+  --surface-2: #1a1f2a;      /* elevated surface */
+  --border: #232a36;         /* blue-tinted border */
+  --border-subtle: #1c2230;  /* subtle border */
 }
 
 /* Smooth 150ms transitions when toggling dark/light theme */
@@ -16,16 +38,60 @@
 
 [data-city='berlin'] {
   --accent: #e2001a;
+  --accent-rgb: 226, 0, 26;
 }
 .dark[data-city='berlin'] {
   --accent: #ff4d5e;
+  --accent-rgb: 255, 77, 94;
+  --surface-0: #0e0c0f;      /* warm-tinted deep black */
+  --surface-1: #171418;      /* warm-tinted card */
+  --surface-2: #1f1a1e;      /* warm-tinted elevated */
+  --border: #2a2328;         /* warm-tinted border */
+  --border-subtle: #221c20;  /* warm-tinted subtle border */
 }
 
 [data-city='hamburg'] {
   --accent: #004b93;
+  --accent-rgb: 0, 75, 147;
 }
 .dark[data-city='hamburg'] {
   --accent: #5b9bd5;
+  --accent-rgb: 91, 155, 213;
+  --surface-0: #0a0d14;      /* cool-tinted deep black */
+  --surface-1: #121620;      /* cool-tinted card */
+  --surface-2: #181d2a;      /* cool-tinted elevated */
+  --border: #212836;         /* cool-tinted border */
+  --border-subtle: #1a2030;  /* cool-tinted subtle border */
+}
+
+/* Skeleton shimmer — gradient sweep left-to-right */
+:root {
+  --shimmer-base: #e5e7eb;
+  --shimmer-highlight: #f3f4f6;
+}
+.dark {
+  --shimmer-base: #374151;
+  --shimmer-highlight: #4b5563;
+}
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.skeleton-shimmer {
+  background: linear-gradient(90deg, var(--shimmer-base) 25%, var(--shimmer-highlight) 50%, var(--shimmer-base) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+/* Subtle accent glow at top of page in dark mode — applied to the app shell div, not body,
+   because Shell's min-h-screen div paints over body's background. */
+
+/* Card inner glow — glass edge effect for dark mode */
+.card-glow {
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+}
+.dark .card-glow {
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.04), 0 1px 3px 0 rgba(0, 0, 0, 0.3);
 }
 
 [data-city='nagpur'] {
@@ -36,10 +102,16 @@
 }
 
 /* MapLibre popup */
+.maplibregl-popup {
+  max-width: calc(100vw - 24px) !important;
+}
 .maplibregl-popup-content {
   border-radius: 8px !important;
   padding: 10px 12px !important;
   box-shadow: 0 3px 14px rgba(0, 0, 0, 0.15) !important;
+  max-width: calc(100vw - 24px) !important;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .maplibregl-popup-close-button {
@@ -61,27 +133,49 @@
 
 /* MapLibre popup dark mode */
 .dark .maplibregl-popup-content {
-  background: #1f2937;
+  background: var(--surface-1);
   color: #e5e7eb;
+  border: 1px solid var(--border);
 }
 .dark .maplibregl-popup-close-button:hover {
   background-color: rgba(255, 255, 255, 0.1);
   color: #e5e7eb;
 }
 .dark .maplibregl-popup-tip {
-  border-top-color: #1f2937;
+  border-top-color: var(--surface-1);
 }
 .dark .maplibregl-popup-anchor-bottom .maplibregl-popup-tip {
-  border-top-color: #1f2937;
+  border-top-color: var(--surface-1);
 }
 .dark .maplibregl-popup-anchor-top .maplibregl-popup-tip {
-  border-bottom-color: #1f2937;
+  border-bottom-color: var(--surface-1);
 }
 .dark .maplibregl-popup-anchor-left .maplibregl-popup-tip {
-  border-right-color: #1f2937;
+  border-right-color: var(--surface-1);
 }
 .dark .maplibregl-popup-anchor-right .maplibregl-popup-tip {
-  border-left-color: #1f2937;
+  border-left-color: var(--surface-1);
+}
+
+/* View Transitions API — circular wipe for theme toggle */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+::view-transition-new(root) {
+  animation: 400ms ease-out circle-expand;
+}
+@keyframes circle-expand {
+  from { clip-path: circle(0% at var(--toggle-x, 50%) var(--toggle-y, 50%)); }
+  to { clip-path: circle(150% at var(--toggle-x, 50%) var(--toggle-y, 50%)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
+  }
 }
 
 /* Global focus-visible indicator for keyboard users (WCAG 2.4.7) */
@@ -121,10 +215,102 @@ select:focus-visible,
   background: rgba(107, 114, 128, 0.6);
 }
 
+/* Tile reveal animation — staggered slide-up + fade */
+.tile-reveal {
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 600ms ease-out, transform 600ms ease-out;
+  transition-delay: var(--reveal-delay, 0ms);
+}
+.tile-revealed {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Respect reduced-motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .tile-reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .animate-scroll-dot {
+    animation: none;
+  }
+  .animate-drawer-breathe {
+    animation: none;
+  }
+  .skeleton-shimmer {
+    animation: none;
+    background: var(--shimmer-base);
+  }
+}
+
+/* Scroll indicator — animated dot inside mouse icon */
+@keyframes scroll-dot {
+  0% { transform: translateY(0); opacity: 1; }
+  50% { transform: translateY(10px); opacity: 0.3; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+.animate-scroll-dot {
+  animation: scroll-dot 1.5s ease-in-out infinite;
+}
+
+/* Mobile layer drawer icon breathe — stops after first click */
+@keyframes drawer-breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.25); }
+}
+.animate-drawer-breathe {
+  animation: drawer-breathe 2s ease-in-out infinite;
+  transform-origin: left center;
+}
+
+/* News marquee — continuous horizontal scroll */
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.marquee-track {
+  animation: marquee var(--marquee-speed, 90s) linear infinite;
+}
+.marquee-container:hover .marquee-track {
+  animation-play-state: paused;
+}
+
+/* Respect reduced-motion for marquee */
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track {
+    animation: none;
+  }
+}
+
+/* Toast fade-in */
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in {
+  animation: fade-in 300ms ease-out;
+}
+
+/* Offset top-right map controls below the fixed news marquee (h-9 = 2.25rem + gap).
+   !important needed to override maplibre-gl.css which sets top:0 at equal specificity
+   but loads later (imported inside CityMap.tsx). */
+.maplibregl-ctrl-top-right {
+  top: 3rem !important;
+}
+
 /* Hide map zoom controls on mobile — finger gestures handle zoom */
 @media (max-width: 1023px) {
   .maplibregl-ctrl-top-right .maplibregl-ctrl-group {
     display: none;
   }
+}
+
+/* Keep any remaining bottom controls above the skyline separator */
+.maplibregl-ctrl-bottom-right,
+.maplibregl-ctrl-bottom-left {
+  bottom: 5rem;
 }
 

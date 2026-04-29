@@ -3,6 +3,7 @@
  */
 
 import maplibregl from 'maplibre-gl';
+import type { StyleSpecification, LayerSpecification } from 'maplibre-gl';
 import {
   KEEP_LAYERS,
   ROAD_LAYER_IDS,
@@ -17,6 +18,61 @@ import {
   NOISE_LAYER,
   getNoiseWmsUrl,
 } from './constants.js';
+
+/** Check whether a style layer should be visible on initial load */
+function isKeptLayer(layer: LayerSpecification): boolean {
+  const id = layer.id;
+  return (
+    KEEP_LAYERS.has(id) ||
+    ROAD_LAYER_IDS.has(id) ||
+    WATER_LAYER_IDS.has(id) ||
+    id.startsWith('district-') ||
+    id.startsWith('political-') ||
+    id.startsWith('transit-') ||
+    id.startsWith('news-') ||
+    id.startsWith('safety-') ||
+    id.startsWith('warning-') ||
+    id.startsWith('pharmacy-') ||
+    id.startsWith('aed-') ||
+    id.startsWith('traffic-') ||
+    id.startsWith('construction-') ||
+    id.startsWith('aq-') ||
+    id.startsWith('wl-') ||
+    id.startsWith('bathing-') ||
+    id.startsWith('weather-') ||
+    id.startsWith('rent-map-') ||
+    id.startsWith('noise-') ||
+    id.startsWith('social-atlas-') ||
+    id.startsWith('population-')
+  );
+}
+
+/** Pre-process a CARTO style to hide layers we don't need, preventing the
+ *  flash of detailed streets before simplifyMap() runs. */
+function preprocessStyle(style: StyleSpecification): StyleSpecification {
+  return {
+    ...style,
+    layers: style.layers.map((layer) => {
+      if (isKeptLayer(layer)) return layer;
+      return { ...layer, layout: { ...layer.layout, visibility: 'none' as const } };
+    }),
+  };
+}
+
+// Cache fetched + processed styles so theme swaps don't re-fetch
+const styleCache = new Map<string, StyleSpecification>();
+
+/** Fetch a CARTO style URL, pre-process it to hide unwanted layers, and return
+ *  a style object ready for the Map constructor or setStyle(). */
+export async function loadStyle(url: string): Promise<StyleSpecification> {
+  const cached = styleCache.get(url);
+  if (cached) return cached;
+  const res = await fetch(url);
+  const raw: StyleSpecification = await res.json();
+  const processed = preprocessStyle(raw);
+  styleCache.set(url, processed);
+  return processed;
+}
 
 /** Strip city prefix and constituency suffixes so API names match Bezirke GeoJSON.
  *  e.g. "Berlin-Spandau – Charlottenburg Nord" → "spandau" */

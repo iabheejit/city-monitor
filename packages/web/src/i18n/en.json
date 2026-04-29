@@ -53,6 +53,8 @@
         "veryHigh": "Very High",
         "extreme": "Extreme"
       },
+      "today": "Today",
+      "tomorrow": "Tmrw",
       "dwdForecast": "DWD Forecast"
     },
     "transit": {
@@ -150,7 +152,8 @@
         "121151": "Child Passport",
         "121627": "Driver's License",
         "121721": "Parking Permit"
-      }
+      },
+      "more": "more"
     },
     "population": {
       "title": "Population",
@@ -340,6 +343,10 @@
     "other": "Other",
     "museum": "Museum"
   },
+  "tile": {
+    "expand": "expand",
+    "collapse": "collapse"
+  },
   "stale": {
     "updated": "Updated {{time}}"
   },
@@ -437,5 +444,14 @@
     "privacy": "Privacy",
     "noTracking": "No Tracking",
     "sources": "Data Sources"
+  },
+  "shortcuts": {
+    "title": "Keyboard Shortcuts",
+    "toggleHints": "Show / hide shortcuts",
+    "toggleDark": "Toggle dark mode",
+    "toggleLayer": "Toggle data layer 1–9",
+    "clearLayers": "Clear all layers",
+    "close": "Close",
+    "toastHint": "Keyboard shortcuts"
   }
 }

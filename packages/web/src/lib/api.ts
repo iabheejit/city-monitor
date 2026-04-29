@@ -8,171 +8,33 @@ async function fetchJson<T>(url: string): Promise<T> {
   return response.json() as Promise<T>;
 }
 
-export type { WeatherData, ApiResponse, HistoryPoint } from '@city-monitor/shared';
-import type { WeatherData, ApiResponse, HistoryPoint } from '@city-monitor/shared';
+// Re-export all shared types for backward compatibility
+export type {
+  WeatherData, ApiResponse, HistoryPoint, NewsItem, NewsDigest,
+  CityEvent, SafetyReport, AirQualityGridPoint, ConstructionSite,
+  WaterLevelData, WaterLevelStation, AedLocation, BathingSpot,
+  BudgetSummary, BudgetAreaSummary, BudgetCategoryAmount,
+  BuergeramtData, BuergeramtService, SocialAtlasFeatureProps,
+  LaborMarketSummary, WastewaterSummary, WastewaterPathogen,
+  PopulationFeatureProps, PopulationSummary, FeuerwehrSummary,
+  FeuerwehrMonthData, PollenForecast, PollenType, PollenIntensity,
+  PollenTypeForecast, NoiseSensor, CouncilMeeting, NinaWarning,
+  TrafficIncident, EmergencyPharmacy, Representative, PoliticalDistrict,
+  TransitAlert, AirQuality, BootstrapData, NewsSummaryData,
+  MandiSummary, MandiCommodity, MgnregaSummary, SchemeCatalogue, SchemeEntry,
+} from '@city-monitor/shared';
 
-export interface BootstrapData {
-  news: ApiResponse<NewsDigest> | null;
-  weather: ApiResponse<WeatherData> | null;
-  transit: ApiResponse<TransitAlert[]> | null;
-  events: ApiResponse<CityEvent[]> | null;
-  safety: ApiResponse<SafetyReport[]> | null;
-  nina: ApiResponse<NinaWarning[]> | null;
-  airQuality: ApiResponse<AirQuality | null> | null;
-  pharmacies: ApiResponse<EmergencyPharmacy[]> | null;
-  aeds: ApiResponse<AedLocation[]> | null;
-  traffic: ApiResponse<TrafficIncident[]> | null;
-  construction: ApiResponse<ConstructionSite[]> | null;
-  waterLevels: ApiResponse<WaterLevelData> | null;
-  budget: ApiResponse<BudgetSummary | null> | null;
-  appointments: ApiResponse<BuergeramtData> | null;
-  laborMarket: ApiResponse<LaborMarketSummary | null> | null;
-  wastewater: ApiResponse<WastewaterSummary | null> | null;
-  populationSummary: ApiResponse<PopulationSummary | null> | null;
-  feuerwehr: ApiResponse<FeuerwehrSummary | null> | null;
-  pollen: ApiResponse<PollenForecast | null> | null;
-  noiseSensors: ApiResponse<NoiseSensor[] | null> | null;
-  councilMeetings: ApiResponse<CouncilMeeting[] | null> | null;
-  mandi: ApiResponse<MandiSummary | null> | null;
-  mgnrega: ApiResponse<MgnregaSummary | null> | null;
-  myScheme: ApiResponse<SchemeCatalogue | null> | null;
-}
-
-export interface NewsDigest {
-  items: NewsItem[];
-  categories: Record<string, NewsItem[]>;
-  updatedAt: string;
-}
-
-export interface NewsItem {
-  id: string;
-  title: string;
-  url: string;
-  publishedAt: string;
-  sourceName: string;
-  category: string;
-  tier: number;
-  description?: string;
-  location?: { lat: number; lon: number; label?: string };
-  importance?: number;
-}
-
-export interface TransitAlert {
-  id: string;
-  line: string;
-  lines?: string[];
-  type: 'delay' | 'disruption' | 'cancellation' | 'planned-work';
-  severity: 'low' | 'medium' | 'high';
-  message: string;
-  detail: string;
-  station: string;
-  location: { lat: number; lon: number } | null;
-  affectedStops: string[];
-}
-
-export interface CityEvent {
-  id: string;
-  title: string;
-  venue?: string;
-  date: string;
-  endDate?: string;
-  category: 'music' | 'art' | 'theater' | 'food' | 'market' | 'sport' | 'community' | 'museum' | 'other';
-  url: string;
-  description?: string;
-  free?: boolean;
-  source: 'kulturdaten' | 'ticketmaster' | 'gomus';
-  price?: string;
-}
-
-export interface SafetyReport {
-  id: string;
-  title: string;
-  description: string;
-  publishedAt: string;
-  url: string;
-  district?: string;
-  location?: { lat: number; lon: number; label?: string };
-}
-
-export interface NinaWarning {
-  id: string;
-  version: number;
-  startDate: string;
-  expiresAt?: string;
-  severity: 'minor' | 'moderate' | 'severe' | 'extreme';
-  urgency?: string;
-  type: string;
-  source: string;
-  headline: string;
-  description?: string;
-  instruction?: string;
-  area?: { type: string; geometry: unknown; properties?: unknown };
-}
-
-export interface AirQuality {
-  current: {
-    europeanAqi: number;
-    pm25: number;
-    pm10: number;
-    no2: number;
-    o3: number;
-    updatedAt: string;
-  };
-  hourly: Array<{
-    time: string;
-    europeanAqi: number;
-    pm25: number;
-    pm10: number;
-  }>;
-}
-
-export interface Representative {
-  name: string;
-  party: string;
-  role: string;
-  photoUrl?: string;
-  profileUrl?: string;
-  constituency?: string;
-}
-
-export interface PoliticalDistrict {
-  id: string;
-  name: string;
-  level: 'bezirk' | 'bundestag' | 'landesparlament';
-  representatives: Representative[];
-}
-
-export interface TrafficIncident {
-  id: string;
-  type: 'jam' | 'closure' | 'construction' | 'accident' | 'other';
-  severity: 'low' | 'moderate' | 'major' | 'critical';
-  description: string;
-  road?: string;
-  from?: string;
-  to?: string;
-  delay?: number;
-  length?: number;
-  geometry: { type: string; coordinates: number[][] };
-  startTime?: string;
-  endTime?: string;
-}
-
-export interface EmergencyPharmacy {
-  id: string;
-  name: string;
-  address: string;
-  district?: string;
-  phone?: string;
-  location: { lat: number; lon: number };
-  validFrom: string;
-  validUntil: string;
-  distance?: number;
-}
-
-export type { AirQualityGridPoint, ConstructionSite, WaterLevelData, WaterLevelStation, AedLocation, BathingSpot, BudgetSummary, BudgetAreaSummary, BudgetCategoryAmount, BuergeramtData, BuergeramtService, SocialAtlasFeatureProps, LaborMarketSummary, WastewaterSummary, WastewaterPathogen, PopulationFeatureProps, PopulationSummary, FeuerwehrSummary, FeuerwehrMonthData, PollenForecast, PollenType, PollenIntensity, PollenTypeForecast, NoiseSensor, CouncilMeeting, MandiSummary, MandiCommodity, MgnregaSummary, SchemeCatalogue, SchemeEntry } from '@city-monitor/shared';
-import type { AirQualityGridPoint, ConstructionSite, WaterLevelData, AedLocation, BathingSpot, BudgetSummary, BuergeramtData, LaborMarketSummary, WastewaterSummary, PopulationSummary, FeuerwehrSummary, PollenForecast, NoiseSensor, CouncilMeeting, MandiSummary, MgnregaSummary, SchemeCatalogue } from '@city-monitor/shared';
-
-export type NewsSummaryData = { briefing: string | null; generatedAt: string | null; headlineCount: number; cached: boolean };
+// Import types used locally in api object definitions
+import type {
+  WeatherData, ApiResponse, HistoryPoint, NewsDigest,
+  CityEvent, SafetyReport, AirQualityGridPoint, ConstructionSite,
+  WaterLevelData, AedLocation, BathingSpot, BudgetSummary,
+  BuergeramtData, LaborMarketSummary, WastewaterSummary,
+  PopulationSummary, FeuerwehrSummary, PollenForecast, NoiseSensor,
+  CouncilMeeting, NinaWarning, TrafficIncident, EmergencyPharmacy,
+  PoliticalDistrict, TransitAlert, AirQuality, BootstrapData,
+  NewsSummaryData, MandiSummary, MgnregaSummary, SchemeCatalogue,
+} from '@city-monitor/shared';
 
 export const api = {
   getBootstrap: (city: string) => fetchJson<BootstrapData>(`${BASE}/${city}/bootstrap`),

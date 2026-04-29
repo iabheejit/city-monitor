@@ -305,3 +305,70 @@ describe('ingest-feeds — DB assessment reuse', () => {
     expect(digest!.items.length).toBe(0);
   });
 });
+
+// ---------------------------------------------------------------------------
+// applyDropLogic — pure function unit tests
+// ---------------------------------------------------------------------------
+
+describe('applyDropLogic', () => {
+  // Lazy import to avoid hoisting issues with vi.mock
+  let applyDropLogic: typeof import('./ingest-feeds.js')['applyDropLogic'];
+
+  beforeEach(async () => {
+    ({ applyDropLogic } = await import('./ingest-feeds.js'));
+  });
+
+  function makeItem(overrides: Partial<import('../db/writes.js').PersistedNewsItem> = {}): import('../db/writes.js').PersistedNewsItem {
+    return {
+      id: 'test-' + Math.random().toString(36).slice(2),
+      title: 'Test Article',
+      url: 'https://example.com/test',
+      publishedAt: '2026-03-02T10:00:00Z',
+      sourceName: 'Test Feed',
+      sourceUrl: 'https://example.com',
+      category: 'local',
+      tier: 1,
+      lang: 'de',
+      ...overrides,
+    };
+  }
+
+  it('drops items with no assessment', () => {
+    const items = [makeItem({ assessment: undefined })];
+    expect(applyDropLogic(items)).toHaveLength(0);
+  });
+
+  it('drops items with relevant_to_city: false', () => {
+    const items = [makeItem({ assessment: { relevant_to_city: false, importance: 0.8 } })];
+    expect(applyDropLogic(items)).toHaveLength(0);
+  });
+
+  it('keeps relevant items and inherits importance', () => {
+    const items = [makeItem({ assessment: { relevant_to_city: true, importance: 0.9 } })];
+    const result = applyDropLogic(items);
+    expect(result).toHaveLength(1);
+    expect(result[0].importance).toBe(0.9);
+  });
+
+  it('defaults importance to 0.5 when not set', () => {
+    const items = [makeItem({ assessment: { relevant_to_city: true } })];
+    const result = applyDropLogic(items);
+    expect(result).toHaveLength(1);
+    expect(result[0].importance).toBe(0.5);
+  });
+
+  it('handles mixed bag correctly', () => {
+    const items = [
+      makeItem({ title: 'No assessment', assessment: undefined }),
+      makeItem({ title: 'Irrelevant', assessment: { relevant_to_city: false, importance: 0.8 } }),
+      makeItem({ title: 'Relevant high', assessment: { relevant_to_city: true, importance: 0.9 } }),
+      makeItem({ title: 'Relevant default', assessment: { relevant_to_city: true } }),
+    ];
+    const result = applyDropLogic(items);
+    expect(result).toHaveLength(2);
+    expect(result[0].title).toBe('Relevant high');
+    expect(result[0].importance).toBe(0.9);
+    expect(result[1].title).toBe('Relevant default');
+    expect(result[1].importance).toBe(0.5);
+  });
+});

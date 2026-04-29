@@ -53,6 +53,8 @@
         "veryHigh": "Çok Yüksek",
         "extreme": "Aşırı"
       },
+      "today": "Bugün",
+      "tomorrow": "Yarın",
       "dwdForecast": "DWD Tahmini"
     },
     "transit": {
@@ -150,7 +152,8 @@
         "121151": "Çocuk Pasaportu",
         "121627": "Ehliyet",
         "121721": "Oturma İzni Parkı"
-      }
+      },
+      "more": "daha fazla"
     },
     "population": {
       "title": "Nüfus",
@@ -340,6 +343,10 @@
     "other": "Diğer",
     "museum": "Müze"
   },
+  "tile": {
+    "expand": "genislet",
+    "collapse": "daralt"
+  },
   "stale": {
     "updated": "Güncellendi {{time}}"
   },
@@ -437,5 +444,14 @@
     "privacy": "Gizlilik",
     "noTracking": "Takip Yok",
     "sources": "Veri Kaynakları"
+  },
+  "shortcuts": {
+    "title": "Klavye Kısayolları",
+    "toggleHints": "Kısayolları göster / gizle",
+    "toggleDark": "Karanlık modu değiştir",
+    "toggleLayer": "Veri katmanı 1–9 değiştir",
+    "clearLayers": "Tüm katmanları temizle",
+    "close": "Kapat",
+    "toastHint": "Klavye kısayolları"
   }
 }

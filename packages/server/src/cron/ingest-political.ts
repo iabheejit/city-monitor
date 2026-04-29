@@ -15,6 +15,10 @@ const API_BASE = 'https://www.abgeordnetenwatch.de/api/v2';
 const TIMEOUT_MS = 30_000;
 const TTL_SECONDS = 604800; // 7 days
 
+/** Date the BEZIRKSBUERGERMEISTER data was last manually verified. */
+const BEZIRKSBUERGERMEISTER_LAST_VERIFIED = new Date('2026-03-02');
+const STALENESS_THRESHOLD_DAYS = 180;
+
 /**
  * Hardcoded Bezirksbürgermeister per city.
  * Source: https://berlin.de/rbmskzl/regierender-buergermeister/buergermeister-von-berlin/rat-der-buergermeister/
@@ -111,6 +115,15 @@ export function preCacheBezirke(cache: Cache): void {
       cache.set(CK.political(city.id, 'bezirke'), bmData, TTL_SECONDS);
     }
   }
+
+  const ageMs = Date.now() - BEZIRKSBUERGERMEISTER_LAST_VERIFIED.getTime();
+  const ageDays = Math.round(ageMs / 86_400_000);
+  if (ageDays > STALENESS_THRESHOLD_DAYS) {
+    log.warn(
+      `Bezirksbuergermeister data was last verified ${ageDays} days ago (${BEZIRKSBUERGERMEISTER_LAST_VERIFIED.toISOString().slice(0, 10)}). ` +
+      `Please re-verify at https://berlin.de/rbmskzl/regierender-buergermeister/buergermeister-von-berlin/rat-der-buergermeister/`
+    );
+  }
 }
 
 export function createPoliticalIngestion(cache: Cache, db: Db | null) {
@@ -185,7 +198,7 @@ async function fetchCurrentPeriod(parliamentId: number): Promise<number | null> 
   return legislature?.id ?? data.data[0]?.id ?? null;
 }
 
-function normalizeParty(fractionLabel: string): string {
+export function normalizeParty(fractionLabel: string): string {
   if (fractionLabel.includes('SPD')) return 'SPD';
   if (fractionLabel.includes('CDU')) return 'CDU';
   if (fractionLabel.includes('CSU')) return 'CSU';
@@ -203,7 +216,7 @@ function normalizeParty(fractionLabel: string): string {
  * Input:  "78 - Berlin-Steglitz-Zehlendorf (Bundestag 2025 - 2029)"
  * Output: "Berlin-Steglitz-Zehlendorf"
  */
-function normalizeConstituencyName(label: string): string {
+export function normalizeConstituencyName(label: string): string {
   // Strip leading number + dash: "78 - Berlin-Mitte (...)" → "Berlin-Mitte (...)"
   let name = label.replace(/^\d+\s*-\s*/, '');
   // Strip trailing parenthetical: "Berlin-Mitte (Bundestag 2025 - 2029)" → "Berlin-Mitte"
@@ -211,7 +224,7 @@ function normalizeConstituencyName(label: string): string {
   return name.trim();
 }
 
-function mandateToRepresentative(m: AW_Mandate, role: string): Representative {
+export function mandateToRepresentative(m: AW_Mandate, role: string): Representative {
   const party = m.fraction_membership?.[0]?.fraction?.label ?? 'Parteilos';
   const rawConstituency = m.electoral_data?.constituency?.label;
   return {
@@ -227,7 +240,7 @@ function mandateToRepresentative(m: AW_Mandate, role: string): Representative {
  * Filter Bundestag mandates to those representing constituencies in the given city.
  * Uses constituency name heuristic (city name appears in constituency label).
  */
-function filterBundestagForCity(mandates: AW_Mandate[], cityName: string): AW_Mandate[] {
+export function filterBundestagForCity(mandates: AW_Mandate[], cityName: string): AW_Mandate[] {
   const lowerCity = cityName.toLowerCase();
   return mandates.filter((m) => {
     const cLabel = m.electoral_data?.constituency?.label?.toLowerCase() ?? '';
@@ -241,7 +254,7 @@ function filterBundestagForCity(mandates: AW_Mandate[], cityName: string): AW_Ma
  * The API can return multiple entries per politician (e.g. direct + list mandate).
  * Keep the first occurrence (which has constituency data for direct mandates).
  */
-function deduplicateMandates(mandates: AW_Mandate[]): AW_Mandate[] {
+export function deduplicateMandates(mandates: AW_Mandate[]): AW_Mandate[] {
   const seen = new Set<number>();
   return mandates.filter((m) => {
     if (seen.has(m.politician.id)) return false;
@@ -254,7 +267,7 @@ function deduplicateMandates(mandates: AW_Mandate[]): AW_Mandate[] {
  * Map a state constituency name to its parent Bezirk.
  * E.g. "Charlottenburg-Wilmersdorf 3" → "Charlottenburg-Wilmersdorf"
  */
-function constituencyToBezirk(constituency: string, bezirke: string[]): string | null {
+export function constituencyToBezirk(constituency: string, bezirke: string[]): string | null {
   const lower = constituency.toLowerCase();
   for (const b of bezirke) {
     if (lower.startsWith(b.toLowerCase())) return b;

@@ -6,9 +6,42 @@ import maplibregl from 'maplibre-gl';
 import { Landmark } from 'lucide';
 import type { PoliticalDistrict } from '../../../lib/api.js';
 import { getPartyColor, getMajorityParty } from '../../../lib/party-colors.js';
-import { registerPoliticalIcons, createBadgeIcon, type IconNode } from '../../../lib/map-icons.js';
+import { registerPoliticalIcons, createVerticalBadgeIcon, type IconNode } from '../../../lib/map-icons.js';
 import { DISTRICT_URLS, POLITICAL_MARKER_LAYER, POLITICAL_MARKER_SOURCE } from '../constants.js';
 import { normalizePoliticalName } from '../base.js';
+
+/** District paint values derived from dark/light theme. */
+function districtPaint(isDark: boolean) {
+  return {
+    fillColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)',
+    lineColor: isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.25)',
+    lineWidth: 1.5 as const,
+    lineDash: [4, 2] as number[],
+    textColor: isDark ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.7)',
+    textHaloColor: isDark ? 'rgba(0,0,0,0.7)' : 'rgba(255,255,255,0.9)',
+    textHaloWidth: 1.5,
+  };
+}
+
+/** Marker symbol layer IDs — district labels must render below all of these */
+const MARKER_LAYER_IDS = [
+  'transit-marker-icon', 'news-marker-icon', 'safety-marker-icon',
+  'wl-marker-icon', 'bathing-marker-icon', 'aq-marker-icon',
+  'noise-sensor-icon', 'pharmacy-marker-icon', 'aed-marker-icon',
+  'construction-points', 'political-markers',
+  'traffic-incidents-circle', 'traffic-incidents-label',
+];
+
+/** Move district-label below the first existing marker layer so labels render behind markers. */
+export function ensureDistrictLabelsBelow(map: maplibregl.Map) {
+  if (!map.getLayer('district-label')) return;
+  for (const id of MARKER_LAYER_IDS) {
+    if (map.getLayer(id)) {
+      map.moveLayer('district-label', id);
+      return;
+    }
+  }
+}
 
 export async function addDistrictLayer(map: maplibregl.Map, cityId: string, isDark: boolean) {
   const config = DISTRICT_URLS[cityId];
@@ -33,12 +66,14 @@ export async function addDistrictLayer(map: maplibregl.Map, cityId: string, isDa
     generateId: true,
   });
 
+  const dp = districtPaint(isDark);
+
   map.addLayer({
     id: 'district-fill',
     type: 'fill',
     source: 'districts',
     paint: {
-      'fill-color': isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)',
+      'fill-color': dp.fillColor,
       'fill-opacity': [
         'case',
         ['boolean', ['feature-state', 'hover'], false],
@@ -53,11 +88,17 @@ export async function addDistrictLayer(map: maplibregl.Map, cityId: string, isDa
     type: 'line',
     source: 'districts',
     paint: {
-      'line-color': isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.25)',
-      'line-width': 1.5,
-      'line-dasharray': [4, 2],
+      'line-color': dp.lineColor,
+      'line-width': dp.lineWidth,
+      'line-dasharray': dp.lineDash,
     },
   });
+
+  // Find the first existing marker layer so we insert district-label below it
+  let beforeId: string | undefined;
+  for (const id of MARKER_LAYER_IDS) {
+    if (map.getLayer(id)) { beforeId = id; break; }
+  }
 
   map.addLayer({
     id: 'district-label',
@@ -71,11 +112,64 @@ export async function addDistrictLayer(map: maplibregl.Map, cityId: string, isDa
       'text-allow-overlap': false,
     },
     paint: {
-      'text-color': isDark ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.7)',
-      'text-halo-color': isDark ? 'rgba(0,0,0,0.7)' : 'rgba(255,255,255,0.9)',
-      'text-halo-width': 1.5,
+      'text-color': dp.textColor,
+      'text-halo-color': dp.textHaloColor,
+      'text-halo-width': dp.textHaloWidth,
+    },
+  }, beforeId);
+}
+
+/**
+ * Add the districts GeoJSON source and three layers (fill, line, label)
+ * with flat fill-opacity for political mode. Does NOT fetch GeoJSON or
+ * remove existing layers — callers handle those concerns differently.
+ */
+export function addDistrictSource(
+  map: maplibregl.Map,
+  geojson: GeoJSON.FeatureCollection,
+  nameField: string,
+  isDark: boolean,
+): void {
+  const dp = districtPaint(isDark);
+
+  map.addSource('districts', { type: 'geojson', data: geojson, generateId: true });
+  map.addLayer({
+    id: 'district-fill',
+    type: 'fill',
+    source: 'districts',
+    paint: {
+      'fill-color': dp.fillColor,
+      'fill-opacity': 0.35,
     },
   });
+  map.addLayer({
+    id: 'district-line',
+    type: 'line',
+    source: 'districts',
+    paint: {
+      'line-color': dp.lineColor,
+      'line-width': dp.lineWidth,
+      'line-dasharray': dp.lineDash,
+    },
+  });
+  map.addLayer({
+    id: 'district-label',
+    type: 'symbol',
+    source: 'districts',
+    layout: {
+      'text-field': ['get', nameField],
+      'text-size': 14,
+      'text-font': ['Open Sans Regular', 'Arial Unicode MS Regular'],
+      'text-anchor': 'center',
+      'text-allow-overlap': false,
+    },
+    paint: {
+      'text-color': dp.textColor,
+      'text-halo-color': dp.textHaloColor,
+      'text-halo-width': dp.textHaloWidth,
+    },
+  });
+  ensureDistrictLabelsBelow(map);
 }
 
 export function applyPoliticalStyling(
@@ -95,11 +189,12 @@ export function applyPoliticalStyling(
   }
 
   if (colorMap.size > 0) {
+    const dp = districtPaint(isDark);
     const matchExpr: unknown[] = ['match', ['downcase', ['get', nameField]]];
     for (const [name, color] of colorMap) {
       matchExpr.push(name, color);
     }
-    matchExpr.push(isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)');
+    matchExpr.push(dp.fillColor);
 
     map.setPaintProperty('district-fill', 'fill-color', matchExpr as maplibregl.ExpressionSpecification);
     map.setPaintProperty('district-fill', 'fill-opacity', 0.35);
@@ -108,11 +203,8 @@ export function applyPoliticalStyling(
 
 export function resetDistrictStyling(map: maplibregl.Map, isDark: boolean) {
   if (!map.getLayer('district-fill')) return;
-  map.setPaintProperty(
-    'district-fill',
-    'fill-color',
-    isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)',
-  );
+  const dp = districtPaint(isDark);
+  map.setPaintProperty('district-fill', 'fill-color', dp.fillColor);
   map.setPaintProperty('district-fill', 'fill-opacity', [
     'case',
     ['boolean', ['feature-state', 'hover'], false],
@@ -261,7 +353,7 @@ export function updatePoliticalMarkers(
       const mayor = mayorMap.get(normalizePoliticalName(name)) ?? name;
       iconId = `pol-badge-${encodeURIComponent(mayor)}-${color.replace('#', '')}`;
       if (!map.hasImage(iconId)) {
-        map.addImage(iconId, createBadgeIcon(Landmark as IconNode, color, stroke, mayor));
+        map.addImage(iconId, createVerticalBadgeIcon(Landmark as IconNode, color, stroke, mayor));
       }
     } else {
       iconId = `political-icon-${color.replace('#', '')}`;

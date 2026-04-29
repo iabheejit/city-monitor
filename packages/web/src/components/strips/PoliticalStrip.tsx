@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { usePolitical } from '../../hooks/usePolitical.js';
 import { useFreshness } from '../../hooks/useFreshness.js';
+import { useTabKeys } from '../../hooks/useTabKeys.js';
 import { getPartyColor } from '../../lib/party-colors.js';
 import { StripErrorFallback } from '../ErrorFallback.js';
 import { Skeleton } from '../layout/Skeleton.js';
@@ -181,25 +182,35 @@ export function PoliticalStrip({ expanded, onExpand }: { expanded: boolean; onEx
   const { data, fetchedAt, isLoading, isError, refetch } = usePolitical(cityId, VIEW_LEVELS[view]);
   const { isStale, agoText } = useFreshness(fetchedAt, FRESH_MAX_AGE);
 
-  if (isLoading) return <Skeleton lines={2} />;
-  if (isError) return <StripErrorFallback domain="Political" onRetry={refetch} />;
-
-  const views: { key: View; label: string }[] = [
+  const views = useMemo<{ key: View; label: string }[]>(() => [
     { key: 'state', label: t('sidebar.political.landesparlament') },
     { key: 'bezirke', label: t('sidebar.political.bezirke') },
     { key: 'bundestag', label: t('sidebar.political.bundestag') },
-  ];
+  ], [t]);
+  const viewIdx = views.findIndex((v) => v.key === view);
+  const selectViewByIdx = useCallback((i: number) => setView(views[i]!.key), [views]);
+  const { setTabRef, onKeyDown } = useTabKeys(views.length, viewIdx, selectViewByIdx);
+
+  if (isLoading) return <Skeleton lines={2} />;
+  if (isError) return <StripErrorFallback domain="Political" onRetry={refetch} />;
 
   const totalReps = data ? data.reduce((sum, d) => sum + d.representatives.length, 0) : 0;
 
   return (
     <div className="flex flex-col flex-1 h-full">
       {/* View selector */}
-      <div className="flex gap-0.5 mb-2 bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5">
-        {views.map((v) => (
+      <div role="tablist" className="flex gap-0.5 mb-2 bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5">
+        {views.map((v, i) => (
           <button
             key={v.key}
+            ref={setTabRef(i)}
+            id={`political-tab-${v.key}`}
+            role="tab"
+            aria-selected={view === v.key}
+            aria-controls="political-panel"
+            tabIndex={view === v.key ? 0 : -1}
             onClick={() => setView(v.key)}
+            onKeyDown={onKeyDown}
             className={`flex-1 px-1.5 py-1 rounded-md text-[11px] font-medium text-center transition-colors ${
               view === v.key
                 ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
@@ -211,29 +222,31 @@ export function PoliticalStrip({ expanded, onExpand }: { expanded: boolean; onEx
         ))}
       </div>
 
-      {!data || data.length === 0 ? (
-        <div className="text-sm text-gray-400 dark:text-gray-500 text-center py-2">
-          {t('panel.political.empty')}
-        </div>
-      ) : view === 'state' ? (
-        /* State Parliament: always show seat chart */
-        <div className="flex-1 flex items-center justify-center">
-          <SeatChart districts={data} seatsLabel={t('panel.political.seats')} />
-        </div>
-      ) : (
-        /* Bezirke / Bundestag: summary + rep list */
-        <>
-          <div className="mb-1">
-            <span className="text-[11px] text-gray-500 dark:text-gray-400">
-              {totalReps}{' '}
-              {view === 'bezirke'
-                ? t('panel.political.districtMayors')
-                : t('panel.political.representatives')}
-            </span>
+      <div id="political-panel" role="tabpanel" aria-labelledby={`political-tab-${view}`}>
+        {!data || data.length === 0 ? (
+          <div className="text-sm text-gray-400 dark:text-gray-500 text-center py-2">
+            {t('panel.political.empty')}
           </div>
-          <RepList districts={data} limit={expanded ? undefined : PREVIEW_COUNT} onExpand={onExpand} />
-        </>
-      )}
+        ) : view === 'state' ? (
+          /* State Parliament: always show seat chart */
+          <div className="flex-1 flex items-center justify-center">
+            <SeatChart districts={data} seatsLabel={t('panel.political.seats')} />
+          </div>
+        ) : (
+          /* Bezirke / Bundestag: summary + rep list */
+          <>
+            <div className="mb-1">
+              <span className="text-[11px] text-gray-500 dark:text-gray-400">
+                {totalReps}{' '}
+                {view === 'bezirke'
+                  ? t('panel.political.districtMayors')
+                  : t('panel.political.representatives')}
+              </span>
+            </div>
+            <RepList districts={data} limit={expanded ? undefined : PREVIEW_COUNT} onExpand={onExpand} />
+          </>
+        )}
+      </div>
       {agoText && <TileFooter stale={isStale}>{t('stale.updated', { time: agoText })}</TileFooter>}
     </div>
   );

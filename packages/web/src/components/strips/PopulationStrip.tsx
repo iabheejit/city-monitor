@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { usePopulationSummary } from '../../hooks/usePopulationSummary.js';
@@ -79,12 +80,33 @@ const FRESH_MAX_AGE = 60 * 24 * 60 * 60 * 1000; // 60 days (cron monthly)
 
 export function PopulationStrip() {
   const { id: cityId } = useCityConfig();
-  const isBerlin = cityId === 'berlin';
   const { data, fetchedAt, isLoading, isError, refetch } = usePopulationSummary(cityId);
   const { t } = useTranslation();
   const { isStale, agoText } = useFreshness(fetchedAt, FRESH_MAX_AGE);
 
-  if (!isBerlin) return null;
+  const ageSlices = useMemo(() => {
+    if (!data) return [];
+    const segments = [
+      { key: 'youth' as const, pct: data.youthPct },
+      { key: 'workingAge' as const, pct: data.workingAgePct },
+      { key: 'elderly' as const, pct: data.elderlyPct },
+    ];
+    const result: DonutSlice[] = [];
+    let angle = -Math.PI / 2;
+    for (const seg of segments) {
+      const sweep = (seg.pct / 100) * Math.PI * 2;
+      result.push({
+        startAngle: angle,
+        endAngle: angle + sweep,
+        color: SEGMENT_COLORS[seg.key],
+        label: t(`panel.population.${seg.key}`),
+        pct: seg.pct,
+      });
+      angle += sweep;
+    }
+    return result;
+  }, [data, t]);
+
   if (isLoading) return <Skeleton lines={2} />;
   if (isError) return <StripErrorFallback domain="Population" onRetry={refetch} />;
   if (!data) return <p className="text-sm text-gray-400 py-2 text-center">{t('panel.population.empty')}</p>;
@@ -109,29 +131,7 @@ export function PopulationStrip() {
 
       {/* Age breakdown donut */}
       <div className="mt-4">
-        <AgeDonut
-          slices={(() => {
-            const segments = [
-              { key: 'youth' as const, pct: data.youthPct },
-              { key: 'workingAge' as const, pct: data.workingAgePct },
-              { key: 'elderly' as const, pct: data.elderlyPct },
-            ];
-            const slices: DonutSlice[] = [];
-            let angle = -Math.PI / 2;
-            for (const seg of segments) {
-              const sweep = (seg.pct / 100) * Math.PI * 2;
-              slices.push({
-                startAngle: angle,
-                endAngle: angle + sweep,
-                color: SEGMENT_COLORS[seg.key],
-                label: t(`panel.population.${seg.key}`),
-                pct: seg.pct,
-              });
-              angle += sweep;
-            }
-            return slices;
-          })()}
-        />
+        <AgeDonut slices={ageSlices} />
         <div className="flex flex-wrap justify-center gap-x-2.5 gap-y-0.5 mt-1">
           {(['youth', 'workingAge', 'elderly'] as const).map((key) => (
             <span key={key} className="inline-flex items-center gap-1 text-[10px] text-gray-600 dark:text-gray-400">

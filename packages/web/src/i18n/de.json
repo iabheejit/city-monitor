@@ -53,6 +53,8 @@
         "veryHigh": "Sehr hoch",
         "extreme": "Extrem"
       },
+      "today": "Heute",
+      "tomorrow": "Morgen",
       "dwdForecast": "DWD-Vorhersage"
     },
     "transit": {
@@ -150,7 +152,8 @@
         "121151": "Kinderreisepass",
         "121627": "Fahrerlaubnis",
         "121721": "Bewohnerparkausweis"
-      }
+      },
+      "more": "weitere"
     },
     "population": {
       "title": "Bevölkerung",
@@ -340,6 +343,10 @@
     "other": "Sonstiges",
     "museum": "Museum"
   },
+  "tile": {
+    "expand": "aufklappen",
+    "collapse": "zuklappen"
+  },
   "stale": {
     "updated": "Aktualisiert {{time}}"
   },
@@ -437,5 +444,14 @@
     "privacy": "Datenschutz",
     "noTracking": "Kein Tracking",
     "sources": "Datenquellen"
+  },
+  "shortcuts": {
+    "title": "Tastenkürzel",
+    "toggleHints": "Tastenkürzel ein-/ausblenden",
+    "toggleDark": "Dark Mode umschalten",
+    "toggleLayer": "Datenebene 1–9 umschalten",
+    "clearLayers": "Alle Ebenen deaktivieren",
+    "close": "Schließen",
+    "toastHint": "Tastenkürzel"
   }
 }

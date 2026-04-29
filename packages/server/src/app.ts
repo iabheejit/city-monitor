@@ -33,6 +33,7 @@ import { createFeuerwehrRouter } from './routes/feuerwehr.js';
 import { createPollenRouter } from './routes/pollen.js';
 import { createNoiseSensorsRouter } from './routes/noise-sensors.js';
 import { createCouncilMeetingsRouter } from './routes/council-meetings.js';
+import { createBootstrapRouter } from './routes/bootstrap.js';
 import { createFeedIngestion } from './cron/ingest-feeds.js';
 import { createWeatherIngestion } from './cron/ingest-weather.js';
 import { createSummarization } from './cron/summarize.js';
@@ -106,8 +107,8 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
   // Max age is roughly the cron interval — data older than that is overdue.
   const FRESHNESS_SPECS: FreshnessSpec[] = [
     // Non-snapshot tables
-    { jobName: 'ingest-feeds',        tableName: 'news_items',    maxAgeSeconds: 600 },
-    { jobName: 'summarize-news',      tableName: 'ai_summaries',  maxAgeSeconds: 1200 },
+    { jobName: 'ingest-feeds',        tableName: 'news_items',    maxAgeSeconds: 3600 },
+    { jobName: 'summarize-news',      tableName: 'ai_summaries',  maxAgeSeconds: 21600, timestampColumn: 'generated_at' },
     { jobName: 'ingest-events',       tableName: 'events',        maxAgeSeconds: 21600 },
     { jobName: 'ingest-safety',       tableName: 'safety_reports', maxAgeSeconds: 600 },
 
@@ -226,8 +227,16 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
   if (!isDev) {
     const bootstrapLimit = rateLimit({ windowMs: 60_000, max: 10, standardHeaders: true, legacyHeaders: false });
     app.use('/api/:city/bootstrap', bootstrapLimit);
+
+    // Stricter rate limit for heavy payloads (GeoJSON, large data objects)
+    const heavyPayloadLimit = rateLimit({ windowMs: 60_000, max: 10, standardHeaders: true, legacyHeaders: false });
+    app.use('/api/:city/social-atlas', heavyPayloadLimit);
+    app.use('/api/:city/population', heavyPayloadLimit);
+    app.use('/api/:city/aeds', heavyPayloadLimit);
+    app.use('/api/:city/budget', heavyPayloadLimit);
   }
 
+  app.use('/api', cacheFor(60), createBootstrapRouter(cache));
   app.use('/api', cacheFor(300), createNewsRouter(cache, db));
   app.use('/api', cacheFor(300), createWeatherRouter(cache, db));
   app.use('/api', cacheFor(120), createTransitRouter(cache, db));

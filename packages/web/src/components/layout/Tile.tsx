@@ -1,17 +1,22 @@
-import { type ReactNode, useState } from 'react';
+import { type ReactNode, useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 
 type TileSpan = 1 | 2 | 'full';
+type TileRowSpan = 1 | 2;
 type TileHeight = 'auto' | 'sm' | 'md' | 'lg';
 
 interface TileProps {
   title: string;
   titleBadge?: ReactNode;
   span?: TileSpan;
+  rowSpan?: TileRowSpan;
   height?: TileHeight;
   expandable?: boolean;
   defaultExpanded?: boolean;
   children: ReactNode | ((expanded: boolean, setExpanded: (v: boolean) => void) => ReactNode);
   className?: string;
+  /** Stagger index for reveal animation (set by DashboardGrid) */
+  revealIndex?: number;
 }
 
 const HEIGHT_CLASSES: Record<TileHeight, string> = {
@@ -27,20 +32,54 @@ const SPAN_CLASSES: Record<TileSpan, string> = {
   full: 'col-span-full',
 };
 
-export function Tile({ title, titleBadge, span = 1, height = 'auto', expandable, defaultExpanded, children, className }: TileProps) {
+const ROW_SPAN_CLASSES: Record<TileRowSpan, string> = {
+  1: '',
+  2: 'xl:row-span-2',
+};
+
+export function Tile({ title, titleBadge, span = 1, rowSpan = 1, height = 'auto', expandable, defaultExpanded, children, className, revealIndex = 0 }: TileProps) {
+  const { t } = useTranslation();
   const [expanded, setExpanded] = useState(defaultExpanded ?? false);
+  const ref = useRef<HTMLDivElement>(null);
+  const skipAnimation =
+    typeof IntersectionObserver === 'undefined' ||
+    (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  const [revealed, setRevealed] = useState(skipAnimation);
+
+  // Reveal on scroll via IntersectionObserver
+  useEffect(() => {
+    if (revealed) return;
+    const el = ref.current;
+    if (!el) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setRevealed(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.05 },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- runs once on mount; revealed guard is intentional
+
+  const delay = Math.min(revealIndex * 50, 400);
 
   return (
     <div
-      className={`col-span-1 ${SPAN_CLASSES[span]} flex flex-col rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm overflow-hidden ${className ?? ''}`}
+      ref={ref}
+      className={`col-span-1 ${SPAN_CLASSES[span]} ${ROW_SPAN_CLASSES[rowSpan]} flex flex-col rounded-lg border border-border bg-surface-1 card-glow overflow-hidden tile-reveal ${revealed ? 'tile-revealed' : ''} hover:-translate-y-0.5 hover:shadow-md transition-[translate,box-shadow,background-color,color,border-color] duration-400 ease-in-out ${className ?? ''}`}
+      style={{ '--reveal-delay': `${delay}ms` } as React.CSSProperties}
     >
       {expandable ? (
         <button
           type="button"
-          className="w-full px-4 py-3 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between cursor-pointer select-none appearance-none bg-transparent text-left"
+          className="w-full px-4 py-3 border-b border-border-subtle flex items-center justify-between cursor-pointer select-none appearance-none bg-transparent text-left"
           onClick={() => setExpanded((v) => !v)}
           aria-expanded={expanded}
-          aria-label={`${title} — ${expanded ? 'collapse' : 'expand'}`}
+          aria-label={`${title} — ${expanded ? t('tile.collapse') : t('tile.expand')}`}
         >
           <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
             {title}{titleBadge}
@@ -61,7 +100,7 @@ export function Tile({ title, titleBadge, span = 1, height = 'auto', expandable,
           </svg>
         </button>
       ) : (
-        <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+        <div className="px-4 py-3 border-b border-border-subtle flex items-center justify-between">
           <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
             {title}{titleBadge}
           </h2>

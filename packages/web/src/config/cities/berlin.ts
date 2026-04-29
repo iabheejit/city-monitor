@@ -10,12 +10,12 @@ export const berlin: CityConfig = {
   languages: ['de', 'en', 'tr', 'ar'],
   map: {
     center: [13.405, 52.52],
-    zoom: 11,
+    zoom: 12,
     minZoom: 9,
     maxZoom: 17,
     bounds: [
-      [12.9, 52.3],
-      [13.8, 52.7],
+      [13.00, 52.3],
+      [13.80, 52.7],
     ],
   },
   theme: { accent: '#E2001A' },

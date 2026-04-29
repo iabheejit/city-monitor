@@ -18,11 +18,7 @@ export function SafetyStrip() {
   const reports = data ?? [];
 
   return (
-    <section className="border-b border-gray-200 dark:border-gray-800 px-4 py-4">
-      <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">
-        {t('panel.safety.title')}
-      </h2>
-
+    <>
       {isError ? (
         <StripErrorFallback domain="Safety" onRetry={refetch} />
       ) : isLoading ? (
@@ -66,6 +62,6 @@ export function SafetyStrip() {
         {agoText && <TileFooter stale={isStale}>{t('stale.updated', { time: agoText })}</TileFooter>}
         </>
       )}
-    </section>
+    </>
   );
 }

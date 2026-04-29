@@ -59,6 +59,14 @@ const COLLAPSED_COUNT = 4;
 
 /* ── Component ─────────────────────────────────────────── */
 
+/**
+ * Berlin-only crisis hotline directory.
+ *
+ * All phone numbers and Krisendienst regions are specific to Berlin.
+ * This strip should only be mounted for Berlin cities (cityId === 'berlin').
+ * If expanding to other cities, the service list and region data must be
+ * replaced with city-specific equivalents.
+ */
 export function CrisisStrip({ expanded, onExpand }: { expanded: boolean; onExpand: () => void }) {
   const { t } = useTranslation();
   const [tab, setTab] = useState<Tab>('citywide');
@@ -125,6 +133,7 @@ export function CrisisStrip({ expanded, onExpand }: { expanded: boolean; onExpan
             ))}
             {!expanded && SERVICES.length > COLLAPSED_COUNT && (
               <button
+                type="button"
                 onClick={onExpand}
                 className="w-full pt-2 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors cursor-pointer"
               >

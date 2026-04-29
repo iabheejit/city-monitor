@@ -9,3 +9,8 @@ export function useCityConfig(): CityConfig {
   }
   return config;
 }
+
+/** Returns the city config or null when rendered outside a CityProvider. */
+export function useOptionalCityConfig(): CityConfig | null {
+  return useContext(CityContext);
+}
