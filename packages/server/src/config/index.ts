@@ -1,10 +1,12 @@
 import type { CityConfig } from '@city-monitor/shared';
 import { berlin } from './cities/berlin.js';
 import { hamburg } from './cities/hamburg.js';
+import { nagpur } from './cities/nagpur.js';
 
 const ALL_CITIES: Record<string, CityConfig> = {
   berlin,
   hamburg,
+  nagpur,
 };
 
 function activeIds(): Set<string> {

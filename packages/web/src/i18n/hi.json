@@ -1,0 +1,441 @@
+{
+  "app": {
+    "title": "सिटी मॉनिटर",
+    "noscript": "इस साइट के लिए JavaScript आवश्यक है।"
+  },
+  "error": {
+    "title": "कुछ गड़बड़ हो गई",
+    "reload": "पुनः लोड करें",
+    "details": "त्रुटि विवरण",
+    "loadFailed": "{{domain}} लोड करने में विफल",
+    "retry": "पुनः प्रयास करें",
+    "mapUnavailable": "मानचित्र उपलब्ध नहीं"
+  },
+  "topbar": {
+    "language": "भाषा",
+    "theme": {
+      "light": "उजला",
+      "dark": "गहरा",
+      "switchDark": "गहरे मोड में जाएं",
+      "switchLight": "उजले मोड में जाएं"
+    }
+  },
+  "panel": {
+    "news": {
+      "title": "समाचार",
+      "briefing": "संक्षिप्त",
+      "headlines": "शीर्षक",
+      "empty": "कोई लेख उपलब्ध नहीं",
+      "generatedAgo": "{{time}} पहले तैयार किया",
+      "headlines_count": "{{count}} शीर्षक",
+      "all": "सभी",
+      "retry": "पुनः प्रयास",
+      "locationPin": "स्थान उपलब्ध",
+      "showMore": "{{count}} और"
+    },
+    "weather": {
+      "title": "मौसम",
+      "humidity": "आर्द्रता",
+      "wind": "हवा",
+      "feelsLike": "अनुभव",
+      "hourly": "प्रति घंटा",
+      "daily": "दैनिक",
+      "high": "अ",
+      "low": "न्य",
+      "alerts": "चेतावनियाँ",
+      "validUntil": "{{time}} तक मान्य",
+      "uv": "UV",
+      "uvClearSky": "साफ आसमान में UV",
+      "uvLevel": {
+        "low": "कम",
+        "moderate": "मध्यम",
+        "high": "अधिक",
+        "veryHigh": "बहुत अधिक",
+        "extreme": "अत्यधिक"
+      },
+      "dwdForecast": "DWD पूर्वानुमान"
+    },
+    "transit": {
+      "title": "सार्वजनिक परिवहन",
+      "empty": "सब सामान्य — कोई व्यवधान नहीं",
+      "affectedStops": "प्रभावित स्टॉप",
+      "more": "और"
+    },
+    "events": {
+      "title": "कार्यक्रम",
+      "empty": "कोई कार्यक्रम नहीं",
+      "free": "निःशुल्क",
+      "today": "आज",
+      "tomorrow": "कल",
+      "all": "सभी",
+      "source": {
+        "community": "समुदाय",
+        "tickets": "टिकट",
+        "museums": "संग्रहालय"
+      },
+      "moreInfo": "अधिक जानकारी",
+      "showMore": "{{count}} और"
+    },
+    "safety": {
+      "title": "सुरक्षा",
+      "empty": "कोई हालिया रिपोर्ट नहीं"
+    },
+    "airQuality": {
+      "title": "वायु गुणवत्ता",
+      "trend": "24 घंटे का रुझान",
+      "level": {
+        "good": "अच्छा",
+        "fair": "ठीक",
+        "moderate": "मध्यम",
+        "poor": "खराब",
+        "veryPoor": "बहुत खराब",
+        "extremelyPoor": "खतरनाक"
+      }
+    },
+    "map": {
+      "title": "मानचित्र"
+    },
+    "political": {
+      "empty": "कोई डेटा उपलब्ध नहीं",
+      "districts": "जिले",
+      "representatives": "प्रतिनिधि",
+      "districtMayors": "जिला महापौर",
+      "seats": "सीटें"
+    },
+    "budget": {
+      "title": "नगर बजट",
+      "city": "शहर",
+      "districts": "जिले",
+      "revenues": "राजस्व",
+      "expenses": "व्यय",
+      "newDebt": "नया ऋण",
+      "surplus": "अधिशेष",
+      "totalBudget": "कुल बजट",
+      "empty": "कोई बजट डेटा उपलब्ध नहीं",
+      "berlinTotal": "बर्लिन (कुल)",
+      "category": {
+        "0": "सामान्य",
+        "1": "शिक्षा और संस्कृति",
+        "2": "सामाजिक और युवा",
+        "3": "स्वास्थ्य और खेल",
+        "4": "आवास और शहरी विकास",
+        "5": "कृषि",
+        "6": "ऊर्जा और वाणिज्य",
+        "7": "परिवहन",
+        "8": "वित्त"
+      },
+      "selectDistrict": "जिला चुनें"
+    },
+    "appointments": {
+      "title": "नागरिक सेवाएं",
+      "empty": "कोई अपॉइंटमेंट डेटा नहीं",
+      "today": "आज",
+      "inDays": "{{count}} दिन में",
+      "noSlots": "उपलब्ध नहीं",
+      "bookAppointment": "अपॉइंटमेंट बुक करें",
+      "summary": {
+        "allAvailable": "अपॉइंटमेंट उपलब्ध",
+        "someScarce": "कुछ सेवाएं कम उपलब्ध",
+        "someUnavailable": "कुछ सेवाएं अनुपलब्ध",
+        "unknown": "उपलब्धता जांच रहे हैं…"
+      },
+      "service": {
+        "120686": "पंजीकरण",
+        "121482": "ID कार्ड",
+        "120335": "पासपोर्ट",
+        "120926": "पुलिस क्लीयरेंस",
+        "120702": "पंजीकरण प्रमाणपत्र",
+        "120697": "पता परिवर्तन",
+        "121701": "प्रमाणीकरण",
+        "121151": "बाल पासपोर्ट",
+        "121627": "ड्राइविंग लाइसेंस",
+        "121721": "पार्किंग परमिट"
+      }
+    },
+    "population": {
+      "title": "जनसंख्या",
+      "total": "कुल",
+      "foreign": "विदेशी नागरिकता",
+      "elderly": "65+ आयु",
+      "youth": "18 से कम",
+      "workingAge": "कामकाजी आयु",
+      "change": "पिछले छमाही की तुलना में",
+      "empty": "कोई डेटा उपलब्ध नहीं",
+      "source": "सांख्यिकी बर्लिन-ब्रांडेनबर्ग",
+      "density": "प्रति km²",
+      "densityLabel": "घनत्व",
+      "german": "जर्मन नागरिकता"
+    },
+    "feuerwehr": {
+      "title": "अग्निशमन विभाग",
+      "missions": "मिशन",
+      "emsResponseTime": "EMS प्रतिक्रिया",
+      "fireResponseTime": "अग्नि प्रतिक्रिया",
+      "ems": "EMS",
+      "fire": "अग्नि",
+      "technicalRescue": "तकनीकी बचाव",
+      "partial": "आंशिक",
+      "empty": "कोई डेटा उपलब्ध नहीं"
+    },
+    "laborMarket": {
+      "title": "बेरोजगारी",
+      "unemployment": "बेरोजगारी",
+      "sgbII": "कल्याण (SGB II)",
+      "underemployment": "अल्परोजगारी",
+      "total": "कुल",
+      "yoy": "पिछले वर्ष की तुलना में",
+      "empty": "कोई डेटा उपलब्ध नहीं"
+    },
+    "waterLevels": {
+      "title": "जल स्तर",
+      "state": {
+        "low": "कम",
+        "normal": "सामान्य",
+        "high": "अधिक",
+        "veryHigh": "बहुत अधिक",
+        "unknown": "अज्ञात"
+      },
+      "allNormal": "सभी स्टेशन सामान्य",
+      "stationsHigh": "{{count}} स्टेशन ऊंचे",
+      "level": "स्तर",
+      "meanWater": "MW",
+      "tidal": "ज्वारीय",
+      "vsNormal": "{{diff}} सामान्य से",
+      "empty": "कोई जल स्तर डेटा नहीं"
+    },
+    "wastewater": {
+      "title": "अपशिष्ट जल वायरल लोड",
+      "empty": "कोई डेटा उपलब्ध नहीं",
+      "fluA": "फ्लू A",
+      "fluB": "फ्लू B",
+      "rsv": "RSV",
+      "covid": "COVID-19",
+      "sampleDate": "नमूना: {{date}}",
+      "level": {
+        "none": "कोई नहीं",
+        "low": "कम",
+        "moderate": "मध्यम",
+        "high": "अधिक"
+      }
+    },
+    "pollen": {
+      "title": "पराग पूर्वानुमान",
+      "empty": "कोई डेटा उपलब्ध नहीं",
+      "offSeason": "ऑफ-सीज़न",
+      "noActive": "कोई पराग बोझ नहीं",
+      "today": "आज",
+      "tomorrow": "कल",
+      "dayAfter": "परसों",
+      "type": {
+        "Hasel": "हेज़ल",
+        "Erle": "एल्डर",
+        "Esche": "एश",
+        "Birke": "बर्च",
+        "Graeser": "घास",
+        "Roggen": "राई",
+        "Beifuss": "मगवॉर्ट",
+        "Ambrosia": "रैगवीड"
+      },
+      "level": {
+        "-1": "—",
+        "0": "कोई नहीं",
+        "0-1": "बहुत कम",
+        "1": "कम",
+        "1-2": "मध्यम",
+        "2": "मध्यम",
+        "2-3": "अधिक",
+        "3": "अधिक"
+      }
+    },
+    "crisis": {
+      "title": "संकट सेवाएं",
+      "tab": {
+        "citywide": "नगर-व्यापी",
+        "local": "स्थानीय"
+      },
+      "hours24_7": "24/7",
+      "hoursDaily": "दैनिक शाम 4–12 बजे",
+      "hoursMoSa": "सोम–शनि 2–8 बजे",
+      "showMore": "{{count}} और",
+      "localNote": "बर्लिनर क्रिसेनडिएंस्ट — 9 क्षेत्रीय कार्यालय",
+      "service": {
+        "telefonSeelsorge": "संकट हेल्पलाइन",
+        "krisendienst": "बर्लिन संकट सेवा",
+        "bigHotline": "घरेलू हिंसा हेल्पलाइन",
+        "kindernotdienst": "बाल आपातकालीन सेवा",
+        "jugendnotdienst": "युवा आपातकालीन सेवा",
+        "kinderJugendtelefon": "बच्चे/युवा हेल्पलाइन",
+        "drogennotdienst": "नशा आपातकालीन सेवा",
+        "maneo": "हिंसा विरोधी (LGBTQ+)",
+        "schwulenberatung": "LGBTQ+ परामर्श"
+      },
+      "source": "berlin.de"
+    },
+    "bathing": {
+      "title": "स्नान जल",
+      "empty": "कोई स्नान डेटा नहीं",
+      "best": "सर्वोत्तम स्थान",
+      "warnings": "चेतावनियाँ",
+      "offSeason": "ऑफ-सीज़न",
+      "measuredAt": "मापा गया: {{date}}",
+      "nextSeason": "मई के मध्य से नए माप उपलब्ध होंगे।",
+      "quality": {
+        "good": "अच्छा",
+        "warning": "चेतावनी",
+        "poor": "खराब"
+      }
+    },
+    "councilMeetings": {
+      "title": "परिषद बैठकें",
+      "empty": "कोई आगामी बैठक नहीं",
+      "filterLabel": "निकाय द्वारा फ़िल्टर",
+      "bvv": "जिला सभा",
+      "parliament": "राज्य संसद",
+      "agendaItems": "{{count}} एजेंडा आइटम",
+      "today": "आज",
+      "tomorrow": "कल"
+    },
+    "mandi": {
+      "title": "मंडी भाव",
+      "empty": "कोई मूल्य डेटा उपलब्ध नहीं",
+      "unit": "₹ / क्विंटल",
+      "more": "और जिंस",
+      "source": "AGMARKNET / data.gov.in"
+    },
+    "mgnrega": {
+      "title": "मनरेगा रोजगार",
+      "personDays": "उत्पन्न व्यक्ति-दिवस",
+      "jobCards": "जारी जॉब कार्ड",
+      "activeWorkers": "सक्रिय श्रमिक",
+      "expenditure": "व्यय",
+      "ofSanctioned": "स्वीकृत का",
+      "empty": "कोई डेटा उपलब्ध नहीं",
+      "source": "MGNREGA / data.gov.in"
+    },
+    "schemes": {
+      "title": "सरकारी योजनाएं",
+      "available": "महाराष्ट्र में {{count}} योजनाएं उपलब्ध",
+      "search": "योजनाएं खोजें…",
+      "more": "और योजनाएं",
+      "empty": "कोई योजना उपलब्ध नहीं",
+      "source": "MyScheme.gov.in"
+    }
+  },
+  "category": {
+    "transit": "परिवहन",
+    "politics": "राजनीति",
+    "culture": "संस्कृति",
+    "crime": "अपराध",
+    "weather": "मौसम",
+    "economy": "अर्थव्यवस्था",
+    "sports": "खेल",
+    "local": "स्थानीय",
+    "music": "संगीत",
+    "art": "कला",
+    "theater": "रंगमंच",
+    "food": "भोजन",
+    "market": "बाज़ार",
+    "sport": "खेल",
+    "community": "समुदाय",
+    "other": "अन्य",
+    "museum": "संग्रहालय"
+  },
+  "stale": {
+    "updated": "{{time}} अपडेट किया"
+  },
+  "time": {
+    "justNow": "अभी",
+    "minutesAgo": "{{count}} मिनट पहले",
+    "hoursAgo": "{{count}} घंटे पहले",
+    "daysAgo": "{{count}} दिन पहले"
+  },
+  "sidebar": {
+    "viewMode": {
+      "single": "एकल",
+      "multi": "एकाधिक"
+    },
+    "layers": {
+      "label": "परतें",
+      "events": "कार्यक्रम",
+      "weather": "वर्षा राडार",
+      "news": "समाचार",
+      "warnings": "चेतावनियाँ",
+      "air-quality": "वायु गुणवत्ता",
+      "noise": "शोर",
+      "emergencies": "आपात",
+      "traffic": "यातायात",
+      "water": "पानी",
+      "social": "सामाजिक",
+      "population": "जनसंख्या",
+      "political": "प्रतिनिधित्व"
+    },
+    "news": {
+      "news": "समाचार",
+      "police": "पुलिस"
+    },
+    "traffic": {
+      "public-transport": "सार्वजनिक परिवहन",
+      "incidents": "घटनाएं",
+      "roadworks": "सड़क कार्य"
+    },
+    "emergencies": {
+      "pharmacies": "फार्मेसी",
+      "aeds": "AEDs"
+    },
+    "noise": {
+      "total": "सभी स्रोत",
+      "road": "सड़क यातायात",
+      "rail": "रेल यातायात",
+      "air": "हवाई यातायात",
+      "live": "लाइव सेंसर"
+    },
+    "water": {
+      "levels": "जल स्तर",
+      "bathing": "स्नान जल"
+    },
+    "social": {
+      "unemployment": "बेरोजगारी (2023)",
+      "single-parent": "एकल-अभिभावक HH (2023)",
+      "welfare": "कल्याण प्राप्तकर्ता (2023)",
+      "child-poverty": "बाल गरीबी (2023)",
+      "rent": "किराया"
+    },
+    "population": {
+      "pop-density": "जनसंख्या घनत्व",
+      "pop-elderly": "वृद्ध हिस्सा",
+      "pop-foreign": "विदेशी जनसंख्या"
+    },
+    "political": {
+      "bezirke": "जिले",
+      "bundestag": "बुंडेस्टाग",
+      "landesparlament": "राज्य संसद"
+    }
+  },
+  "nina": {
+    "severity": {
+      "extreme": "अत्यधिक",
+      "severe": "गंभीर",
+      "moderate": "मध्यम",
+      "minor": "हल्का"
+    },
+    "dismiss": "खारिज करें"
+  },
+  "support": {
+    "title": "हमारा समर्थन करें",
+    "cost": "लागत",
+    "ads": "विज्ञापन",
+    "tracking": "ट्रैकिंग",
+    "cta": "इसे बनाए रखने के लिए",
+    "footer": "हमेशा एक अच्छा विचार"
+  },
+  "footer": {
+    "sourceCode": "स्रोत कोड",
+    "inspiredBy": "World Monitor से प्रेरित",
+    "license": "AGPL-3.0",
+    "weatherTiles": "वर्षा राडार © RainViewer",
+    "imprint": "कानूनी नोटिस",
+    "privacy": "गोपनीयता",
+    "noTracking": "कोई ट्रैकिंग नहीं",
+    "sources": "डेटा स्रोत"
+  }
+}

@@ -294,6 +294,31 @@
       "agendaItems": "{{count}} Tagesordnungspunkte",
       "today": "Heute",
       "tomorrow": "Morgen"
+    },
+    "mandi": {
+      "title": "Marktpreise (Mandi)",
+      "empty": "Keine Preisdaten verfügbar",
+      "unit": "₹ / Quintal",
+      "more": "weitere Waren",
+      "source": "AGMARKNET / data.gov.in"
+    },
+    "mgnrega": {
+      "title": "MGNREGA-Beschäftigung",
+      "personDays": "Erzeugte Personentage",
+      "jobCards": "Ausgestellte Jobkarten",
+      "activeWorkers": "Aktive Beschäftigte",
+      "expenditure": "Ausgaben",
+      "ofSanctioned": "des Genehmigten",
+      "empty": "Keine Daten verfügbar",
+      "source": "MGNREGA / data.gov.in"
+    },
+    "schemes": {
+      "title": "Regierungsprogramme",
+      "available": "{{count}} Programme in Maharashtra verfügbar",
+      "search": "Programme suchen…",
+      "more": "weitere Programme",
+      "empty": "Keine Programme verfügbar",
+      "source": "MyScheme.gov.in"
     }
   },
   "category": {

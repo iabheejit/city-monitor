@@ -2,7 +2,7 @@ import { sql } from 'drizzle-orm';
 import type { Db } from './index.js';
 import type { Cache } from '../lib/cache.js';
 import { getActiveCities } from '../config/index.js';
-import { loadWeather, loadTransitAlerts, loadEvents, loadSafetyReports, loadNewsItems, loadSummary, loadNinaWarnings, loadAirQualityGrid, loadPoliticalDistricts, loadAllGeocodeLookups, loadWaterLevels, loadAppointments, loadBudget, loadConstructionSites, loadTrafficIncidents, loadPharmacies, loadAeds, loadSocialAtlas, loadWastewater, loadBathingSpots, loadLaborMarket, loadPopulationGeojson, loadPopulationSummary, loadFeuerwehr, loadPollen, loadNoiseSensors, loadCouncilMeetings } from './reads.js';
+import { loadWeather, loadTransitAlerts, loadEvents, loadSafetyReports, loadNewsItems, loadSummary, loadNinaWarnings, loadAirQualityGrid, loadPoliticalDistricts, loadAllGeocodeLookups, loadWaterLevels, loadAppointments, loadBudget, loadConstructionSites, loadTrafficIncidents, loadPharmacies, loadAeds, loadSocialAtlas, loadWastewater, loadBathingSpots, loadLaborMarket, loadPopulationGeojson, loadPopulationSummary, loadFeuerwehr, loadPollen, loadNoiseSensors, loadCouncilMeetings, loadMandi, loadMgnrega, loadMyScheme } from './reads.js';
 import { setGeocodeCacheEntry } from '../lib/geocode.js';
 import { applyDropLogic, type NewsDigest, type NewsItem } from '../cron/ingest-feeds.js';
 import { createLogger } from '../lib/logger.js';
@@ -171,6 +171,24 @@ async function warmCity(db: Db, cache: Cache, cityId: string): Promise<void> {
         const r = await loadCouncilMeetings(db, 'berlin');
         if (r) cache.set(CK.councilMeetings('berlin'), r.data, 25920, r.fetchedAt);
       })().catch((err) => log.error('council-meetings failed', err)),
+    ] : []),
+
+    // Nagpur India-specific data sources
+    ...(cityId === 'nagpur' ? [
+      (async () => {
+        const r = await loadMandi(db, 'nagpur');
+        if (r) cache.set(CK.mandi('nagpur'), r.data, 43200, r.fetchedAt);
+      })().catch((err) => log.error('nagpur mandi failed', err)),
+
+      (async () => {
+        const r = await loadMgnrega(db, 'nagpur');
+        if (r) cache.set(CK.mgnrega('nagpur'), r.data, 86400, r.fetchedAt);
+      })().catch((err) => log.error('nagpur mgnrega failed', err)),
+
+      (async () => {
+        const r = await loadMyScheme(db, 'nagpur');
+        if (r) cache.set(CK.myScheme('nagpur'), r.data, 86400, r.fetchedAt);
+      })().catch((err) => log.error('nagpur myscheme failed', err)),
     ] : []),
   ];
 

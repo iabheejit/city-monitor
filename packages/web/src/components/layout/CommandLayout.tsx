@@ -25,6 +25,9 @@ import { FeuerwehrStrip } from '../strips/FeuerwehrStrip.js';
 import { PollenStrip } from '../strips/PollenStrip.js';
 import { CouncilMeetingsStrip } from '../strips/CouncilMeetingsStrip.js';
 import { PopulationStrip } from '../strips/PopulationStrip.js';
+import { MandiStrip } from '../strips/MandiStrip.js';
+import { MgnregaStrip } from '../strips/MgnregaStrip.js';
+import { SchemesStrip } from '../strips/SchemesStrip.js';
 import { Skeleton } from './Skeleton.js';
 import { ErrorBoundary } from 'react-error-boundary';
 import { MapErrorFallback } from '../ErrorFallback.js';
@@ -53,7 +56,7 @@ function BathingTile({ isDesktop }: { isDesktop: boolean }) {
 
 export function CommandLayout() {
   const { t } = useTranslation();
-  const { id: cityId } = useCityConfig();
+  const { id: cityId, dataSources } = useCityConfig();
   const isDesktop = typeof window !== 'undefined'
     && window.matchMedia('(min-width: 640px)').matches;
 
@@ -105,9 +108,11 @@ export function CommandLayout() {
           <Tile title={t('panel.transit.title')} span={1} expandable defaultExpanded={isDesktop}>
             {(expanded, setExpanded) => <TransitStrip expanded={expanded} onExpand={() => setExpanded(true)} />}
           </Tile>
-          <Tile title={t('panel.appointments.title')} span={1} expandable defaultExpanded={isDesktop}>
-            {(expanded, setExpanded) => <AppointmentsStrip expanded={expanded} onExpand={() => setExpanded(true)} />}
-          </Tile>
+          {dataSources.appointments && (
+            <Tile title={t('panel.appointments.title')} span={1} expandable defaultExpanded={isDesktop}>
+              {(expanded, setExpanded) => <AppointmentsStrip expanded={expanded} onExpand={() => setExpanded(true)} />}
+            </Tile>
+          )}
           {cityId === 'berlin' && (
             <Tile title={t('panel.feuerwehr.title')} span={1} expandable defaultExpanded={isDesktop}>
               {(expanded) => <FeuerwehrStrip expanded={expanded} />}
@@ -170,6 +175,21 @@ export function CommandLayout() {
           {cityId === 'berlin' && (
             <Tile title={t('panel.councilMeetings.title')} span={2}>
               <CouncilMeetingsStrip />
+            </Tile>
+          )}
+          {dataSources.agmarknet && (
+            <Tile title={t('panel.mandi.title')} span={2} expandable defaultExpanded={false}>
+              {(expanded) => <MandiStrip expanded={expanded} />}
+            </Tile>
+          )}
+          {dataSources.mgnrega && (
+            <Tile title={t('panel.mgnrega.title')} span={1} expandable defaultExpanded={false}>
+              <MgnregaStrip />
+            </Tile>
+          )}
+          {dataSources.myScheme && (
+            <Tile title={t('panel.schemes.title')} span={1} expandable defaultExpanded={false}>
+              {(expanded, setExpanded) => <SchemesStrip expanded={expanded} onExpand={() => setExpanded(true)} />}
             </Tile>
           )}
           <Tile title={t('panel.events.title')} span={2}>

@@ -294,6 +294,31 @@
       "agendaItems": "{{count}} agenda items",
       "today": "Today",
       "tomorrow": "Tomorrow"
+    },
+    "mandi": {
+      "title": "Mandi Prices",
+      "empty": "No price data available",
+      "unit": "₹ / quintal",
+      "more": "more commodities",
+      "source": "AGMARKNET / data.gov.in"
+    },
+    "mgnrega": {
+      "title": "MGNREGA Employment",
+      "personDays": "Person-Days Generated",
+      "jobCards": "Job Cards Issued",
+      "activeWorkers": "Active Workers",
+      "expenditure": "Expenditure",
+      "ofSanctioned": "of sanctioned",
+      "empty": "No data available",
+      "source": "MGNREGA / data.gov.in"
+    },
+    "schemes": {
+      "title": "Government Schemes",
+      "available": "{{count}} schemes available in Maharashtra",
+      "search": "Search schemes…",
+      "more": "more schemes",
+      "empty": "No schemes available",
+      "source": "MyScheme.gov.in"
     }
   },
   "category": {

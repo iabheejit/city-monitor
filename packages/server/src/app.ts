@@ -59,6 +59,12 @@ import { createFeuerwehrIngestion } from './cron/ingest-feuerwehr.js';
 import { createPollenIngestion } from './cron/ingest-pollen.js';
 import { createNoiseSensorIngestion } from './cron/ingest-noise-sensors.js';
 import { createCouncilMeetingIngestion } from './cron/ingest-council-meetings.js';
+import { createMandiIngestion } from './cron/ingest-mandi.js';
+import { createMgnregaIngestion } from './cron/ingest-mgnrega.js';
+import { createMySchemeIngestion } from './cron/ingest-myscheme.js';
+import { createMandiRouter } from './routes/mandi.js';
+import { createMgnregaRouter } from './routes/mgnrega.js';
+import { createMySchemeRouter } from './routes/myscheme.js';
 import { initGeocodeDb } from './lib/geocode.js';
 import { validateCity } from './lib/validate-city.js';
 
@@ -127,6 +133,9 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
     { jobName: 'ingest-pollen',       tableName: 'snapshots', maxAgeSeconds: 86400,   filter: { column: 'type', value: 'dwd-pollen' } },
     { jobName: 'ingest-noise-sensors', tableName: 'snapshots', maxAgeSeconds: 1800,   filter: { column: 'type', value: 'sc-dnms' } },
     { jobName: 'ingest-council-meetings', tableName: 'snapshots', maxAgeSeconds: 21600, filter: { column: 'type', value: 'oparl-meetings' } },
+    { jobName: 'ingest-mandi',            tableName: 'snapshots', maxAgeSeconds: 43200,  filter: { column: 'type', value: 'agmarknet-mandi' } },
+    { jobName: 'ingest-mgnrega',          tableName: 'snapshots', maxAgeSeconds: 86400,  filter: { column: 'type', value: 'data-gov-mgnrega' } },
+    { jobName: 'ingest-myscheme',         tableName: 'snapshots', maxAgeSeconds: 86400,  filter: { column: 'type', value: 'myscheme-schemes' } },
   ];
 
   const stale = db
@@ -158,6 +167,9 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
   const ingestPollen = createPollenIngestion(cache, db);
   const ingestNoiseSensors = createNoiseSensorIngestion(cache, db);
   const ingestCouncilMeetings = createCouncilMeetingIngestion(cache, db);
+  const ingestMandi = createMandiIngestion(cache, db);
+  const ingestMgnrega = createMgnregaIngestion(cache, db);
+  const ingestMyScheme = createMySchemeIngestion(cache, db);
 
   const retainData = db ? createDataRetention(db) : async () => {};
 
@@ -189,6 +201,9 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
     { name: 'ingest-pollen', schedule: '0 */6 * * *', handler: ingestPollen, runOnStart: s('ingest-pollen') },
     { name: 'ingest-noise-sensors', schedule: '*/10 * * * *', handler: ingestNoiseSensors, runOnStart: s('ingest-noise-sensors') },
     { name: 'ingest-council-meetings', schedule: '0 */6 * * *', handler: ingestCouncilMeetings, runOnStart: s('ingest-council-meetings') },
+    { name: 'ingest-mandi',    schedule: '0 4 * * *', handler: ingestMandi,    runOnStart: s('ingest-mandi') },
+    { name: 'ingest-mgnrega',  schedule: '0 7 * * *', handler: ingestMgnrega,  runOnStart: s('ingest-mgnrega') },
+    { name: 'ingest-myscheme', schedule: '0 5 * * *', handler: ingestMyScheme, runOnStart: s('ingest-myscheme') },
     { name: 'data-retention', schedule: '0 3 * * *', handler: retainData },
   ];
 
@@ -237,6 +252,9 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
   app.use('/api', cacheFor(43200), createPollenRouter(cache, db));
   app.use('/api', cacheFor(300), createNoiseSensorsRouter(cache, db));
   app.use('/api', cacheFor(3600), createCouncilMeetingsRouter(cache, db));
+  app.use('/api', cacheFor(43200), createMandiRouter(cache, db));
+  app.use('/api', cacheFor(43200), createMgnregaRouter(cache, db));
+  app.use('/api', cacheFor(43200), createMySchemeRouter(cache, db));
 
   return { app, cache, db, scheduler };
 }

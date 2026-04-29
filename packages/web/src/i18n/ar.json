@@ -294,6 +294,31 @@
       "agendaItems": "{{count}} بنود جدول الأعمال",
       "today": "اليوم",
       "tomorrow": "غداً"
+    },
+    "mandi": {
+      "title": "أسعار المندي",
+      "empty": "لا تتوفر بيانات الأسعار",
+      "unit": "₹ / قنطار",
+      "more": "سلع إضافية",
+      "source": "AGMARKNET / data.gov.in"
+    },
+    "mgnrega": {
+      "title": "توظيف مانريغا",
+      "personDays": "أيام العمل المُنتجة",
+      "jobCards": "بطاقات العمل الصادرة",
+      "activeWorkers": "العمال النشطون",
+      "expenditure": "الإنفاق",
+      "ofSanctioned": "من المعتمد",
+      "empty": "لا تتوفر بيانات",
+      "source": "MGNREGA / data.gov.in"
+    },
+    "schemes": {
+      "title": "المخططات الحكومية",
+      "available": "{{count}} مخطط متاح في ماهاراشترا",
+      "search": "البحث في المخططات…",
+      "more": "مخططات إضافية",
+      "empty": "لا تتوفر مخططات",
+      "source": "MyScheme.gov.in"
     }
   },
   "category": {

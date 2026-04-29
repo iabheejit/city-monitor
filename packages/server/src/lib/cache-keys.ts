@@ -53,6 +53,11 @@ export const CK = {
   populationGeojson: (cityId: string) => `${cityId}:population:geojson`,
   populationSummary: (cityId: string) => `${cityId}:population:summary`,
 
+  // India-specific
+  mandi: (cityId: string) => `${cityId}:mandi`,
+  mgnrega: (cityId: string) => `${cityId}:mgnrega`,
+  myScheme: (cityId: string) => `${cityId}:myscheme`,
+
   // History
   weatherHistory: (cityId: string, days: number) => `${cityId}:weather:history:${days}d`,
   aqiHistory: (cityId: string, days: number) => `${cityId}:aqi:history:${days}d`,
@@ -82,5 +87,8 @@ export const CK = {
     CK.pollen(cityId),
     CK.noiseSensors(cityId),
     CK.councilMeetings(cityId),
+    CK.mandi(cityId),
+    CK.mgnrega(cityId),
+    CK.myScheme(cityId),
   ],
 } as const;
