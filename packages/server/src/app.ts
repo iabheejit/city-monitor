@@ -102,8 +102,12 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
 
   if (db) {
     await testConnection(db);
-    const migrationsFolder = join(__dirname, '../drizzle');
-    await migrate(db, { migrationsFolder });
+    try {
+      const migrationsFolder = join(__dirname, '../drizzle');
+      await migrate(db, { migrationsFolder });
+    } catch (err) {
+      console.error('[app] migration error (server will attempt to continue):', err);
+    }
     initGeocodeDb(db);
     await warmCache(db, cache);
   }
