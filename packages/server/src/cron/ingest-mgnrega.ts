@@ -24,7 +24,7 @@ interface MgnregaRecord {
   Centre_Released_Fund_In_Lakhs?: string;
 }
 
-function parseLakhs(raw: string | undefined): number {
+function parseLakhsToRupees(raw: string | undefined): number {
   if (!raw) return 0;
   const n = parseFloat(raw.replace(/,/g, ''));
   return isNaN(n) ? 0 : Math.round(n * 100_000); // convert lakhs to rupees
@@ -51,8 +51,8 @@ export function parseMgnregaRecord(record: MgnregaRecord): MgnregaSummary | null
     personDaysGenerated: parseLong(record.Total_Person_Days_Generated),
     jobCardsIssued: parseLong(record.Total_Households_Registered),
     activeWorkers: parseLong(record.Active_Workers),
-    amountSpent: parseLakhs(record.Total_Exp_Rs_In_Lakhs),
-    totalSanctioned: parseLakhs(record.Centre_Released_Fund_In_Lakhs),
+    amountSpent: parseLakhsToRupees(record.Total_Exp_Rs_In_Lakhs),
+    totalSanctioned: parseLakhsToRupees(record.Centre_Released_Fund_In_Lakhs),
     reportMonth: derivedReportMonth(fy),
     fetchedAt: new Date().toISOString(),
   };

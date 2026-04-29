@@ -62,8 +62,8 @@ export function MandiStrip({ expanded = false }: { expanded?: boolean }) {
     <>
       <div className="space-y-1 flex-1">
         <p className="text-xs text-gray-400 dark:text-gray-500 text-right mb-1">{unit}</p>
-        {visible.map((c) => (
-          <CommodityRow key={`${c.name}-${c.variety}`} commodity={c} />
+        {visible.map((c, i) => (
+          <CommodityRow key={`${c.name}-${c.variety}-${c.market}-${i}`} commodity={c} />
         ))}
         {!expanded && data.commodities.length > COLLAPSED_ROWS && (
           <p className="text-xs text-gray-400 text-center pt-1">

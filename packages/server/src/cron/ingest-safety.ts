@@ -31,7 +31,9 @@ const BERLIN_DISTRICTS = [
   'Moabit', 'Tiergarten',
 ];
 
-/** Default district lists per city (used when police config omits `districts`). */
+/** Default district lists per city (used when police config omits `districts`).
+ *  To add districts for a new city: either set `police.districts` in the city config
+ *  (preferred), or add the city's list here as a fallback. */
 const CITY_DISTRICTS: Record<string, string[]> = {
   berlin: BERLIN_DISTRICTS,
 };

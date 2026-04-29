@@ -12,6 +12,8 @@ const DATA_GOV_IN_BASE = 'https://api.data.gov.in/resource/9ef84268-d588-465a-a3
 const FETCH_TIMEOUT_MS = 15_000;
 const TTL_SECONDS = 43200; // 12h
 
+// Field names use '_x0020_' as URL-encoded space (hex entity from the AGMARKNET API's
+// underlying XML schema). These are the literal keys returned by the data.gov.in API.
 interface AgmarknetRecord {
   State?: string;
   District?: string;
