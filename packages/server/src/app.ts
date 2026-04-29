@@ -7,6 +7,12 @@ import { createCache } from './lib/cache.js';
 import { createScheduler, type JobInfo, type ScheduledJob } from './lib/scheduler.js';
 import { createDb, testConnection } from './db/index.js';
 import { warmCache, findStaleJobs, type FreshnessSpec } from './db/warm-cache.js';
+import { migrate } from 'drizzle-orm/postgres-js/migrator';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 import { createHealthRouter } from './routes/health.js';
 import { createNewsRouter } from './routes/news.js';
 import { createWeatherRouter } from './routes/weather.js';
@@ -96,6 +102,9 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
 
   if (db) {
     await testConnection(db);
+    const migrationsFolder = join(__dirname, '../drizzle');
+    await migrate(db, { migrationsFolder });
+    log.info('DB migrations applied');
     initGeocodeDb(db);
     await warmCache(db, cache);
   }
