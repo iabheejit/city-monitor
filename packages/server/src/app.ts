@@ -104,7 +104,6 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
     await testConnection(db);
     const migrationsFolder = join(__dirname, '../drizzle');
     await migrate(db, { migrationsFolder });
-    log.info('DB migrations applied');
     initGeocodeDb(db);
     await warmCache(db, cache);
   }
