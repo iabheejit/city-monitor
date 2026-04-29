@@ -1,6 +1,18 @@
 # City Monitor
 
-Real-time multi-city dashboard (Berlin, Hamburg). Inspired by [World Monitor](https://worldmonitor.io).
+**Engineering OS**: Mr Fox CTO is active on this project.
+
+At every session start:
+1. Read `.claude/milestones.md` and last 3 entries in `.claude/session-log.md`
+2. Find and read only the most recent `### CTO Consolidated` section in `.claude/audit-trail.md`
+3. Brief: current milestone, status, blockers, what to run at
+
+Eight specialists in `.claude/agents/`. Spawn in parallel at milestone gates.
+Slash commands: /mr-fox-boot /mr-fox-status /mr-fox-plan /mr-fox-plan-review /mr-fox-audit /mr-fox-milestone-complete /mr-fox-log
+
+---
+
+Real-time multi-city dashboard (Berlin, Hamburg, Nagpur). Inspired by [World Monitor](https://worldmonitor.io).
 
 > **Dev servers are already running.** The web app (port 5173) and API server (port 3001) are up. Do **not** start additional instances via `npm run dev` or similar.
 
