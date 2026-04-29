@@ -135,6 +135,9 @@ export function createNewsRouter(cache: Cache, db: Db | null = null) {
       pollen: data[CK.pollen(city.id)] ?? null,
       noiseSensors: data[CK.noiseSensors(city.id)] ?? null,
       councilMeetings: data[CK.councilMeetings(city.id)] ?? null,
+      mandi: data[CK.mandi(city.id)] ?? null,
+      mgnrega: data[CK.mgnrega(city.id)] ?? null,
+      myScheme: data[CK.myScheme(city.id)] ?? null,
     });
   });
 

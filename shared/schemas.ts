@@ -385,3 +385,47 @@ export const NinaWarningSchema = z.object({
   instruction: z.string().optional(),
   area: z.object({ type: z.string(), geometry: z.unknown(), properties: z.unknown().optional() }).optional(),
 });
+
+// --- India-specific schemas ---
+
+export const MandiCommoditySchema = z.object({
+  name: z.string(),
+  variety: z.string(),
+  market: z.string(),
+  modalPrice: z.number(),
+  minPrice: z.number(),
+  maxPrice: z.number(),
+  arrivalDate: z.string(),
+});
+
+export const MandiSummarySchema = z.object({
+  commodities: z.array(MandiCommoditySchema),
+  fetchedAt: z.string(),
+});
+
+export const MgnregaSummarySchema = z.object({
+  financialYear: z.string(),
+  personDaysGenerated: z.number(),
+  jobCardsIssued: z.number(),
+  activeWorkers: z.number(),
+  amountSpent: z.number(),
+  totalSanctioned: z.number(),
+  reportMonth: z.string(),
+  fetchedAt: z.string(),
+});
+
+export const SchemeEntrySchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  ministry: z.string(),
+  benefitType: z.string(),
+  description: z.string(),
+  applyUrl: z.string(),
+  tags: z.array(z.string()),
+});
+
+export const SchemeCatalogueSchema = z.object({
+  schemes: z.array(SchemeEntrySchema),
+  totalCount: z.number(),
+  fetchedAt: z.string(),
+});

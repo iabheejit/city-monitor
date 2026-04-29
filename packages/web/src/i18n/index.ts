@@ -5,6 +5,8 @@ import de from './de.json';
 import en from './en.json';
 import tr from './tr.json';
 import ar from './ar.json';
+import hi from './hi.json';
+import mr from './mr.json';
 
 i18n
   .use(LanguageDetector)
@@ -15,9 +17,11 @@ i18n
       en: { translation: en },
       tr: { translation: tr },
       ar: { translation: ar },
+      hi: { translation: hi },
+      mr: { translation: mr },
     },
     fallbackLng: 'en',
-    supportedLngs: ['de', 'en', 'tr', 'ar'],
+    supportedLngs: ['de', 'en', 'tr', 'ar', 'hi', 'mr'],
     detection: {
       order: ['localStorage', 'navigator'],
       lookupLocalStorage: 'language',

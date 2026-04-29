@@ -220,9 +220,47 @@ const HAMBURG_SOURCES: SourceGroup[] = [
   },
 ];
 
+const NAGPUR_SOURCES: SourceGroup[] = [
+  {
+    category: 'News',
+    sources: [
+      { name: 'Times of India Nagpur', url: 'https://timesofindia.indiatimes.com/', description: 'Leading English-language daily newspaper — Nagpur city section.' },
+      { name: 'Hindustan Times Nagpur', url: 'https://www.hindustantimes.com/nagpur', description: 'National English-language daily — Nagpur coverage.' },
+      { name: 'Nagpur Today', url: 'https://www.nagpurtoday.in/', description: 'Local Nagpur news portal.' },
+      { name: 'Lokmat Nagpur', url: 'https://www.lokmat.com/nagpur/', description: 'Marathi regional daily newspaper — Nagpur edition.' },
+      { name: 'Maharashtra Times Nagpur', url: 'https://maharashtratimes.com/', description: 'Marathi mainstream newspaper — Nagpur section.' },
+    ],
+  },
+  {
+    category: 'Agriculture',
+    sources: [
+      { name: 'AGMARKNET (data.gov.in)', url: 'https://data.gov.in/resource/9ef84268-d588-465a-a308-a864a43d0070', description: 'Daily mandi (agricultural market) prices for commodities at Nagpur APMC and Kalamna market — modal, min, and max price per quintal.' },
+    ],
+  },
+  {
+    category: 'Employment',
+    sources: [
+      { name: 'MGNREGA (data.gov.in)', url: 'https://data.gov.in/resource/9802de1b-1be5-4c1c-b247-aba9ee9b25d9', description: 'MGNREGA rural employment data — person-days generated, job cards issued, active workers, and expenditure for Nagpur district.' },
+    ],
+  },
+  {
+    category: 'Civic Services',
+    sources: [
+      { name: 'MyScheme.gov.in', url: 'https://www.myscheme.gov.in/', description: 'Government scheme catalogue for Maharashtra — central and state schemes covering education, health, livelihood, and housing.' },
+    ],
+  },
+  {
+    category: 'Air Quality',
+    sources: [
+      { name: 'WAQI / CPCB', url: 'https://waqi.info/', description: 'Air quality index from Central Pollution Control Board (CPCB) stations aggregated via the World Air Quality Index project.' },
+    ],
+  },
+];
+
 const CITY_SOURCES: Record<string, SourceGroup[]> = {
   berlin: BERLIN_SOURCES,
   hamburg: HAMBURG_SOURCES,
+  nagpur: NAGPUR_SOURCES,
 };
 
 function mergeGroups(shared: SourceGroup[], city: SourceGroup[]): SourceGroup[] {

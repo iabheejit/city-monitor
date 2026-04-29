@@ -28,6 +28,13 @@
   --accent: #5b9bd5;
 }
 
+[data-city='nagpur'] {
+  --accent: #FF6600;
+}
+.dark[data-city='nagpur'] {
+  --accent: #FF8C42;
+}
+
 /* MapLibre popup */
 .maplibregl-popup-content {
   border-radius: 8px !important;

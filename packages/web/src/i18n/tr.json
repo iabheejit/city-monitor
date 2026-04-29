@@ -294,6 +294,31 @@
       "agendaItems": "{{count}} gündem maddesi",
       "today": "Bugün",
       "tomorrow": "Yarın"
+    },
+    "mandi": {
+      "title": "Mandi Fiyatları",
+      "empty": "Fiyat verisi mevcut değil",
+      "unit": "₹ / Quintal",
+      "more": "daha fazla ürün",
+      "source": "AGMARKNET / data.gov.in"
+    },
+    "mgnrega": {
+      "title": "MGNREGA İstihdamı",
+      "personDays": "Üretilen Kişi-Günleri",
+      "jobCards": "Verilen İş Kartları",
+      "activeWorkers": "Aktif Çalışanlar",
+      "expenditure": "Harcama",
+      "ofSanctioned": "onaylananın",
+      "empty": "Veri mevcut değil",
+      "source": "MGNREGA / data.gov.in"
+    },
+    "schemes": {
+      "title": "Devlet Programları",
+      "available": "Maharashtra'da {{count}} program mevcut",
+      "search": "Program ara…",
+      "more": "daha fazla program",
+      "empty": "Program mevcut değil",
+      "source": "MyScheme.gov.in"
     }
   },
   "category": {

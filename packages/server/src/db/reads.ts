@@ -9,7 +9,7 @@ import {
   geocodeLookups,
 } from './schema.js';
 import type { SnapshotType } from './schema.js';
-import type { NinaWarning, PoliticalDistrict, WaterLevelData, BuergeramtData, BudgetSummary, ConstructionSite, TrafficIncident, EmergencyPharmacy, AedLocation, WastewaterSummary, BathingSpot, LaborMarketSummary, PopulationSummary, FeuerwehrSummary, PollenForecast, NoiseSensor, CouncilMeeting, HistoryPoint, AirQualityGridPoint } from '@city-monitor/shared';
+import type { NinaWarning, PoliticalDistrict, WaterLevelData, BuergeramtData, BudgetSummary, ConstructionSite, TrafficIncident, EmergencyPharmacy, AedLocation, WastewaterSummary, BathingSpot, LaborMarketSummary, PopulationSummary, FeuerwehrSummary, PollenForecast, NoiseSensor, CouncilMeeting, HistoryPoint, AirQualityGridPoint, MandiSummary, MgnregaSummary, SchemeCatalogue } from '@city-monitor/shared';
 import {
   WeatherDataSchema, WaterLevelDataSchema, BuergeramtDataSchema, BudgetSummarySchema,
   PoliticalDistrictSchema, WastewaterSummarySchema, LaborMarketSummarySchema,
@@ -17,6 +17,7 @@ import {
   TrafficIncidentSchema, ConstructionSiteSchema, PopulationSummarySchema,
   FeuerwehrSummarySchema, PollenForecastSchema, NoiseSensorSchema, CouncilMeetingSchema,
   TransitAlertSchema, NinaWarningSchema,
+  MandiSummarySchema, MgnregaSummarySchema, SchemeCatalogueSchema,
 } from '@city-monitor/shared/schemas.js';
 import type { GeocodeResult } from '../lib/geocode.js';
 import type { WeatherData } from '../cron/ingest-weather.js';
@@ -558,6 +559,22 @@ export async function loadLaborMarketHistory(
     byMonth.set(month, { timestamp: r.fetchedAt.toISOString(), value: d.unemploymentRate });
   }
   return [...byMonth.values()];
+}
+
+// ---------------------------------------------------------------------------
+// India-specific reads
+// ---------------------------------------------------------------------------
+
+export async function loadMandi(db: Db, cityId: string): Promise<DbResult<MandiSummary>> {
+  return loadSnapshot(db, cityId, 'agmarknet-mandi', { schema: MandiSummarySchema, maxAgeMs: 36 * 3600_000 });
+}
+
+export async function loadMgnrega(db: Db, cityId: string): Promise<DbResult<MgnregaSummary>> {
+  return loadSnapshot(db, cityId, 'data-gov-mgnrega', { schema: MgnregaSummarySchema, maxAgeMs: 7 * 86_400_000 });
+}
+
+export async function loadMyScheme(db: Db, cityId: string): Promise<DbResult<SchemeCatalogue>> {
+  return loadSnapshot(db, cityId, 'myscheme-schemes', { schema: SchemeCatalogueSchema, maxAgeMs: 7 * 86_400_000 });
 }
 
 export type { GeocodeResult };

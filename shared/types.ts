@@ -65,7 +65,7 @@ export interface CityDataSources {
     stations?: Array<{ id: string; name: string }>;
   };
   events?: EventSourceConfig[];
-  police?: { provider: 'rss'; url: string };
+  police?: { provider: 'rss'; url: string; districts?: string[] };
   nina?: { ars: string }; // Amtlicher Regionalschlüssel for NINA warnings
   roadworks?: { url: string };
   openData?: { provider: 'ckan'; baseUrl: string };
@@ -102,6 +102,24 @@ export interface CityDataSources {
       committeeUrl: string;
       plenaryUrl: string;
     };
+  };
+  /** AGMARKNET mandi (agricultural market) prices via data.gov.in */
+  agmarknet?: {
+    stateId: string;
+    districtName: string;
+  };
+  /** MGNREGA employment absorption via data.gov.in */
+  mgnrega?: {
+    stateCode: string;
+    districtCode: string;
+  };
+  /** MyScheme.gov.in government scheme catalogue */
+  myScheme?: {
+    stateCode: string;
+  };
+  /** CPCB AQI station IDs (optional override — WAQI already aggregates CPCB) */
+  cpcbAqi?: {
+    stationIds: string[];
   };
 }
 
@@ -454,3 +472,54 @@ export interface PollenForecast {
 
 // Council meetings (BVV OParl + PARDOK)
 export type { CouncilMeeting } from './schemas.js';
+
+// ---------------------------------------------------------------------------
+// India-specific types
+// ---------------------------------------------------------------------------
+
+/** A single commodity entry from AGMARKNET mandi price data. */
+export interface MandiCommodity {
+  name: string;
+  variety: string;
+  market: string;
+  modalPrice: number;
+  minPrice: number;
+  maxPrice: number;
+  arrivalDate: string;
+}
+
+/** AGMARKNET mandi price summary for a city. */
+export interface MandiSummary {
+  commodities: MandiCommodity[];
+  fetchedAt: string;
+}
+
+/** MGNREGA employment absorption summary for a district. */
+export interface MgnregaSummary {
+  financialYear: string;
+  personDaysGenerated: number;
+  jobCardsIssued: number;
+  activeWorkers: number;
+  amountSpent: number;
+  totalSanctioned: number;
+  reportMonth: string;
+  fetchedAt: string;
+}
+
+/** A single government scheme from MyScheme.gov.in. */
+export interface SchemeEntry {
+  id: string;
+  name: string;
+  ministry: string;
+  benefitType: string;
+  description: string;
+  applyUrl: string;
+  tags: string[];
+}
+
+/** MyScheme government schemes catalogue for a state. */
+export interface SchemeCatalogue {
+  schemes: SchemeEntry[];
+  totalCount: number;
+  fetchedAt: string;
+}

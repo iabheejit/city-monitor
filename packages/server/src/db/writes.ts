@@ -16,7 +16,7 @@ import {
   geocodeLookups,
 } from './schema.js';
 import type { SnapshotType } from './schema.js';
-import type { NinaWarning, PoliticalDistrict, WaterLevelData, BuergeramtData, BudgetSummary, ConstructionSite, TrafficIncident, EmergencyPharmacy, AedLocation, WastewaterSummary, BathingSpot, LaborMarketSummary, PopulationSummary, FeuerwehrSummary, PollenForecast, NoiseSensor, CouncilMeeting } from '@city-monitor/shared';
+import type { NinaWarning, PoliticalDistrict, WaterLevelData, BuergeramtData, BudgetSummary, ConstructionSite, TrafficIncident, EmergencyPharmacy, AedLocation, WastewaterSummary, BathingSpot, LaborMarketSummary, PopulationSummary, FeuerwehrSummary, PollenForecast, NoiseSensor, CouncilMeeting, MandiSummary, MgnregaSummary, SchemeCatalogue } from '@city-monitor/shared';
 import type { GeocodeResult } from '../lib/geocode.js';
 import type { WeatherData } from '../cron/ingest-weather.js';
 import type { TransitAlert } from '../cron/ingest-transit.js';
@@ -116,6 +116,22 @@ export async function saveNoiseSensors(db: Db, cityId: string, data: NoiseSensor
 
 export async function saveCouncilMeetings(db: Db, cityId: string, meetings: CouncilMeeting[]): Promise<void> {
   await saveSnapshot(db, cityId, 'oparl-meetings', meetings);
+}
+
+// ---------------------------------------------------------------------------
+// India-specific snapshot writes
+// ---------------------------------------------------------------------------
+
+export async function saveMandi(db: Db, cityId: string, data: MandiSummary): Promise<void> {
+  await saveSnapshot(db, cityId, 'agmarknet-mandi', data);
+}
+
+export async function saveMgnrega(db: Db, cityId: string, data: MgnregaSummary): Promise<void> {
+  await saveSnapshot(db, cityId, 'data-gov-mgnrega', data);
+}
+
+export async function saveMyScheme(db: Db, cityId: string, data: SchemeCatalogue): Promise<void> {
+  await saveSnapshot(db, cityId, 'myscheme-schemes', data);
 }
 
 // ---------------------------------------------------------------------------
