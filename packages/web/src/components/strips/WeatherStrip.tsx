@@ -1,27 +1,17 @@
+import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useWeather } from '../../hooks/useWeather.js';
 import { useFreshness } from '../../hooks/useFreshness.js';
 import { getWeatherInfo } from '../../lib/weather-codes.js';
 import { getUvLevel } from '../../lib/uv-levels.js';
+import { formatDayName } from '../../lib/format-day-name.js';
 import { StripErrorFallback } from '../ErrorFallback.js';
 import { Skeleton } from '../layout/Skeleton.js';
 import { TileFooter } from '../layout/TileFooter.js';
 
-function formatDayName(dateStr: string, locale: string): string {
-  try {
-    const date = new Date(dateStr + 'T00:00:00Z');
-    return date.toLocaleDateString(locale, { weekday: 'short', timeZone: 'UTC' });
-  } catch {
-    return dateStr;
-  }
-}
-
 function isToday(dateStr: string): boolean {
-  const now = new Date();
-  const todayUtc = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
-  const date = new Date(dateStr + 'T00:00:00Z');
-  return Math.abs(date.getTime() - todayUtc) < 86400_000;
+  return dateStr === new Date().toISOString().slice(0, 10);
 }
 
 /** Step size (hours) by time-of-day bucket: 0-6→4h, 6-12→3h, 12-18→2h, 18-24→1h */
@@ -65,6 +55,13 @@ export function WeatherStrip({ expanded }: { expanded: boolean }) {
   const { t, i18n } = useTranslation();
   const { isStale, agoText } = useFreshness(fetchedAt, FRESH_MAX_AGE);
 
+  const rawHourly = data?.hourly;
+  const sampledHourly = useMemo(() => {
+    if (!rawHourly || rawHourly.length === 0) return [];
+    const nowStr = new Date().toISOString().slice(0, 16);
+    return sampleHourly(rawHourly, nowStr);
+  }, [rawHourly]);
+
   if (isLoading) return <Skeleton lines={2} />;
   if (isError) return <StripErrorFallback domain="Weather" onRetry={refetch} />;
 
@@ -72,13 +69,9 @@ export function WeatherStrip({ expanded }: { expanded: boolean }) {
   if (!current) return null;
 
   const weatherInfo = getWeatherInfo(current.weatherCode);
-  const locale = i18n.language === 'de' ? 'de' : 'en';
-  const hourly = data?.hourly ?? [];
+  const locale = i18n.language;
   const daily = data?.daily ?? [];
   const alerts = data?.alerts ?? [];
-
-  const nowStr = new Date().toISOString().slice(0, 16);
-  const sampledHourly = sampleHourly(hourly, nowStr);
 
   return (
     <>

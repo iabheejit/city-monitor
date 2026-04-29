@@ -4,7 +4,7 @@
 
 ### Data Flow
 
-1. **Ingestion** (`packages/server/src/cron/ingest-feeds.ts`) — Runs every 10 minutes. Fetches RSS/Atom feeds from city-configured sources (10 feeds for Berlin across 3 tiers). Parses with `fast-xml-parser`, deduplicates by URL+title hash, sorts by tier → importance (desc) → recency. **Before LLM filtering, loads existing assessments from DB** — only genuinely new items (hash not in DB) are sent through the LLM filter. The LLM assigns `category`, `relevant_to_city`, and `importance` (0–1). After filtering, writes to cache keys `{cityId}:news:digest` and `{cityId}:news:{category}` (TTL 900s), then persists all items with their assessments to Postgres via UPSERT (dedup on cityId+hash). Uses in-flight coalescing via `cache.fetch()` to avoid re-fetching the same feed within 10 min.
+1. **Ingestion** (`packages/server/src/cron/ingest-feeds.ts`) — Runs every 10 minutes. Fetches RSS/Atom feeds from city-configured sources (9 feeds for Berlin across 3 tiers). Parses with `fast-xml-parser`, deduplicates by URL+title hash, sorts by tier → importance (desc) → recency. **Before LLM filtering, loads existing assessments from DB** — only genuinely new items (hash not in DB) are sent through the LLM filter. The LLM assigns `category`, `relevant_to_city`, and `importance` (0–1). After filtering, writes to cache keys `{cityId}:news:digest` and `{cityId}:news:{category}` (TTL 900s), then persists all items with their assessments to Postgres via UPSERT (dedup on cityId+hash). Uses in-flight coalescing via `cache.fetch()` to avoid re-fetching the same feed within 20 min (TTL 1200s).
 
 2. **API** (`packages/server/src/routes/news.ts`) — `GET /api/:city/news/digest` returns cached digest, falls back to Postgres (with `applyDropLogic`), then empty structure.
 
@@ -15,7 +15,7 @@
 Feeds are defined in city config files (e.g. `packages/server/src/config/cities/berlin.ts`). Each feed has:
 - `name`, `url`, `tier` (1=primary, 2=secondary, 3=tertiary), `type` ('rss'|'atom'), `lang`, optional `category` override
 
-Berlin has 10 feeds: rbb24, Tagesspiegel, Berliner Morgenpost, BZ Berlin, Berlin.de News, Berliner Zeitung, taz Berlin, RBB Polizei (category=crime), Gründerszene, Exberliner.
+Berlin has 9 feeds: rbb24, Tagesspiegel, Berliner Morgenpost, BZ Berlin, Berliner Zeitung, taz Berlin, Polizei Berlin (category=crime), Gründerszene, Exberliner.
 
 ### Favicons
 
@@ -31,7 +31,7 @@ News source favicons are self-hosted in `packages/web/public/favicons/`. When ad
 - Per-feed timeout: 8s
 - Overall deadline: 25s (stops fetching more feeds if exceeded)
 - Batch concurrency: 10 feeds at once
-- Raw feed XML cached separately (TTL 600s) to avoid redundant fetches
+- Raw feed XML cached separately (TTL 1200s) to avoid redundant fetches across cron cycles
 
 ### RSS Parser (`packages/server/src/lib/rss-parser.ts`)
 

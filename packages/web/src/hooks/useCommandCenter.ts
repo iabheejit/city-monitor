@@ -41,7 +41,7 @@ const DEFAULT_LAYERS: Set<DataLayer> = new Set(['traffic', 'weather', 'warnings'
 const ALL_NEWS_SUBS: Set<NewsSubLayer> = new Set(['news']);
 const ALL_EMERGENCY_SUBS: Set<EmergencySubLayer> = new Set(['pharmacies']);
 const ALL_WATER_SUBS: Set<WaterSubLayer> = new Set(['levels', 'bathing']);
-const ALL_TRAFFIC_SUBS: Set<TrafficSubLayer> = new Set(['public-transport']);
+const ALL_TRAFFIC_SUBS: Set<TrafficSubLayer> = new Set(['public-transport', 'incidents', 'roadworks']);
 
 export const useCommandCenter = create<CommandCenterState>((set) => ({
   singleView: false,
@@ -67,17 +67,20 @@ export const useCommandCenter = create<CommandCenterState>((set) => ({
   toggleLayer: (layer) =>
     set((state) => {
       if (state.singleView) {
-        // In single-view mode: toggle off if already active, otherwise switch to this layer only
         if (state.activeLayers.has(layer) && state.activeLayers.size === 1) {
           return { activeLayers: new Set<DataLayer>() };
         }
-        return { activeLayers: new Set<DataLayer>([layer]) };
+        const extra: Partial<CommandCenterState> = {};
+        if (layer === 'traffic') extra.trafficSubLayers = new Set(ALL_TRAFFIC_SUBS);
+        return { activeLayers: new Set<DataLayer>([layer]), ...extra };
       }
       const next = new Set(state.activeLayers);
       if (next.has(layer)) {
         next.delete(layer);
       } else {
         next.add(layer);
+        // Re-activate all sub-layers when turning the traffic category back on
+        if (layer === 'traffic') return { activeLayers: next, trafficSubLayers: new Set(ALL_TRAFFIC_SUBS) };
       }
       return { activeLayers: next };
     }),

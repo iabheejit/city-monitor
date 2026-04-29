@@ -21,6 +21,12 @@ const LAYER_META: { layer: DataLayer; icon: IconNode; color: string; cities?: st
 
 const INACTIVE_COLOR = '#9ca3af';
 
+/** Maps each layer to its keyboard shortcut number (1-9), matching useKeyboardShortcuts.ts LAYER_ORDER */
+const LAYER_SHORTCUT: Partial<Record<DataLayer, number>> = {
+  warnings: 1, news: 2, traffic: 3, weather: 4, 'air-quality': 5,
+  noise: 6, water: 7, emergencies: 8, social: 9,
+};
+
 const NEWS_SUB_META: { key: NewsSubLayer; icon: IconNode; color: string }[] = [
   { key: 'news', icon: Newspaper as IconNode, color: '#6366f1' },
   { key: 'police', icon: Siren as IconNode, color: '#f97316' },
@@ -86,14 +92,14 @@ function LayerBadge({ icon, color, active, small }: { icon: IconNode; color: str
   );
 }
 
-function SubLayerItem({ icon, color, active, label, onClick }: { icon: IconNode; color: string; active: boolean; label: string; onClick: () => void }) {
+function SubLayerItem({ icon, color, active, label, onClick, parentColor }: { icon: IconNode; color: string; active: boolean; label: string; onClick: () => void; parentColor?: string }) {
   return (
     <button
       onClick={onClick}
       className={`flex items-center gap-2 w-full pl-8 pr-2 py-1 rounded-lg cursor-pointer transition-colors text-left ${
         active ? '' : 'hover:bg-gray-100 dark:hover:bg-gray-800'
       }`}
-      style={active ? { backgroundColor: `${color}12` } : undefined}
+      style={active ? { backgroundColor: `${parentColor ?? color}12` } : undefined}
     >
       <LayerBadge icon={icon} color={color} active={active} small />
       <span className={`text-[13px] ${active ? 'text-gray-700 dark:text-gray-300' : 'text-gray-500 dark:text-gray-400'}`}>
@@ -131,7 +137,10 @@ export function DataLayerToggles() {
 
   return (
     <div>
-      <div className="flex items-center justify-end mb-2">
+      <div className="flex items-center justify-between mb-2">
+        <span className="hidden sm:inline text-[11px] text-gray-500 dark:text-gray-400">
+          {t('shortcuts.title')}
+        </span>
         <button
           onClick={toggleSingleView}
           aria-pressed={singleView}
@@ -160,6 +169,7 @@ export function DataLayerToggles() {
                 active={newsSubLayers.has(key)}
                 label={t(`sidebar.news.${key}`)}
                 onClick={() => toggleNewsSubLayer(key)}
+                parentColor={color}
               />
             ));
           } else if (layer === 'traffic' && active) {
@@ -171,6 +181,7 @@ export function DataLayerToggles() {
                 active={trafficSubLayers.has(key)}
                 label={t(`sidebar.traffic.${key}`)}
                 onClick={() => toggleTrafficSubLayer(key)}
+                parentColor={color}
               />
             ));
           } else if (layer === 'emergencies' && active) {
@@ -182,6 +193,7 @@ export function DataLayerToggles() {
                 active={emergencySubLayers.has(key)}
                 label={t(`sidebar.emergencies.${key}`)}
                 onClick={() => toggleEmergencySubLayer(key)}
+                parentColor={color}
               />
             ));
           } else if (layer === 'water' && active) {
@@ -193,6 +205,7 @@ export function DataLayerToggles() {
                 active={waterSubLayers.has(key)}
                 label={t(`sidebar.water.${key}`)}
                 onClick={() => toggleWaterSubLayer(key)}
+                parentColor={color}
               />
             ));
           } else if (layer === 'noise' && active) {
@@ -208,6 +221,7 @@ export function DataLayerToggles() {
                 active={noiseLiveData}
                 label={t('sidebar.noise.live')}
                 onClick={toggleNoiseLiveData}
+                parentColor={color}
               />
             ) : null;
             const wmsItems = NOISE_SUB_META
@@ -220,6 +234,7 @@ export function DataLayerToggles() {
                 active={effectiveNoise === key}
                 label={t(`sidebar.noise.${key}`)}
                 onClick={() => { if (hasLiveSensors || effectiveNoise !== key) setNoiseLayer(key); }}
+                parentColor={color}
               />
             ));
             subItems = <>{liveItem}{wmsItems}</>;
@@ -232,6 +247,7 @@ export function DataLayerToggles() {
                 active={socialLayer === key}
                 label={t(`sidebar.social.${key}`)}
                 onClick={() => setSocialLayer(key)}
+                parentColor={color}
               />
             ));
           } else if (layer === 'population' && active) {
@@ -243,6 +259,7 @@ export function DataLayerToggles() {
                 active={populationLayer === key}
                 label={t(`sidebar.population.${key}`)}
                 onClick={() => setPopulationLayer(key)}
+                parentColor={color}
               />
             ));
           } else if (layer === 'political' && active) {
@@ -254,6 +271,7 @@ export function DataLayerToggles() {
                 active={politicalLayer === key}
                 label={t(`sidebar.political.${key}`)}
                 onClick={() => setPoliticalLayer(key)}
+                parentColor={color}
               />
             ));
           }
@@ -267,7 +285,14 @@ export function DataLayerToggles() {
                 }`}
                 style={active ? { backgroundColor: `${color}18` } : undefined}
               >
-                <LayerBadge icon={icon} color={color} active={active} />
+                <span className="relative">
+                  <LayerBadge icon={icon} color={color} active={active} />
+                  {LAYER_SHORTCUT[layer] != null && (
+                    <span className="hidden sm:flex absolute -top-1.5 -right-1.5 w-4 h-4 items-center justify-center rounded-full bg-gray-200 dark:bg-gray-700 text-[9px] font-bold text-gray-500 dark:text-gray-400 leading-none">
+                      {LAYER_SHORTCUT[layer]}
+                    </span>
+                  )}
+                </span>
                 <span className="text-sm text-gray-700 dark:text-gray-300">
                   {t(`sidebar.layers.${layer}`)}
                 </span>

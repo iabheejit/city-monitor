@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme.js';
-import { useCityConfig } from '../../hooks/useCityConfig.js';
+import { useOptionalCityConfig } from '../../hooks/useCityConfig.js';
 
 /**
  * Language switcher + theme toggle for the header.
@@ -10,10 +10,10 @@ import { useCityConfig } from '../../hooks/useCityConfig.js';
 export function HeaderControls() {
   const { theme, toggle } = useTheme();
   const { t, i18n } = useTranslation();
-  const cityConfig = useCityConfig();
+  const cityConfig = useOptionalCityConfig();
   const languages = useMemo(
-    () => cityConfig.languages.map((code) => ({ code, label: code.toUpperCase() })),
-    [cityConfig.languages],
+    () => (cityConfig?.languages ?? ['de', 'en']).map((code) => ({ code, label: code.toUpperCase() })),
+    [cityConfig?.languages],
   );
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -86,7 +86,7 @@ export function HeaderControls() {
           {languageButtons('px-2 py-1 text-xs')}
         </div>
         <button
-          onClick={toggle}
+          onClick={(e) => toggle(e)}
           className="px-2 rounded border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer flex items-center"
           aria-label={theme === 'light' ? t('topbar.theme.switchDark') : t('topbar.theme.switchLight')}
         >
@@ -110,13 +110,13 @@ export function HeaderControls() {
           </svg>
         </button>
         {menuOpen && (
-          <div role="menu" className="absolute right-0 top-full mt-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-2 z-50 min-w-[140px]">
+          <div role="menu" className="absolute right-0 top-full mt-1 bg-surface-1 border border-border rounded-lg shadow-lg p-2 z-50 min-w-[140px]">
             <div className="flex rounded border border-gray-300 dark:border-gray-600 overflow-hidden mb-2">
               {languageButtons('flex-1 px-2 py-1.5 text-xs', () => setMenuOpen(false))}
             </div>
             <button
-              onClick={() => {
-                toggle();
+              onClick={(e) => {
+                toggle(e);
                 setMenuOpen(false);
               }}
               className="w-full flex items-center gap-2 px-2 py-1.5 text-xs rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-left cursor-pointer"

@@ -10,7 +10,7 @@
 - **Snapshots**: h01 = June 30, h02 = December 31 (published ~3 months later)
 - **Granularity**: 536 LOR Planungsräume
 - **License**: CC-BY
-- **Dependency**: `xlsx` (SheetJS) npm package for XLSX parsing
+- **Dependency**: `exceljs` npm package for XLSX parsing
 
 ### XLSX Structure
 
@@ -37,7 +37,7 @@ Berlin-only (hardcoded, same pattern as wastewater/labor market).
 ### Ingestion Flow
 
 1. Fetch XLSX from hardcoded URL (60s timeout)
-2. Parse sheets T2 (age groups) and Schlüssel (PLR names) via SheetJS
+2. Parse sheets T2 (age groups) and Schlüssel (PLR names) via ExcelJS
 3. For each PLR: extract total, youth (0-17), elderly (65+), foreign count
 4. Read PLR polygon geometry from social atlas cache (`CK.socialAtlasGeojson`)
 5. Compute density via geodetic Shoelace formula (latitude-corrected polygon area)

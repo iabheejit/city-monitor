@@ -15,6 +15,7 @@ const log = createLogger('openai');
 // ---------------------------------------------------------------------------
 
 interface UsageEntry {
+  model: string;
   input: number;
   output: number;
   calls: number;
@@ -22,11 +23,26 @@ interface UsageEntry {
 
 const usage: Record<string, UsageEntry> = {};
 
-function trackUsage(cityKey: string, input: number, output: number): void {
-  if (!usage[cityKey]) usage[cityKey] = { input: 0, output: 0, calls: 0 };
-  usage[cityKey].input += input;
-  usage[cityKey].output += output;
-  usage[cityKey].calls += 1;
+function trackUsage(key: string, model: string, input: number, output: number): void {
+  const compositeKey = `${model}:${key}`;
+  if (!usage[compositeKey]) usage[compositeKey] = { model, input: 0, output: 0, calls: 0 };
+  usage[compositeKey].input += input;
+  usage[compositeKey].output += output;
+  usage[compositeKey].calls += 1;
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+/** Discard bare city-name labels that would resolve to city center. */
+export function stripBareCityLabel(label: string | null | undefined, cityLower: string): string | undefined {
+  if (!label) return undefined;
+  const lower = label.toLowerCase().trim();
+  if (lower === cityLower || lower.startsWith(cityLower + ',') || lower.startsWith(cityLower + ' (')) {
+    return undefined;
+  }
+  return label;
 }
 
 // ---------------------------------------------------------------------------
@@ -94,7 +110,7 @@ export async function summarizeHeadlines(
     const outTok = raw.usage_metadata?.output_tokens ?? 0;
     log.info(`${cityName}: done in ${ms}ms (${inTok}in/${outTok}out tokens)`);
 
-    trackUsage(cityName.toLowerCase(), inTok, outTok);
+    trackUsage(cityName.toLowerCase(), model, inTok, outTok);
 
     return {
       briefings: result.parsed.briefings,
@@ -232,24 +248,19 @@ export async function filterAndGeolocateNews(
     const ms = Math.round(performance.now() - start);
     log.info(`${cityName} filter: done in ${ms}ms — ${batches.length} batches (${totalInTok}in/${totalOutTok}out tokens)`);
 
-    trackUsage(cityId, totalInTok, totalOutTok);
+    trackUsage(cityId, filterModel, totalInTok, totalOutTok);
 
     // Resolve location names to coordinates via Nominatim
     const { geocode } = await import('./geocode.js');
     const cityLower = cityName.toLowerCase();
     const results: FilteredItem[] = [];
+    // Serial loop is intentional: Nominatim enforces a strict 1 QPS rate limit,
+    // so parallel requests would be rejected. See geocode.ts for the rate-limiter.
     for (const item of allLlmItems) {
       const category = VALID_CATEGORIES.has(item.category) ? item.category : 'local';
       const importance = Math.max(0, Math.min(1, item.importance));
 
-      // Discard bare city name labels — they resolve to city center and are useless
-      let label = item.locationLabel ?? undefined;
-      if (label) {
-        const lower = label.toLowerCase().trim();
-        if (lower === cityLower || lower.startsWith(cityLower + ',') || lower.startsWith(cityLower + ' (')) {
-          label = undefined;
-        }
-      }
+      const label = stripBareCityLabel(item.locationLabel, cityLower);
 
       const filtered: FilteredItem = {
         index: item.index,
@@ -325,7 +336,7 @@ export async function geolocateReports(
     const outTok = raw.usage_metadata?.output_tokens ?? 0;
     log.info(`${cityName} geocode: done in ${ms}ms (${inTok}in/${outTok}out tokens)`);
 
-    trackUsage(cityId, inTok, outTok);
+    trackUsage(cityId, filterModel, inTok, outTok);
 
     const llmItems = result.parsed.items;
 
@@ -334,14 +345,7 @@ export async function geolocateReports(
     const cityLower = cityName.toLowerCase();
     const results: GeolocatedReport[] = [];
     for (const item of llmItems) {
-      // Discard bare city name labels — they resolve to city center and are useless
-      let label = item.locationLabel ?? undefined;
-      if (label) {
-        const lower = label.toLowerCase().trim();
-        if (lower === cityLower || lower.startsWith(cityLower + ',') || lower.startsWith(cityLower + ' (')) {
-          label = undefined;
-        }
-      }
+      const label = stripBareCityLabel(item.locationLabel, cityLower);
 
       const geoResult: GeolocatedReport = {
         index: item.index,
@@ -370,12 +374,19 @@ export async function geolocateReports(
 // Usage stats (exposed via /health endpoint)
 // ---------------------------------------------------------------------------
 
+/** Per-model pricing in USD per 1M tokens */
+const MODEL_PRICING: Record<string, { input: number; output: number }> = {
+  'gpt-5-mini': { input: 1.00, output: 4.00 },
+  'gpt-5-nano': { input: 0.10, output: 0.40 },
+};
+const DEFAULT_PRICING = { input: 1.00, output: 4.00 };
+
 export function getUsageStats(): Record<string, UsageEntry & { estimatedCostUsd: number }> {
   const result: Record<string, UsageEntry & { estimatedCostUsd: number }> = {};
-  for (const [city, entry] of Object.entries(usage)) {
-    // Rough cost estimate for gpt-5-mini: $1.00/1M input, $4.00/1M output
-    const cost = (entry.input * 0.000001) + (entry.output * 0.000004);
-    result[city] = { ...entry, estimatedCostUsd: Math.round(cost * 10000) / 10000 };
+  for (const [key, entry] of Object.entries(usage)) {
+    const pricing = MODEL_PRICING[entry.model] ?? DEFAULT_PRICING;
+    const cost = (entry.input * pricing.input / 1_000_000) + (entry.output * pricing.output / 1_000_000);
+    result[key] = { ...entry, estimatedCostUsd: Math.round(cost * 10000) / 10000 };
   }
   return result;
 }

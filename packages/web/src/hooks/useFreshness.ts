@@ -16,9 +16,17 @@ export function useFreshness(fetchedAt: string | null, freshMaxAge: number) {
   const [now, setNow] = useState(Date.now);
 
   useEffect(() => {
+    if (!fetchedAt) return;
     const id = setInterval(() => setNow(Date.now), 60_000);
-    return () => clearInterval(id);
-  }, []);
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') setNow(Date.now);
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [fetchedAt]);
 
   if (!fetchedAt) return { isStale: false, agoText: '' };
 

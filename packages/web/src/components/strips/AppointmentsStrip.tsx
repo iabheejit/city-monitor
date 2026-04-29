@@ -135,7 +135,7 @@ export function AppointmentsStrip({ expanded = false, onExpand }: { expanded?: b
             onClick={onExpand}
             className="w-full text-xs text-gray-400 dark:text-gray-500 text-center pt-1 hover:text-gray-600 dark:hover:text-gray-300 transition-colors cursor-pointer"
           >
-            +{hiddenCount} {t('panel.transit.more')}
+            +{hiddenCount} {t('panel.appointments.more')}
           </button>
         )}
 

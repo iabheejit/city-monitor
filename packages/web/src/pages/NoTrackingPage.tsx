@@ -1,6 +1,7 @@
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 import { PageShell } from '../components/layout/PageShell.js';
+import { SUPPORT_URL } from '../lib/constants.js';
 
 const CHECK = (
   <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-500 inline-block shrink-0" aria-hidden="true">
@@ -112,7 +113,7 @@ export function NoTrackingPage() {
             Free. Open source. Without ads. Help us keep it that way.
           </p>
           <a
-            href="https://ko-fi.com/OdinMB"
+            href={SUPPORT_URL}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-block px-6 py-2.5 text-sm font-semibold rounded-lg bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:opacity-90 transition-opacity shadow-sm"

@@ -88,6 +88,13 @@ vi.mock('maplibre-gl', () => {
   };
 });
 
+// Mock ResizeObserver for jsdom environment (used by Shell.tsx)
+global.ResizeObserver = vi.fn().mockImplementation(() => ({
+  observe: vi.fn(),
+  unobserve: vi.fn(),
+  disconnect: vi.fn(),
+})) as unknown as typeof ResizeObserver;
+
 // Mock window.matchMedia for jsdom environment
 Object.defineProperty(window, 'matchMedia', {
   writable: true,

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import type { Server } from 'node:http';
 import { createApp } from '../app.js';
-import type { TransitAlert } from '../cron/ingest-transit.js';
+import type { TransitAlert } from '@city-monitor/shared';
 
 describe('Transit API', () => {
   let server: Server;

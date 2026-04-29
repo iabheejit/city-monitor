@@ -86,12 +86,10 @@ const FRESH_MAX_AGE = 8 * 24 * 60 * 60 * 1000; // 8 days (cron weekly)
 
 export function WastewaterStrip({ expanded }: { expanded: boolean }) {
   const { id: cityId } = useCityConfig();
-  const isBerlin = cityId === 'berlin';
-  const { data, fetchedAt, isLoading, isError, refetch } = useWastewater(cityId, isBerlin);
+  const { data, fetchedAt, isLoading, isError, refetch } = useWastewater(cityId);
   const { t } = useTranslation();
   const { isStale, agoText } = useFreshness(fetchedAt, FRESH_MAX_AGE);
 
-  if (!isBerlin) return null;
   if (isLoading) return <Skeleton lines={2} />;
   if (isError) return <StripErrorFallback domain="Wastewater" onRetry={refetch} />;
   if (!data) return <p className="text-sm text-gray-400 py-2 text-center">{t('panel.wastewater.empty')}</p>;

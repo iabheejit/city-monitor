@@ -16,10 +16,9 @@ import {
   geocodeLookups,
 } from './schema.js';
 import type { SnapshotType } from './schema.js';
-import type { NinaWarning, PoliticalDistrict, WaterLevelData, BuergeramtData, BudgetSummary, ConstructionSite, TrafficIncident, EmergencyPharmacy, AedLocation, WastewaterSummary, BathingSpot, LaborMarketSummary, PopulationSummary, FeuerwehrSummary, PollenForecast, NoiseSensor, CouncilMeeting, MandiSummary, MgnregaSummary, SchemeCatalogue } from '@city-monitor/shared';
+import type { NinaWarning, PoliticalDistrict, WaterLevelData, BuergeramtData, BudgetSummary, ConstructionSite, TrafficIncident, EmergencyPharmacy, AedLocation, WastewaterSummary, BathingSpot, LaborMarketSummary, PopulationSummary, FeuerwehrSummary, PollenForecast, NoiseSensor, CouncilMeeting, TransitAlert, MandiSummary, MgnregaSummary, SchemeCatalogue } from '@city-monitor/shared';
 import type { GeocodeResult } from '../lib/geocode.js';
 import type { WeatherData } from '../cron/ingest-weather.js';
-import type { TransitAlert } from '../cron/ingest-transit.js';
 import type { CityEvent } from '../cron/ingest-events.js';
 import type { SafetyReport } from '../cron/ingest-safety.js';
 import type { NewsItem } from '../cron/ingest-feeds.js';
@@ -38,6 +37,7 @@ export type PersistedNewsItem = NewsItem & { assessment?: NewsItemAssessment };
 // ---------------------------------------------------------------------------
 
 async function saveSnapshot(db: Db, cityId: string, type: SnapshotType, data: unknown): Promise<void> {
+  if (data == null) return;                 // guard: skip insert for null/undefined
   await db.insert(snapshots).values({ cityId, type, data });
 }
 

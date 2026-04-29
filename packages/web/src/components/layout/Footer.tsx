@@ -1,6 +1,7 @@
 import { Link, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { getCityConfig } from '../../config/index.js';
+import { SUPPORT_URL } from '../../lib/constants.js';
 
 export function Footer() {
   const { t } = useTranslation();
@@ -8,7 +9,7 @@ export function Footer() {
   const city = cityId ? getCityConfig(cityId) : null;
 
   return (
-    <footer className="px-4 py-3 text-xs text-gray-400 border-t border-gray-200 dark:border-gray-800 flex justify-between gap-4">
+    <footer className="px-4 py-3 text-xs text-gray-400 border-t border-border flex justify-between gap-4">
       <nav aria-label="Footer" className="flex flex-col sm:flex-row gap-1 sm:gap-4">
         <a href="https://github.com/OdinMB/city-monitor" target="_blank" rel="noopener noreferrer" className="hover:underline">
           {t('footer.sourceCode')}
@@ -17,7 +18,7 @@ export function Footer() {
           {t('footer.inspiredBy')}
         </a>
         <span>{t('footer.license')}</span>
-        <a href="https://ko-fi.com/OdinMB" target="_blank" rel="noopener noreferrer" className="hover:underline">
+        <a href={SUPPORT_URL} target="_blank" rel="noopener noreferrer" className="hover:underline">
           {t('support.title')}
         </a>
       </nav>

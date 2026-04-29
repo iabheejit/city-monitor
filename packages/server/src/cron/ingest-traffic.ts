@@ -17,7 +17,7 @@ const TOMTOM_API_KEY = process.env.TOMTOM_API_KEY ?? '';
  * TomTom iconCategory → incident type mapping.
  * See: https://developer.tomtom.com/traffic-api/documentation/tomtom-maps/traffic-incidents/incident-details
  */
-const ICON_TO_TYPE: Record<number, TrafficIncident['type']> = {
+export const ICON_TO_TYPE: Record<number, TrafficIncident['type']> = {
   0: 'other',      // Unknown
   1: 'accident',   // Accident
   2: 'other',      // Fog
@@ -36,7 +36,7 @@ const ICON_TO_TYPE: Record<number, TrafficIncident['type']> = {
 };
 
 /** magnitudeOfDelay → severity */
-function toSeverity(magnitude: number): TrafficIncident['severity'] {
+export function toSeverity(magnitude: number): TrafficIncident['severity'] {
   switch (magnitude) {
     case 4: return 'critical';
     case 3: return 'major';
@@ -120,13 +120,13 @@ async function ingestCityTraffic(city: CityConfig, cache: Cache, db: Db | null):
       severity: toSeverity(props.magnitudeOfDelay),
       description: desc,
       road: props.roadNumbers?.join(', '),
-      from: props.from,
-      to: props.to,
-      delay: props.delay,
-      length: props.length,
+      from: props.from ?? undefined,
+      to: props.to ?? undefined,
+      delay: props.delay ?? undefined,
+      length: props.length ?? undefined,
       geometry: { type: 'LineString', coordinates: coords },
-      startTime: props.startTime,
-      endTime: props.endTime,
+      startTime: props.startTime ?? undefined,
+      endTime: props.endTime ?? undefined,
     };
   });
 

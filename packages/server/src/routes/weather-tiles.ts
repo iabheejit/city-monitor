@@ -50,7 +50,7 @@ export function createWeatherTilesRouter() {
 
     if (
       !Number.isInteger(z) || !Number.isInteger(x) || !Number.isInteger(y) ||
-      z < 0 || z > 7 || x < 0 || y < 0 ||
+      z < 0 || z > 7 || x < 0 || y < 0 || // RainViewer free tier: max zoom 7
       x >= maxCoord || y >= maxCoord
     ) {
       res.status(400).json({ error: 'Invalid tile coordinates' });

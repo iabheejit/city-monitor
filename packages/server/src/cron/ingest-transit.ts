@@ -1,6 +1,7 @@
 import type { Cache } from '../lib/cache.js';
 import type { Db } from '../db/index.js';
-import type { CityConfig } from '@city-monitor/shared';
+import type { CityConfig, TransitAlert } from '@city-monitor/shared';
+export type { TransitAlert };
 import { saveTransitAlerts } from '../db/writes.js';
 import { getActiveCities } from '../config/index.js';
 import { hashString } from '../lib/hash.js';
@@ -8,19 +9,6 @@ import { createLogger } from '../lib/logger.js';
 import { CK } from '../lib/cache-keys.js';
 
 const log = createLogger('ingest-transit');
-
-export interface TransitAlert {
-  id: string;
-  line: string;
-  lines: string[];
-  type: 'delay' | 'disruption' | 'cancellation' | 'planned-work';
-  severity: 'low' | 'medium' | 'high';
-  message: string;
-  detail: string;
-  station: string;
-  location: { lat: number; lon: number } | null;
-  affectedStops: string[];
-}
 
 const TRANSIT_TIMEOUT_MS = 15_000;
 const DEFAULT_ENDPOINT = 'https://v6.vbb.transport.rest';

@@ -139,6 +139,7 @@ City accent colors are set via CSS custom property `--accent` with `[data-city='
 
 - MapLibre GL JS (open-source Mapbox fork), lazy-loaded via `React.lazy`
 - CARTO basemaps: dark-matter-nolabels (dark theme), positron-nolabels (light theme) — free, no API key
+- **Pre-processed styles:** CARTO style JSON is fetched, processed to set `visibility: 'none'` on unwanted layers, then passed as an object to the Map constructor (not as a URL). This prevents the flash of detailed street tiles before `simplifyMap()` runs. The `loadStyle()` helper in `base.ts` handles fetch + processing + caching. Both initial load and theme swaps use it.
 - Minimal style: only keeps background, landcover, parks, and boundary layers (water, roads, labels hidden via `simplifyMap()`). Major road case layers (`TRAFFIC_ROAD_LAYERS` — motorway, trunk, primary, secondary + bridges) are excluded from `simplifyMap` and controlled via `setTrafficRoadVisibility()` which uses `line-opacity` (0 hidden, 1 visible) with overridden color/width paint properties. Roads appear as semi-transparent dark lines (light mode) or light lines (dark mode) when the traffic data layer is active
 - Initialized from city config: `bounds` (auto-fit to show full city), minZoom, maxZoom, maxBounds
 - Controls: NavigationControl (zoom only, no compass), AttributionControl (compact, collapsed on load)

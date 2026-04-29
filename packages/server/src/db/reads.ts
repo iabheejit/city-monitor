@@ -9,7 +9,7 @@ import {
   geocodeLookups,
 } from './schema.js';
 import type { SnapshotType } from './schema.js';
-import type { NinaWarning, PoliticalDistrict, WaterLevelData, BuergeramtData, BudgetSummary, ConstructionSite, TrafficIncident, EmergencyPharmacy, AedLocation, WastewaterSummary, BathingSpot, LaborMarketSummary, PopulationSummary, FeuerwehrSummary, PollenForecast, NoiseSensor, CouncilMeeting, HistoryPoint, AirQualityGridPoint, MandiSummary, MgnregaSummary, SchemeCatalogue } from '@city-monitor/shared';
+import type { NinaWarning, PoliticalDistrict, WaterLevelData, BuergeramtData, BudgetSummary, ConstructionSite, TrafficIncident, EmergencyPharmacy, AedLocation, WastewaterSummary, BathingSpot, LaborMarketSummary, PopulationSummary, FeuerwehrSummary, PollenForecast, NoiseSensor, CouncilMeeting, HistoryPoint, AirQualityGridPoint, TransitAlert, MandiSummary, MgnregaSummary, SchemeCatalogue } from '@city-monitor/shared';
 import {
   WeatherDataSchema, WaterLevelDataSchema, BuergeramtDataSchema, BudgetSummarySchema,
   PoliticalDistrictSchema, WastewaterSummarySchema, LaborMarketSummarySchema,
@@ -21,7 +21,6 @@ import {
 } from '@city-monitor/shared/schemas.js';
 import type { GeocodeResult } from '../lib/geocode.js';
 import type { WeatherData } from '../cron/ingest-weather.js';
-import type { TransitAlert } from '../cron/ingest-transit.js';
 import type { CityEvent } from '../cron/ingest-events.js';
 import type { SafetyReport } from '../cron/ingest-safety.js';
 import type { NewsSummary } from '../cron/summarize.js';
@@ -245,7 +244,8 @@ export async function loadEvents(db: Db, cityId: string): Promise<DbResult<CityE
     .select()
     .from(events)
     .where(eq(events.cityId, cityId))
-    .orderBy(events.date);
+    .orderBy(events.date)
+    .limit(500);
 
   if (rows.length === 0) return null;
 
@@ -306,7 +306,8 @@ export async function loadSafetyReports(db: Db, cityId: string): Promise<DbResul
     .select()
     .from(safetyReports)
     .where(eq(safetyReports.cityId, cityId))
-    .orderBy(desc(safetyReports.publishedAt));
+    .orderBy(desc(safetyReports.publishedAt))
+    .limit(200);
 
   if (rows.length === 0) return null;
 

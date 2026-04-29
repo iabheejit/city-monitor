@@ -8,10 +8,10 @@ import { Skeleton } from '../layout/Skeleton.js';
 import { TileFooter } from '../layout/TileFooter.js';
 
 function BriefingContent({ text }: { text: string }) {
-  const paragraphs = text.split(/\n\s*\n/).map(p => p.trim()).filter(Boolean);
+  const paragraphs = text.replace(/\r\n/g, '\n').split(/\n\s*\n/).map(p => p.trim()).filter(Boolean);
 
   return (
-    <div className="text-sm leading-relaxed text-gray-700 dark:text-gray-300 space-y-2">
+    <div className="text-base lg:text-xl leading-relaxed text-gray-700 dark:text-gray-300 space-y-3">
       {paragraphs.map((p, i) => (
         <p key={i}>{p}</p>
       ))}

@@ -5,6 +5,7 @@ import { saveCouncilMeetings } from '../db/writes.js';
 import { createLogger } from '../lib/logger.js';
 import { CK } from '../lib/cache-keys.js';
 import { getActiveCities } from '../config/index.js';
+import { createRateGate } from '../lib/rate-gate.js';
 import { XMLParser } from 'fast-xml-parser';
 
 const log = createLogger('ingest-council-meetings');
@@ -40,14 +41,14 @@ interface OparlResponse {
   links?: { next?: string };
 }
 
-function extractCommittee(name: string): string {
+export function extractCommittee(name: string): string {
   // OParl names are like "77. Sitzung in der IX. Wahlperiode des Ausschusses ..."
   // Try to extract the committee name after "des/der"
   const match = name.match(/(?:des|der)\s+(.+)$/i);
   return match ? match[1] : name;
 }
 
-function buildLocation(loc: OparlMeeting['location']): string | undefined {
+export function buildLocation(loc: OparlMeeting['location']): string | undefined {
   if (!loc) return undefined;
   const parts = [loc.room, loc.streetAddress ?? loc.description].filter(Boolean);
   return parts.length > 0 ? parts.join(', ') : undefined;
@@ -128,12 +129,23 @@ async function fetchOparlMeetings(
 // ── PARDOK XML ingestion ────────────────────────────────────────
 
 /** Determine CET (+01:00) or CEST (+02:00) offset for a given date in Europe/Berlin */
-function berlinUtcOffset(dateStr: string): string {
+export function berlinUtcOffset(dateStr: string): string {
   // Parse as UTC first to get a Date object for DST detection
   const d = new Date(dateStr.replace(' ', 'T') + 'Z');
-  const parts = new Intl.DateTimeFormat('en', { timeZone: 'Europe/Berlin', timeZoneName: 'short' }).formatToParts(d);
-  const tz = parts.find((p) => p.type === 'timeZoneName')?.value;
-  return tz === 'CEST' ? '+02:00' : '+01:00';
+  // Compare UTC hour to Berlin hour to derive offset numerically.
+  // This avoids platform-dependent timezone name strings (e.g. "CEST" on
+  // Linux vs "GMT+2" on Windows).
+  const utcHour = d.getUTCHours();
+  const berlinHour = Number(
+    new Intl.DateTimeFormat('en', {
+      timeZone: 'Europe/Berlin',
+      hour: 'numeric',
+      hour12: false,
+    }).format(d),
+  );
+  // Handle day wrap (e.g., UTC 23:00 → Berlin 01:00 next day = +2)
+  const diff = ((berlinHour - utcHour) + 24) % 24;
+  return diff === 2 ? '+02:00' : '+01:00';
 }
 
 interface PardokRow {
@@ -145,15 +157,16 @@ interface PardokRow {
   title: string;
 }
 
-function parsePardokXml(xmlText: string, type: 'committee' | 'plenary', now: number, windowMs: number): CouncilMeeting[] {
+export function parsePardokXml(xmlText: string, type: 'committee' | 'plenary', now: number, windowMs: number): CouncilMeeting[] {
   const parsed = xmlParser.parse(xmlText);
   const rows: PardokRow[] = [];
 
   // XML structure: resultset.row[].field[]
   const rawRows = parsed?.resultset?.row;
-  if (!Array.isArray(rawRows)) return [];
+  // fast-xml-parser returns an object (not array) for a single <row> element
+  const normalizedRows = Array.isArray(rawRows) ? rawRows : rawRows ? [rawRows] : [];
 
-  for (const row of rawRows) {
+  for (const row of normalizedRows) {
     const fields = Array.isArray(row.field) ? row.field : [];
     const obj: Record<string, string> = {};
     for (const f of fields) {
@@ -204,17 +217,25 @@ async function fetchPardokSchedules(
 ): Promise<CouncilMeeting[]> {
   const meetings: CouncilMeeting[] = [];
 
-  for (const [url, type] of [[committeeUrl, 'committee'], [plenaryUrl, 'plenary']] as const) {
-    try {
-      const res = await log.fetch(url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
-      if (!res.ok) {
-        log.warn(`PARDOK ${type} returned ${res.status}`);
-        continue;
-      }
-      const text = await res.text();
-      meetings.push(...parsePardokXml(text, type, now, windowMs));
-    } catch (err) {
-      log.warn(`PARDOK ${type} fetch failed: ${err instanceof Error ? err.message : String(err)}`);
+  const fetches = ([
+    [committeeUrl, 'committee'],
+    [plenaryUrl, 'plenary'],
+  ] as const).map(async ([url, type]) => {
+    const res = await log.fetch(url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
+    if (!res.ok) {
+      log.warn(`PARDOK ${type} returned ${res.status}`);
+      return [];
+    }
+    const text = await res.text();
+    return parsePardokXml(text, type, now, windowMs);
+  });
+
+  const results = await Promise.allSettled(fetches);
+  for (const r of results) {
+    if (r.status === 'fulfilled') {
+      meetings.push(...r.value);
+    } else {
+      log.warn(`PARDOK fetch failed: ${r.reason instanceof Error ? r.reason.message : String(r.reason)}`);
     }
   }
 
@@ -222,10 +243,6 @@ async function fetchPardokSchedules(
 }
 
 // ── Main ingestion factory ──────────────────────────────────────
-
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
 
 export function createCouncilMeetingIngestion(cache: Cache, db: Db | null = null) {
   return async function ingestCouncilMeetings(): Promise<void> {
@@ -240,16 +257,24 @@ export function createCouncilMeetingIngestion(cache: Cache, db: Db | null = null
 
         const allMeetings: CouncilMeeting[] = [];
 
-        // Fetch BVV OParl districts
-        for (const district of cfg.bvv) {
-          try {
+        // Fetch BVV OParl districts (rate-gated concurrent)
+        const gate = createRateGate(DELAY_BETWEEN_DISTRICTS_MS);
+
+        const bvvResults = await Promise.allSettled(
+          cfg.bvv.map(async (district) => {
+            await gate();
             const meetings = await fetchOparlMeetings(district.baseUrl, district.district, now, windowMs);
-            allMeetings.push(...meetings);
             log.info(`${city.id} ${district.district}: ${meetings.length} meetings`);
-          } catch (err) {
-            log.warn(`${city.id} ${district.district} OParl failed: ${err instanceof Error ? err.message : String(err)}`);
+            return meetings;
+          }),
+        );
+
+        for (const r of bvvResults) {
+          if (r.status === 'fulfilled') {
+            allMeetings.push(...r.value);
+          } else {
+            log.warn(`BVV OParl failed: ${r.reason instanceof Error ? r.reason.message : String(r.reason)}`);
           }
-          await delay(DELAY_BETWEEN_DISTRICTS_MS);
         }
 
         // Fetch PARDOK (parliament)

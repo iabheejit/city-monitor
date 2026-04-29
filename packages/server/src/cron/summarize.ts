@@ -23,6 +23,7 @@ export interface NewsSummary {
 
 const SUMMARY_TTL = 86400; // 24 hours
 const TOP_HEADLINES = 25;
+const HASH_HEADLINE_COUNT = 10;
 
 export function createSummarization(cache: Cache, db: Db | null = null) {
   return async function summarizeNews(): Promise<void> {
@@ -59,9 +60,9 @@ async function summarizeCityNews(
 
   if (topItems.length === 0) return;
 
-  // Build cache key from sorted top-5 headlines to detect changes
+  // Build cache key from sorted top headlines to detect changes
   const keyHeadlines = topItems
-    .slice(0, 5)
+    .slice(0, HASH_HEADLINE_COUNT)
     .map((item) => item.title)
     .sort()
     .join('|');

@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 import { createCache } from '../lib/cache.js';
 import type { PopulationSummary } from '@city-monitor/shared';
 
 // Build a mock XLSX workbook with T2 (age groups) and Schlüssel (PLR names)
-function buildMockXlsx(): ArrayBuffer {
-  const wb = XLSX.utils.book_new();
+async function buildMockXlsx(): Promise<ArrayBuffer> {
+  const wb = new ExcelJS.Workbook();
 
   // --- Sheet "Schlüssel" (PLR name lookup) ---
   // Columns: BEZ, PGR, BZR, PLR, Planungsraumname (each geo column is 2 digits)
@@ -18,14 +18,12 @@ function buildMockXlsx(): ArrayBuffer {
     ['01', '10', '01', '02', 'Großer Tiergarten'],
     ['02', '02', '01', '01', 'Alexanderplatzviertel'],
   ];
-  const schluesselWs = XLSX.utils.aoa_to_sheet(schluesselData);
-  XLSX.utils.book_append_sheet(wb, schluesselWs, 'Schlüssel');
+  const schluesselWs = wb.addWorksheet('Schlüssel');
+  for (const row of schluesselData) {
+    schluesselWs.addRow(row);
+  }
 
   // --- Sheet "T2" (population by age groups per PLR) ---
-  // Structure: header rows, then data rows with geographic columns + demographics
-  // Columns: BEZ, PGR, BZR, PLR, Insgesamt, unter 6, 6 bis unter 15, 15 bis unter 18,
-  //          18 bis unter 27, 27 bis unter 45, 45 bis unter 55, 55 bis unter 65, 65 und älter,
-  //          weiblich, Ausländer/-innen
   const t2Header = [
     'BEZ', 'PGR', 'BZR', 'PLR',
     'Insgesamt',
@@ -41,9 +39,9 @@ function buildMockXlsx(): ArrayBuffer {
     ['Einwohnerinnen und Einwohner in Berlin am 31. Dezember 2025\r\nnach Planungsräumen und Altersgruppen'],
     [],
     t2Header,
-    // Aggregation row: Bezirk-level (has BEZ but not all 4 geo columns filled → skip)
+    // Aggregation row: Bezirk-level (has BEZ but not all 4 geo columns filled -> skip)
     ['01', '', '', '', ' 10 000', ' 600', ' 900', ' 300', ' 1 200', ' 3 000', ' 1 500', ' 1 200', ' 1 300', ' 5 100', ' 2 500'],
-    // Section header row (Bezirk name in total column → skip)
+    // Section header row (Bezirk name in total column -> skip)
     [null, null, null, null, 'Mitte'],
     // PLR data rows (all 4 geo columns filled with 2-digit values)
     ['01', '10', '01', '01', ' 5 000', ' 300', ' 450', ' 150', ' 600', ' 1 500', ' 750', ' 600', ' 650', ' 2 550', ' 1 200'],
@@ -53,11 +51,13 @@ function buildMockXlsx(): ArrayBuffer {
     ['02', '', '', '', ' 2 000', ' 100', ' 150', ' 50', ' 200', ' 500', ' 250', ' 300', ' 450', ' 1 020', ' 500'],
   ];
 
-  const t2Ws = XLSX.utils.aoa_to_sheet(t2Data);
-  XLSX.utils.book_append_sheet(wb, t2Ws, 'T2');
+  const t2Ws = wb.addWorksheet('T2');
+  for (const row of t2Data) {
+    t2Ws.addRow(row);
+  }
 
   // Write to buffer
-  const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+  const buf = await wb.xlsx.writeBuffer();
   return buf;
 }
 
@@ -119,7 +119,7 @@ describe('ingest-population', () => {
   });
 
   it('parses XLSX and caches PopulationSummary', async () => {
-    const xlsxBuf = buildMockXlsx();
+    const xlsxBuf = await buildMockXlsx();
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response(xlsxBuf, { status: 200 }),
     );
@@ -151,7 +151,7 @@ describe('ingest-population', () => {
   });
 
   it('caches GeoJSON FeatureCollection with per-PLR properties', async () => {
-    const xlsxBuf = buildMockXlsx();
+    const xlsxBuf = await buildMockXlsx();
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response(xlsxBuf, { status: 200 }),
     );
@@ -183,7 +183,7 @@ describe('ingest-population', () => {
   });
 
   it('skips aggregation rows (missing PLR column)', async () => {
-    const xlsxBuf = buildMockXlsx();
+    const xlsxBuf = await buildMockXlsx();
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response(xlsxBuf, { status: 200 }),
     );
@@ -226,7 +226,7 @@ describe('ingest-population', () => {
   });
 
   it('parses German space-separated thousands correctly', async () => {
-    const xlsxBuf = buildMockXlsx();
+    const xlsxBuf = await buildMockXlsx();
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response(xlsxBuf, { status: 200 }),
     );
@@ -244,7 +244,7 @@ describe('ingest-population', () => {
   });
 
   it('uses 30-day TTL for cache', async () => {
-    const xlsxBuf = buildMockXlsx();
+    const xlsxBuf = await buildMockXlsx();
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response(xlsxBuf, { status: 200 }),
     );
@@ -266,7 +266,7 @@ describe('ingest-population', () => {
   });
 
   it('sets change to 0 when no previous snapshot exists', async () => {
-    const xlsxBuf = buildMockXlsx();
+    const xlsxBuf = await buildMockXlsx();
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response(xlsxBuf, { status: 200 }),
     );

@@ -5,7 +5,7 @@ import { loadTransitAlerts } from '../db/reads.js';
 import { getCityConfig } from '../config/index.js';
 import { createLogger } from '../lib/logger.js';
 import { CK } from '../lib/cache-keys.js';
-import type { TransitAlert } from '../cron/ingest-transit.js';
+import type { TransitAlert } from '@city-monitor/shared';
 
 const log = createLogger('route:transit');
 
