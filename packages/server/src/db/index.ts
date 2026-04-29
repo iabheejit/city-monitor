@@ -19,7 +19,9 @@ export function createDb(): { db: Db; client: ReturnType<typeof postgres> } | nu
     max: 10,
     idle_timeout: 30,
     connect_timeout: 10,
-    statement_timeout: 30000,
+    connection: {
+      statement_timeout: 30000,
+    },
   });
   const db = drizzle(client, { schema });
   log.info('Connected to Postgres');
