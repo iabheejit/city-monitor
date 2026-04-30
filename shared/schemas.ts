@@ -429,3 +429,26 @@ export const SchemeCatalogueSchema = z.object({
   totalCount: z.number(),
   fetchedAt: z.string(),
 });
+
+export const CpcbPollutantsSchema = z.object({
+  pm25: z.number().optional(),
+  pm10: z.number().optional(),
+  no2: z.number().optional(),
+  o3: z.number().optional(),
+  so2: z.number().optional(),
+  co: z.number().optional(),
+  nh3: z.number().optional(),
+});
+
+export const CpcbStationSchema = z.object({
+  station: z.string(),
+  lat: z.number(),
+  lon: z.number(),
+  pollutants: CpcbPollutantsSchema,
+  lastUpdate: z.string(),
+});
+
+export const CpcbAqiDataSchema = z.object({
+  stations: z.array(CpcbStationSchema),
+  fetchedAt: z.string(),
+});

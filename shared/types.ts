@@ -113,16 +113,18 @@ export interface CityDataSources {
   };
   /** MGNREGA employment absorption via data.gov.in */
   mgnrega?: {
-    stateCode: string;
-    districtCode: string;
+    stateName: string;
+    districtName: string;
   };
   /** MyScheme.gov.in government scheme catalogue */
   myScheme?: {
-    stateCode: string;
+    /** Full state name as used in MyScheme facets, e.g. "Maharashtra" */
+    stateName: string;
   };
-  /** CPCB AQI station IDs (optional override — WAQI already aggregates CPCB) */
+  /** CPCB real-time AQI via data.gov.in (station-level pollutant readings) */
   cpcbAqi?: {
-    stationIds: string[];
+    /** City name as used in the data.gov.in CPCB dataset, e.g. "Nagpur" */
+    cityName: string;
   };
 }
 
@@ -579,6 +581,7 @@ export interface BootstrapData {
   mandi: ApiResponse<MandiSummary | null> | null;
   mgnrega: ApiResponse<MgnregaSummary | null> | null;
   myScheme: ApiResponse<SchemeCatalogue | null> | null;
+  cpcbAqi: ApiResponse<CpcbAqiData | null> | null;
 }
 
 // News AI summary
@@ -635,5 +638,29 @@ export interface SchemeEntry {
 export interface SchemeCatalogue {
   schemes: SchemeEntry[];
   totalCount: number;
+  fetchedAt: string;
+}
+
+// CPCB real-time air quality (data.gov.in — one row per station+pollutant)
+export interface CpcbPollutants {
+  pm25?: number;
+  pm10?: number;
+  no2?: number;
+  o3?: number;
+  so2?: number;
+  co?: number;
+  nh3?: number;
+}
+
+export interface CpcbStation {
+  station: string;
+  lat: number;
+  lon: number;
+  pollutants: CpcbPollutants;
+  lastUpdate: string;
+}
+
+export interface CpcbAqiData {
+  stations: CpcbStation[];
   fetchedAt: string;
 }

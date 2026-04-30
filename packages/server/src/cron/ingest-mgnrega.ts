@@ -66,8 +66,8 @@ export function createMgnregaIngestion(cache: Cache, db: Db | null = null) {
       try {
         await ingestCityMgnrega(
           city.id,
-          city.dataSources.mgnrega.stateCode,
-          city.dataSources.mgnrega.districtCode,
+          city.dataSources.mgnrega.stateName,
+          city.dataSources.mgnrega.districtName,
           cache,
           db,
         );
@@ -80,8 +80,8 @@ export function createMgnregaIngestion(cache: Cache, db: Db | null = null) {
 
 async function ingestCityMgnrega(
   cityId: string,
-  stateCode: string,
-  districtCode: string,
+  stateName: string,
+  districtName: string,
   cache: Cache,
   db: Db | null,
 ): Promise<void> {
@@ -94,8 +94,8 @@ async function ingestCityMgnrega(
   const params = new URLSearchParams({
     'api-key': apiKey,
     format: 'json',
-    'filters[State_code]': stateCode,
-    'filters[District_code]': districtCode,
+    'filters[State_name]': stateName,
+    'filters[District_Name]': districtName,
     limit: '5',
     'sort[Financial_Year]': 'desc',
   });

@@ -27,11 +27,14 @@ export const nagpur: CityConfig = {
       districtName: 'Nagpur',
     },
     mgnrega: {
-      stateCode: '27',
-      districtCode: '529',
+      stateName: 'Maharashtra',
+      districtName: 'Nagpur',
     },
     myScheme: {
-      stateCode: 'MH',
+      stateName: 'Maharashtra',
+    },
+    cpcbAqi: {
+      cityName: 'Nagpur',
     },
   },
 };

@@ -9,38 +9,51 @@ import { CK } from '../lib/cache-keys.js';
 const log = createLogger('ingest-myscheme');
 
 const MYSCHEME_BASE = 'https://api.myscheme.gov.in/search/v4/schemes';
+// Required by AWS API Gateway — requests without Origin are rejected
+const MYSCHEME_ORIGIN = 'https://www.myscheme.gov.in';
 const FETCH_TIMEOUT_MS = 20_000;
 const TTL_SECONDS = 86400; // 1 day
 const PAGE_SIZE = 30;
 
-interface MySchemeApiScheme {
-  schemeId?: string;
+interface MySchemeHitFields {
   schemeName?: string;
   schemeShortTitle?: string;
-  schemeDescription?: string;
-  benefit?: { benefitType?: string };
-  ministry?: { nameEn?: string };
-  applicationProcess?: Array<{ stepEn?: string }>;
-  schemeUrl?: string;
+  briefDescription?: string;
+  nodalMinistryName?: string;
+  schemeCategory?: string[];
+  beneficiaryState?: string[];
   tags?: string[];
+  slug?: string;
+}
+
+interface MySchemeHit {
+  id?: string;
+  fields?: MySchemeHitFields;
 }
 
 interface MySchemeApiResponse {
   data?: {
-    schemes?: MySchemeApiScheme[];
-    totalSchemes?: number;
+    summary?: { total?: number };
+    hits?: { items?: MySchemeHit[] };
   };
 }
 
-function mapScheme(raw: MySchemeApiScheme): SchemeEntry {
+function mapScheme(hit: MySchemeHit): SchemeEntry | null {
+  const f = hit.fields;
+  if (!f) return null;
+  const id = hit.id ?? f.slug ?? '';
+  const name = f.schemeName ?? f.schemeShortTitle ?? '';
+  if (!id || !name) return null;
   return {
-    id: raw.schemeId ?? '',
-    name: raw.schemeName ?? raw.schemeShortTitle ?? '',
-    ministry: raw.ministry?.nameEn ?? '',
-    benefitType: raw.benefit?.benefitType ?? '',
-    description: raw.schemeDescription ?? '',
-    applyUrl: raw.schemeUrl ?? 'https://www.myscheme.gov.in',
-    tags: Array.isArray(raw.tags) ? raw.tags : [],
+    id,
+    name,
+    ministry: f.nodalMinistryName ?? '',
+    benefitType: (f.schemeCategory ?? []).join(', '),
+    description: f.briefDescription ?? '',
+    applyUrl: f.slug
+      ? `https://www.myscheme.gov.in/schemes/${f.slug}`
+      : 'https://www.myscheme.gov.in',
+    tags: Array.isArray(f.tags) ? f.tags : [],
   };
 }
 
@@ -50,7 +63,7 @@ export function createMySchemeIngestion(cache: Cache, db: Db | null = null) {
     for (const city of cities) {
       if (!city.dataSources.myScheme) continue;
       try {
-        await ingestCityMyScheme(city.id, city.dataSources.myScheme.stateCode, cache, db);
+        await ingestCityMyScheme(city.id, city.dataSources.myScheme.stateName, cache, db);
       } catch (err) {
         log.error(`${city.id} failed`, err);
       }
@@ -60,13 +73,16 @@ export function createMySchemeIngestion(cache: Cache, db: Db | null = null) {
 
 async function ingestCityMyScheme(
   cityId: string,
-  stateCode: string,
+  stateName: string,
   cache: Cache,
   db: Db | null,
 ): Promise<void> {
+  // Filter param is a JSON array: [{"identifier":"beneficiaryState","value":"<StateName>"}]
+  const q = JSON.stringify([{ identifier: 'beneficiaryState', value: stateName }]);
+
   const params = new URLSearchParams({
     lang: 'en',
-    beneficiaryState: stateCode,
+    q,
     numberOfSchemes: String(PAGE_SIZE),
     pageNumber: '1',
   });
@@ -74,7 +90,10 @@ async function ingestCityMyScheme(
   const url = `${MYSCHEME_BASE}?${params}`;
   const response = await log.fetch(url, {
     signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-    headers: { Accept: 'application/json' },
+    headers: {
+      Accept: 'application/json',
+      Origin: MYSCHEME_ORIGIN,
+    },
   });
 
   if (!response.ok) {
@@ -83,17 +102,17 @@ async function ingestCityMyScheme(
   }
 
   const json = await response.json() as MySchemeApiResponse;
-  const rawSchemes: MySchemeApiScheme[] = Array.isArray(json.data?.schemes) ? json.data!.schemes! : [];
-  const totalCount = json.data?.totalSchemes ?? rawSchemes.length;
+  const rawHits: MySchemeHit[] = json.data?.hits?.items ?? [];
+  const totalCount = json.data?.summary?.total ?? rawHits.length;
 
-  if (rawSchemes.length === 0) {
+  if (rawHits.length === 0) {
     log.info(`${cityId}: no schemes returned`);
     return;
   }
 
-  const schemes: SchemeEntry[] = rawSchemes
+  const schemes: SchemeEntry[] = rawHits
     .map(mapScheme)
-    .filter((s) => s.id && s.name);
+    .filter((s): s is SchemeEntry => s !== null);
 
   const catalogue: SchemeCatalogue = {
     schemes,
@@ -111,5 +130,5 @@ async function ingestCityMyScheme(
     }
   }
 
-  log.info(`${cityId}: ${schemes.length} schemes (${totalCount} total for ${stateCode})`);
+  log.info(`${cityId}: ${schemes.length} schemes (${totalCount} total for ${stateName})`);
 }
