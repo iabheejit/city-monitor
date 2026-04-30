@@ -4,6 +4,21 @@ Date: 2026-04-30
 
 Goal: translate the raw dataset list into a City Monitor style execution queue.
 
+## Probe Snapshot (automated, key-tested)
+
+Source: `.plans/2026-04-30_nagpur-api-probe-report.md`
+
+1. `agmarknet-mandi`: LIVE_OK (total 55 for current Nagpur filter sample)
+2. `cpcb-realtime-aqi`: LIVE_OK (total 28 for Nagpur city filter sample)
+3. `msme-udyam`: LIVE_OK (total 272,963 for District=NAGPUR)
+4. `mgnrega-gp`: BROKEN (Meta not found on current resource)
+5. `myscheme-search`: BROKEN (401 with probe call shape; ingestion endpoint requires strict request contract)
+
+Immediate action from probe:
+1. Keep AGMARKNET, CPCB, MSME as production LIVE_OK sources.
+2. Treat MGNREGA as blocked until a working replacement resource is identified.
+3. Keep MyScheme in system via existing ingestor contract, but do not classify as generic public API-stable.
+
 ## Status Legend
 
 - LIVE_OK: confirmed live and usable via API with Nagpur or Maharashtra filtering
@@ -151,6 +166,15 @@ Sprint C
 5. Define freshness + cron schedule + cache TTL
 6. Add to server snapshot type and bootstrap response
 7. Add frontend tile with stale-data fallback state
+
+## Reusable Test-Then-Integrate Workflow
+
+1. Add dataset to `packages/server/src/scripts/probe-data-sources.ts`.
+2. Run `npm run probe:apis` from `packages/server` with `DATA_GOV_IN_API_KEY` configured.
+3. Confirm status is LIVE_OK before adding ingestion code.
+4. Integrate server pipeline (ingestor, writes, reads, route, cache key, bootstrap, app wiring).
+5. Integrate frontend tile/hook and stale-data UI.
+6. Add parser + route tests and update this plan file with final status.
 
 ## Notes
 
