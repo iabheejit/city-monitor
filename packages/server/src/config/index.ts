@@ -11,7 +11,7 @@ const ALL_CITIES: Record<string, CityConfig> = {
 
 function activeIds(): Set<string> {
   return new Set(
-    (process.env.ACTIVE_CITIES || 'berlin')
+    (process.env.ACTIVE_CITIES || 'berlin,hamburg,nagpur')
       .split(',')
       .map((s) => s.trim())
       .filter(Boolean),
