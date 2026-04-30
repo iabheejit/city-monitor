@@ -72,6 +72,9 @@ export const RENT_MAP_WMS_URL =
 export const NOISE_SOURCE = 'noise-wms';
 export const NOISE_LAYER = 'noise-wms-layer';
 
+export const BHUVAN_SOURCE = 'bhuvan-wms';
+export const BHUVAN_LAYER = 'bhuvan-wms-layer';
+
 const NOISE_WMS_LAYERS: Record<string, Record<string, string>> = {
   berlin: {
     total: 'bf_gesamtlaerm_den2022',
@@ -98,6 +101,21 @@ export function getNoiseWmsUrl(cityId: string, noiseLayer: string): string | nul
   const layer = layers[noiseLayer];
   if (!layer) return null;
   return `${base}?service=WMS&version=1.1.1&request=GetMap` +
+    `&layers=${layer}&styles=&format=image/png&transparent=true` +
+    `&srs=EPSG:3857&width=256&height=256&bbox={bbox-epsg-3857}`;
+}
+
+const BHUVAN_WMS_BASE = 'https://bhuvan-vec2.nrsc.gov.in/bhuvan/wms';
+
+// Keep this scoped to known, validated city-specific layers to avoid brittle config.
+const BHUVAN_WMS_LAYERS: Record<string, string> = {
+  nagpur: 'PMO_RAIL_NAG_NAGB',
+};
+
+export function getBhuvanWmsUrl(cityId: string): string | null {
+  const layer = BHUVAN_WMS_LAYERS[cityId];
+  if (!layer) return null;
+  return `${BHUVAN_WMS_BASE}?service=WMS&version=1.1.1&request=GetMap` +
     `&layers=${layer}&styles=&format=image/png&transparent=true` +
     `&srs=EPSG:3857&width=256&height=256&bbox={bbox-epsg-3857}`;
 }

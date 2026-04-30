@@ -9,7 +9,7 @@ export type NoiseWmsLayer = NoiseLayer | null;
 export type NewsSubLayer = 'news' | 'police';
 export type EmergencySubLayer = 'pharmacies' | 'aeds';
 export type WaterSubLayer = 'levels' | 'bathing';
-export type TrafficSubLayer = 'public-transport' | 'incidents' | 'roadworks';
+export type TrafficSubLayer = 'public-transport' | 'incidents' | 'roadworks' | 'official';
 
 interface CommandCenterState {
   singleView: boolean;
@@ -41,7 +41,7 @@ const DEFAULT_LAYERS: Set<DataLayer> = new Set(['traffic', 'weather', 'warnings'
 const ALL_NEWS_SUBS: Set<NewsSubLayer> = new Set(['news']);
 const ALL_EMERGENCY_SUBS: Set<EmergencySubLayer> = new Set(['pharmacies']);
 const ALL_WATER_SUBS: Set<WaterSubLayer> = new Set(['levels', 'bathing']);
-const ALL_TRAFFIC_SUBS: Set<TrafficSubLayer> = new Set(['public-transport', 'incidents', 'roadworks']);
+const ALL_TRAFFIC_SUBS: Set<TrafficSubLayer> = new Set(['public-transport', 'incidents', 'roadworks', 'official']);
 
 export const useCommandCenter = create<CommandCenterState>((set) => ({
   singleView: false,

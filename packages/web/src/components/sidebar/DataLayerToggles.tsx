@@ -49,10 +49,11 @@ const WATER_SUB_META: { key: WaterSubLayer; icon: IconNode; color: string }[] = 
   { key: 'bathing', icon: Waves as IconNode, color: '#06b6d4' },
 ];
 
-const TRAFFIC_SUB_META: { key: TrafficSubLayer; icon: IconNode; color: string }[] = [
+const TRAFFIC_SUB_META: { key: TrafficSubLayer; icon: IconNode; color: string; cities?: string[] }[] = [
   { key: 'public-transport', icon: TrainFront as IconNode, color: '#f59e0b' },
   { key: 'incidents', icon: Car as IconNode, color: '#8b5cf6' },
   { key: 'roadworks', icon: Construction as IconNode, color: '#d97706' },
+  { key: 'official', icon: Globe as IconNode, color: '#0ea5e9', cities: ['nagpur'] },
 ];
 
 const SOCIAL_SUB_META: { key: SocialLayer; icon: IconNode; color: string }[] = [
@@ -176,13 +177,15 @@ export function DataLayerToggles() {
               />
             ));
           } else if (layer === 'traffic' && active) {
-            subItems = TRAFFIC_SUB_META.map(({ key, icon: subIcon, color: subColor }) => (
+            subItems = TRAFFIC_SUB_META
+              .filter(({ cities: c }) => !c || c.includes(city.id))
+              .map(({ key, icon: subIcon, color: subColor }) => (
               <SubLayerItem
                 key={key}
                 icon={subIcon}
                 color={subColor}
                 active={trafficSubLayers.has(key)}
-                label={t(`sidebar.traffic.${key}`)}
+                label={key === 'official' ? t('sidebar.traffic.official', 'Official (Bhuvan)') : t(`sidebar.traffic.${key}`)}
                 onClick={() => toggleTrafficSubLayer(key)}
                 parentColor={color}
               />

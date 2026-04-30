@@ -30,7 +30,7 @@ import { useCommandCenter } from '../../hooks/useCommandCenter.js';
 import { registerAllMapIcons } from '../../lib/map-icons.js';
 
 import { DARK_STYLE, LIGHT_STYLE, EMPTY_AQ, EMPTY_WL, DISTRICT_URLS, POLITICAL_MARKER_LAYER, type SocialAtlasMetric, type PopulationMetric } from './constants.js';
-import { simplifyMap, setTrafficRoadVisibility, setWaterAreaVisibility, setWeatherOverlay, setNoiseOverlay, setRentMapOverlay, loadStyle } from './base.js';
+import { simplifyMap, setTrafficRoadVisibility, setWaterAreaVisibility, setWeatherOverlay, setNoiseOverlay, setRentMapOverlay, setBhuvanOverlay, loadStyle } from './base.js';
 import { showMapPopup, scheduleHoverClose } from './popups.js';
 import { addDistrictLayer, addDistrictSource, ensureDistrictLabelsBelow, applyPoliticalStyling, setupDistrictHover, updatePoliticalMarkers, removePoliticalMarkers, buildPoliticalPopupHtml } from './layers/political.js';
 import { filterNewsForMap, updateNewsMarkers, updateSafetyMarkers } from './layers/news-safety.js';
@@ -124,6 +124,7 @@ export function CityMap() {
   const trafficSubLayers = useCommandCenter((s) => s.trafficSubLayers);
   const trafficActive = activeLayers.has('traffic') && trafficSubLayers.has('incidents');
   const constructionActive = activeLayers.has('traffic') && trafficSubLayers.has('roadworks');
+  const bhuvanOverlayActive = activeLayers.has('traffic') && trafficSubLayers.has('official') && city.country === 'IN';
   const roadsActive = trafficActive || constructionActive;
   const weatherActive = activeLayers.has('weather');
   const noiseLayerSel = useCommandCenter((s) => s.noiseLayer);
@@ -264,6 +265,8 @@ export function CityMap() {
   effectiveNoiseLayerRef.current = effectiveNoiseLayer;
   const rentMapActiveRef = useRef(rentMapActive);
   rentMapActiveRef.current = rentMapActive;
+  const bhuvanOverlayActiveRef = useRef(bhuvanOverlayActive);
+  bhuvanOverlayActiveRef.current = bhuvanOverlayActive;
   const waterActiveRef = useRef(waterActive);
   waterActiveRef.current = waterActive;
   const politicalActiveRef = useRef(politicalActive);
@@ -328,6 +331,7 @@ export function CityMap() {
         setWeatherOverlay(map, weatherActiveRef.current);
         setNoiseOverlay(map, noiseWmsActiveRef.current, cityIdRef.current, effectiveNoiseLayerRef.current);
         setRentMapOverlay(map, rentMapActiveRef.current);
+        setBhuvanOverlay(map, bhuvanOverlayActiveRef.current, cityIdRef.current);
 
         // Ensure district labels render below all marker icons
         ensureDistrictLabelsBelow(map);
@@ -411,6 +415,7 @@ export function CityMap() {
       setWeatherOverlay(map, weatherActiveRef.current);
       setNoiseOverlay(map, noiseWmsActiveRef.current, cityIdRef.current, effectiveNoiseLayerRef.current);
       setRentMapOverlay(map, rentMapActiveRef.current);
+      setBhuvanOverlay(map, bhuvanOverlayActiveRef.current, cityIdRef.current);
       ensureDistrictLabelsBelow(map);
     });
   }, [isDark, city.id]);
@@ -453,6 +458,19 @@ export function CityMap() {
     map.once('idle', apply);
     return () => { map.off('idle', apply); };
   }, [noiseWmsActive, effectiveNoiseLayer, city.id]);
+
+  // Show/hide India official Bhuvan overlay when traffic sub-layer is toggled
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const apply = () => setBhuvanOverlay(map, bhuvanOverlayActive, city.id);
+    if (map.isStyleLoaded()) {
+      apply();
+      return;
+    }
+    map.once('idle', apply);
+    return () => { map.off('idle', apply); };
+  }, [bhuvanOverlayActive, city.id]);
 
   // Keep district labels below marker layers whenever marker data changes
   useEffect(() => {

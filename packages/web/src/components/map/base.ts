@@ -17,6 +17,9 @@ import {
   NOISE_SOURCE,
   NOISE_LAYER,
   getNoiseWmsUrl,
+  BHUVAN_SOURCE,
+  BHUVAN_LAYER,
+  getBhuvanWmsUrl,
 } from './constants.js';
 import { API_BASE } from '../../lib/api-base.js';
 
@@ -43,6 +46,7 @@ function isKeptLayer(layer: LayerSpecification): boolean {
     id.startsWith('weather-') ||
     id.startsWith('rent-map-') ||
     id.startsWith('noise-') ||
+    id.startsWith('bhuvan-') ||
     id.startsWith('social-atlas-') ||
     id.startsWith('population-')
   );
@@ -110,6 +114,7 @@ export function simplifyMap(map: maplibregl.Map) {
       !layer.id.startsWith('weather-') &&
       !layer.id.startsWith('rent-map-') &&
       !layer.id.startsWith('noise-') &&
+      !layer.id.startsWith('bhuvan-') &&
       !layer.id.startsWith('social-atlas-') &&
       !layer.id.startsWith('population-')
     ) {
@@ -227,4 +232,33 @@ export function setRentMapOverlay(map: maplibregl.Map, visible: boolean) {
     if (map.getLayer(RENT_MAP_LAYER)) map.removeLayer(RENT_MAP_LAYER);
     if (map.getSource(RENT_MAP_SOURCE)) map.removeSource(RENT_MAP_SOURCE);
   }
+}
+
+export function setBhuvanOverlay(map: maplibregl.Map, visible: boolean, cityId: string) {
+  // Always remove stale layer/source first to support city switches.
+  if (map.getLayer(BHUVAN_LAYER)) map.removeLayer(BHUVAN_LAYER);
+  if (map.getSource(BHUVAN_SOURCE)) map.removeSource(BHUVAN_SOURCE);
+
+  if (!visible) return;
+
+  const url = getBhuvanWmsUrl(cityId);
+  if (!url) return;
+
+  map.addSource(BHUVAN_SOURCE, {
+    type: 'raster',
+    tiles: [url],
+    tileSize: 256,
+    attribution: '&copy; <a href="https://bhuvan.nrsc.gov.in/" target="_blank">ISRO Bhuvan</a>',
+  });
+
+  // Keep incidents and markers readable above this background thematic layer.
+  const beforeId = map.getLayer('traffic-incidents-line') ? 'traffic-incidents-line' : undefined;
+  map.addLayer({
+    id: BHUVAN_LAYER,
+    type: 'raster',
+    source: BHUVAN_SOURCE,
+    paint: {
+      'raster-opacity': 0.45,
+    },
+  }, beforeId);
 }
