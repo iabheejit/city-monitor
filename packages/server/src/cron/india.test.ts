@@ -10,15 +10,15 @@ describe('parseAgmarknetRecords', () => {
   it('parses a basic commodity record', () => {
     const records = [
       {
-        State: 'Maharashtra',
-        District: 'Nagpur',
-        Market: 'Nagpur',
-        Commodity: 'Onion',
-        Variety: 'Red',
-        Arrival_Date: '28/04/2025',
-        'Min_x0020_Price': '1500',
-        'Max_x0020_Price': '2200',
-        'Modal_x0020_Price': '1800',
+        state: 'Maharashtra',
+        district: 'Nagpur',
+        market: 'Nagpur',
+        commodity: 'Onion',
+        variety: 'Red',
+        arrival_date: '28/04/2025',
+        min_price: 1500,
+        max_price: 2200,
+        modal_price: 1800,
       },
     ];
     const result = parseAgmarknetRecords(records);
@@ -35,22 +35,22 @@ describe('parseAgmarknetRecords', () => {
   it('keeps only the latest arrival date per commodity', () => {
     const records = [
       {
-        Commodity: 'Tomato',
-        Market: 'Nagpur',
-        Variety: '',
-        Arrival_Date: '26/04/2025',
-        'Min_x0020_Price': '800',
-        'Max_x0020_Price': '1200',
-        'Modal_x0020_Price': '1000',
+        commodity: 'Tomato',
+        market: 'Nagpur',
+        variety: '',
+        arrival_date: '26/04/2025',
+        min_price: 800,
+        max_price: 1200,
+        modal_price: 1000,
       },
       {
-        Commodity: 'Tomato',
-        Market: 'Kalamna',
-        Variety: '',
-        Arrival_Date: '28/04/2025',
-        'Min_x0020_Price': '900',
-        'Max_x0020_Price': '1300',
-        'Modal_x0020_Price': '1100',
+        commodity: 'Tomato',
+        market: 'Kalamna',
+        variety: '',
+        arrival_date: '28/04/2025',
+        min_price: 900,
+        max_price: 1300,
+        modal_price: 1100,
       },
     ];
     const result = parseAgmarknetRecords(records);
@@ -62,13 +62,13 @@ describe('parseAgmarknetRecords', () => {
   it('filters out records with zero modal price', () => {
     const records = [
       {
-        Commodity: 'Rice',
-        Market: 'Nagpur',
-        Variety: '',
-        Arrival_Date: '28/04/2025',
-        'Min_x0020_Price': '0',
-        'Max_x0020_Price': '0',
-        'Modal_x0020_Price': '0',
+        commodity: 'Rice',
+        market: 'Nagpur',
+        variety: '',
+        arrival_date: '28/04/2025',
+        min_price: 0,
+        max_price: 0,
+        modal_price: 0,
       },
     ];
     expect(parseAgmarknetRecords(records)).toHaveLength(0);
@@ -77,13 +77,13 @@ describe('parseAgmarknetRecords', () => {
   it('handles prices with commas', () => {
     const records = [
       {
-        Commodity: 'Cotton',
-        Market: 'Nagpur',
-        Variety: 'Long Staple',
-        Arrival_Date: '28/04/2025',
-        'Min_x0020_Price': '6,000',
-        'Max_x0020_Price': '7,500',
-        'Modal_x0020_Price': '6,800',
+        commodity: 'Cotton',
+        market: 'Nagpur',
+        variety: 'Long Staple',
+        arrival_date: '28/04/2025',
+        min_price: '6,000',
+        max_price: '7,500',
+        modal_price: '6,800',
       },
     ];
     const result = parseAgmarknetRecords(records);
@@ -94,22 +94,22 @@ describe('parseAgmarknetRecords', () => {
   it('sorts by modal price descending', () => {
     const records = [
       {
-        Commodity: 'Potato',
-        Market: 'N',
-        Variety: '',
-        Arrival_Date: '28/04/2025',
-        'Min_x0020_Price': '500',
-        'Max_x0020_Price': '700',
-        'Modal_x0020_Price': '600',
+        commodity: 'Potato',
+        market: 'N',
+        variety: '',
+        arrival_date: '28/04/2025',
+        min_price: 500,
+        max_price: 700,
+        modal_price: 600,
       },
       {
-        Commodity: 'Cotton',
-        Market: 'N',
-        Variety: '',
-        Arrival_Date: '28/04/2025',
-        'Min_x0020_Price': '6000',
-        'Max_x0020_Price': '7500',
-        'Modal_x0020_Price': '6800',
+        commodity: 'Cotton',
+        market: 'N',
+        variety: '',
+        arrival_date: '28/04/2025',
+        min_price: 6000,
+        max_price: 7500,
+        modal_price: 6800,
       },
     ];
     const result = parseAgmarknetRecords(records);
@@ -120,13 +120,13 @@ describe('parseAgmarknetRecords', () => {
   it('filters out records with no commodity name', () => {
     const records = [
       {
-        Commodity: '',
-        Market: 'Nagpur',
-        Variety: '',
-        Arrival_Date: '28/04/2025',
-        'Min_x0020_Price': '500',
-        'Max_x0020_Price': '700',
-        'Modal_x0020_Price': '600',
+        commodity: '',
+        market: 'Nagpur',
+        variety: '',
+        arrival_date: '28/04/2025',
+        min_price: 500,
+        max_price: 700,
+        modal_price: 600,
       },
     ];
     expect(parseAgmarknetRecords(records)).toHaveLength(0);
