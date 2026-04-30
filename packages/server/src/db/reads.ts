@@ -9,7 +9,7 @@ import {
   geocodeLookups,
 } from './schema.js';
 import type { SnapshotType } from './schema.js';
-import type { NinaWarning, PoliticalDistrict, WaterLevelData, BuergeramtData, BudgetSummary, ConstructionSite, TrafficIncident, EmergencyPharmacy, AedLocation, WastewaterSummary, BathingSpot, LaborMarketSummary, PopulationSummary, FeuerwehrSummary, PollenForecast, NoiseSensor, CouncilMeeting, HistoryPoint, AirQualityGridPoint, TransitAlert, MandiSummary, MgnregaSummary, SchemeCatalogue, CpcbAqiData } from '@city-monitor/shared';
+import type { NinaWarning, PoliticalDistrict, WaterLevelData, BuergeramtData, BudgetSummary, ConstructionSite, TrafficIncident, EmergencyPharmacy, AedLocation, WastewaterSummary, BathingSpot, LaborMarketSummary, PopulationSummary, FeuerwehrSummary, PollenForecast, NoiseSensor, CouncilMeeting, HistoryPoint, AirQualityGridPoint, TransitAlert, MandiSummary, MgnregaSummary, SchemeCatalogue, CpcbAqiData, MsmeSummary } from '@city-monitor/shared';
 import {
   WeatherDataSchema, WaterLevelDataSchema, BuergeramtDataSchema, BudgetSummarySchema,
   PoliticalDistrictSchema, WastewaterSummarySchema, LaborMarketSummarySchema,
@@ -19,6 +19,7 @@ import {
   TransitAlertSchema, NinaWarningSchema,
   MandiSummarySchema, MgnregaSummarySchema, SchemeCatalogueSchema,
   CpcbAqiDataSchema,
+  MsmeSummarySchema,
 } from '@city-monitor/shared/schemas.js';
 import type { GeocodeResult } from '../lib/geocode.js';
 import type { WeatherData } from '../cron/ingest-weather.js';
@@ -581,6 +582,10 @@ export async function loadMyScheme(db: Db, cityId: string): Promise<DbResult<Sch
 
 export async function loadCpcbAqi(db: Db, cityId: string): Promise<DbResult<CpcbAqiData>> {
   return loadSnapshot(db, cityId, 'cpcb-aqi', { schema: CpcbAqiDataSchema, maxAgeMs: 1800_000 });
+}
+
+export async function loadMsme(db: Db, cityId: string): Promise<DbResult<MsmeSummary>> {
+  return loadSnapshot(db, cityId, 'msme-udyam', { schema: MsmeSummarySchema, maxAgeMs: 86_400_000 });
 }
 
 export type { GeocodeResult };

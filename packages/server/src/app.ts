@@ -70,10 +70,12 @@ import { createMandiIngestion } from './cron/ingest-mandi.js';
 import { createMgnregaIngestion } from './cron/ingest-mgnrega.js';
 import { createMySchemeIngestion } from './cron/ingest-myscheme.js';
 import { createCpcbAqiIngestion } from './cron/ingest-cpcb-aqi.js';
+import { createMsmeIngestion } from './cron/ingest-msme.js';
 import { createMandiRouter } from './routes/mandi.js';
 import { createMgnregaRouter } from './routes/mgnrega.js';
 import { createMySchemeRouter } from './routes/myscheme.js';
 import { createCpcbAqiRouter } from './routes/cpcb-aqi.js';
+import { createMsmeRouter } from './routes/msme.js';
 import { initGeocodeDb } from './lib/geocode.js';
 import { validateCity } from './lib/validate-city.js';
 
@@ -155,6 +157,7 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
     { jobName: 'ingest-mgnrega',          tableName: 'snapshots', maxAgeSeconds: 86400,  filter: { column: 'type', value: 'data-gov-mgnrega' } },
     { jobName: 'ingest-myscheme',         tableName: 'snapshots', maxAgeSeconds: 86400,  filter: { column: 'type', value: 'myscheme-schemes' } },
     { jobName: 'ingest-cpcb-aqi',         tableName: 'snapshots', maxAgeSeconds: 1800,   filter: { column: 'type', value: 'cpcb-aqi' } },
+    { jobName: 'ingest-msme',             tableName: 'snapshots', maxAgeSeconds: 86400,  filter: { column: 'type', value: 'msme-udyam' } },
   ];
 
   const stale = db
@@ -190,6 +193,7 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
   const ingestMgnrega = createMgnregaIngestion(cache, db);
   const ingestMyScheme = createMySchemeIngestion(cache, db);
   const ingestCpcbAqi = createCpcbAqiIngestion(cache, db);
+  const ingestMsme = createMsmeIngestion(cache, db);
 
   const retainData = db ? createDataRetention(db) : async () => {};
 
@@ -225,6 +229,7 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
     { name: 'ingest-mgnrega',  schedule: '0 7 * * *', handler: ingestMgnrega,  runOnStart: s('ingest-mgnrega') },
     { name: 'ingest-myscheme', schedule: '0 5 * * *', handler: ingestMyScheme, runOnStart: s('ingest-myscheme') },
     { name: 'ingest-cpcb-aqi', schedule: '*/30 * * * *', handler: ingestCpcbAqi, runOnStart: s('ingest-cpcb-aqi') },
+    { name: 'ingest-msme',     schedule: '0 2 * * *',    handler: ingestMsme,    runOnStart: s('ingest-msme') },
     { name: 'data-retention', schedule: '0 3 * * *', handler: retainData },
   ];
 
@@ -285,6 +290,7 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
   app.use('/api', cacheFor(43200), createMgnregaRouter(cache, db));
   app.use('/api', cacheFor(43200), createMySchemeRouter(cache, db));
   app.use('/api', cacheFor(1800), createCpcbAqiRouter(cache, db));
+  app.use('/api', cacheFor(43200), createMsmeRouter(cache, db));
 
   return { app, cache, db, scheduler };
 }

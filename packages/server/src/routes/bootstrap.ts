@@ -44,6 +44,7 @@ export function createBootstrapRouter(cache: Cache) {
       mgnrega: data[CK.mgnrega(city.id)] ?? null,
       myScheme: data[CK.myScheme(city.id)] ?? null,
       cpcbAqi: data[CK.cpcbAqi(city.id)] ?? null,
+      msme: data[CK.msme(city.id)] ?? null,
     });
   });
 

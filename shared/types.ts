@@ -126,6 +126,11 @@ export interface CityDataSources {
     /** City name as used in the data.gov.in CPCB dataset, e.g. "Nagpur" */
     cityName: string;
   };
+  /** MSME UDYAM business registrations via data.gov.in */
+  msme?: {
+    /** District name in uppercase as used in the dataset, e.g. "NAGPUR" */
+    districtName: string;
+  };
 }
 
 // Weather data types (shared between server ingestion and web UI)
@@ -582,6 +587,7 @@ export interface BootstrapData {
   mgnrega: ApiResponse<MgnregaSummary | null> | null;
   myScheme: ApiResponse<SchemeCatalogue | null> | null;
   cpcbAqi: ApiResponse<CpcbAqiData | null> | null;
+  msme: ApiResponse<MsmeSummary | null> | null;
 }
 
 // News AI summary
@@ -662,5 +668,32 @@ export interface CpcbStation {
 
 export interface CpcbAqiData {
   stations: CpcbStation[];
+  fetchedAt: string;
+}
+
+// MSME UDYAM registrations (data.gov.in — Ministry of MSME)
+export interface MsmeActivity {
+  nicCode: string;
+  description: string;
+}
+
+export interface MsmeEnterprise {
+  name: string;
+  district: string;
+  state: string;
+  pincode: string;
+  registrationDate: string;
+  activities: MsmeActivity[];
+}
+
+export interface MsmeSectorCount {
+  description: string;
+  count: number;
+}
+
+export interface MsmeSummary {
+  totalRegistered: number;
+  recentRegistrations: MsmeEnterprise[]; // last 10 by registration date
+  topSectors: MsmeSectorCount[];         // top 10 NIC sectors by count
   fetchedAt: string;
 }

@@ -452,3 +452,31 @@ export const CpcbAqiDataSchema = z.object({
   stations: z.array(CpcbStationSchema),
   fetchedAt: z.string(),
 });
+
+// --- MSME UDYAM ---
+
+export const MsmeActivitySchema = z.object({
+  nicCode: z.string(),
+  description: z.string(),
+});
+
+export const MsmeEnterpriseSchema = z.object({
+  name: z.string(),
+  district: z.string(),
+  state: z.string(),
+  pincode: z.string(),
+  registrationDate: z.string(),
+  activities: z.array(MsmeActivitySchema),
+});
+
+export const MsmeSectorCountSchema = z.object({
+  description: z.string(),
+  count: z.number(),
+});
+
+export const MsmeSummarySchema = z.object({
+  totalRegistered: z.number(),
+  recentRegistrations: z.array(MsmeEnterpriseSchema),
+  topSectors: z.array(MsmeSectorCountSchema),
+  fetchedAt: z.string(),
+});

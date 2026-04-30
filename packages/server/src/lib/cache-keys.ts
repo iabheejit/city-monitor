@@ -58,6 +58,7 @@ export const CK = {
   mgnrega: (cityId: string) => `${cityId}:mgnrega`,
   myScheme: (cityId: string) => `${cityId}:myscheme`,
   cpcbAqi: (cityId: string) => `${cityId}:cpcb-aqi`,
+  msme: (cityId: string) => `${cityId}:msme`,
 
   // History
   weatherHistory: (cityId: string, days: number) => `${cityId}:weather:history:${days}d`,
@@ -92,5 +93,6 @@ export const CK = {
     CK.mgnrega(cityId),
     CK.myScheme(cityId),
     CK.cpcbAqi(cityId),
+    CK.msme(cityId),
   ],
 } as const;

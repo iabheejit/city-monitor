@@ -16,7 +16,7 @@ import {
   geocodeLookups,
 } from './schema.js';
 import type { SnapshotType } from './schema.js';
-import type { NinaWarning, PoliticalDistrict, WaterLevelData, BuergeramtData, BudgetSummary, ConstructionSite, TrafficIncident, EmergencyPharmacy, AedLocation, WastewaterSummary, BathingSpot, LaborMarketSummary, PopulationSummary, FeuerwehrSummary, PollenForecast, NoiseSensor, CouncilMeeting, TransitAlert, MandiSummary, MgnregaSummary, SchemeCatalogue, CpcbAqiData } from '@city-monitor/shared';
+import type { NinaWarning, PoliticalDistrict, WaterLevelData, BuergeramtData, BudgetSummary, ConstructionSite, TrafficIncident, EmergencyPharmacy, AedLocation, WastewaterSummary, BathingSpot, LaborMarketSummary, PopulationSummary, FeuerwehrSummary, PollenForecast, NoiseSensor, CouncilMeeting, TransitAlert, MandiSummary, MgnregaSummary, SchemeCatalogue, CpcbAqiData, MsmeSummary } from '@city-monitor/shared';
 import type { GeocodeResult } from '../lib/geocode.js';
 import type { WeatherData } from '../cron/ingest-weather.js';
 import type { CityEvent } from '../cron/ingest-events.js';
@@ -136,6 +136,10 @@ export async function saveMyScheme(db: Db, cityId: string, data: SchemeCatalogue
 
 export async function saveCpcbAqi(db: Db, cityId: string, data: CpcbAqiData): Promise<void> {
   await saveSnapshot(db, cityId, 'cpcb-aqi', data);
+}
+
+export async function saveMsme(db: Db, cityId: string, data: MsmeSummary): Promise<void> {
+  await saveSnapshot(db, cityId, 'msme-udyam', data);
 }
 
 // ---------------------------------------------------------------------------

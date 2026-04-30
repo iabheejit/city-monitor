@@ -36,5 +36,8 @@ export const nagpur: CityConfig = {
     cpcbAqi: {
       cityName: 'Nagpur',
     },
+    msme: {
+      districtName: 'NAGPUR',
+    },
   },
 };
