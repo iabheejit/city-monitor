@@ -15,16 +15,16 @@ const TTL_SECONDS = 43200; // 12h
 // Field names use '_x0020_' as URL-encoded space (hex entity from the AGMARKNET API's
 // underlying XML schema). These are the literal keys returned by the data.gov.in API.
 interface AgmarknetRecord {
-  State?: string;
-  District?: string;
-  Market?: string;
-  Commodity?: string;
-  Variety?: string;
-  Grade?: string;
-  Arrival_Date?: string;
-  Min_x0020_Price?: string;
-  Max_x0020_Price?: string;
-  Modal_x0020_Price?: string;
+  state?: string;
+  district?: string;
+  market?: string;
+  commodity?: string;
+  variety?: string;
+  grade?: string;
+  arrival_date?: string;
+  min_price?: number | string;
+  max_price?: number | string;
+  modal_price?: number | string;
 }
 
 function parsePrice(raw: string | undefined): number {
@@ -37,23 +37,23 @@ function parseAgmarknetRecords(records: AgmarknetRecord[]): MandiCommodity[] {
   // Group by commodity name, keep the record with the latest arrival date
   const latest = new Map<string, AgmarknetRecord>();
   for (const r of records) {
-    const key = (r.Commodity ?? '').toLowerCase();
+    const key = (r.commodity ?? '').toLowerCase();
     if (!key) continue;
     const existing = latest.get(key);
-    if (!existing || (r.Arrival_Date ?? '') > (existing.Arrival_Date ?? '')) {
+    if (!existing || (r.arrival_date ?? '') > (existing.arrival_date ?? '')) {
       latest.set(key, r);
     }
   }
 
   return [...latest.values()]
     .map((r) => ({
-      name: r.Commodity ?? '',
-      variety: r.Variety ?? '',
-      market: r.Market ?? '',
-      modalPrice: parsePrice(r.Modal_x0020_Price),
-      minPrice: parsePrice(r.Min_x0020_Price),
-      maxPrice: parsePrice(r.Max_x0020_Price),
-      arrivalDate: r.Arrival_Date ?? '',
+      name: r.commodity ?? '',
+      variety: r.variety ?? '',
+      market: r.market ?? '',
+      modalPrice: parsePrice(String(r.modal_price ?? '')),
+      minPrice: parsePrice(String(r.min_price ?? '')),
+      maxPrice: parsePrice(String(r.max_price ?? '')),
+      arrivalDate: r.arrival_date ?? '',
     }))
     .filter((c) => c.name && c.modalPrice > 0)
     .sort((a, b) => b.modalPrice - a.modalPrice);
@@ -89,10 +89,10 @@ async function ingestCityMandi(
   const params = new URLSearchParams({
     'api-key': apiKey,
     format: 'json',
-    'filters[State]': stateId,
-    'filters[District]': districtName,
+    'filters[state]': stateId,
+    'filters[district]': districtName,
     limit: '100',
-    'sort[Arrival_Date]': 'desc',
+    'sort[arrival_date]': 'desc',
   });
 
   const url = `${DATA_GOV_IN_BASE}?${params}`;
