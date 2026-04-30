@@ -92,7 +92,6 @@ async function ingestCityMandi(
     'filters[state]': stateId,
     'filters[district]': districtName,
     limit: '100',
-    'sort[arrival_date]': 'desc',
   });
 
   const url = `${DATA_GOV_IN_BASE}?${params}`;
