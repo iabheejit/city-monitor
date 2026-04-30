@@ -42,6 +42,8 @@ import { updateAqGridLayer } from './layers/air-quality.js';
 import { updateWaterLevelMarkers, updateBathingMarkers } from './layers/water.js';
 import { updateSocialAtlasLayer, updatePopulationLayer } from './layers/choropleth.js';
 import { updateNoiseSensorMarkers } from './layers/noise-sensors.js';
+import { updateOsmPoiMarkers } from './layers/pois.js';
+import { useOsmPois } from '../../hooks/useOsmPois.js';
 
 /** Symbol layer IDs that should animate in after fly-in */
 const MARKER_LAYERS = [
@@ -55,6 +57,7 @@ const MARKER_LAYERS = [
   'pharmacy-marker-icon',
   'aed-marker-icon',
   'construction-points',
+  'osm-poi-circles',
   'political-markers',
 ];
 
@@ -121,6 +124,8 @@ export function CityMap() {
   const newsSubLayers = useCommandCenter((s) => s.newsSubLayers);
   const emergencySubLayers = useCommandCenter((s) => s.emergencySubLayers);
   const politicalActive = activeLayers.has('political');
+  const poisActive = activeLayers.has('pois') && Boolean(city.dataSources.osmPois);
+  const { data: osmPoisData } = useOsmPois(city.id, poisActive);
   const trafficSubLayers = useCommandCenter((s) => s.trafficSubLayers);
   const trafficActive = activeLayers.has('traffic') && trafficSubLayers.has('incidents');
   const constructionActive = activeLayers.has('traffic') && trafficSubLayers.has('roadworks');
@@ -211,6 +216,10 @@ export function CityMap() {
     () => (waterActive && waterSubLayers.has('bathing')) ? (bathingData ?? []) : [],
     [waterActive, waterSubLayers, bathingData],
   );
+  const osmPoiItems = useMemo(
+    () => poisActive ? (osmPoisData?.pois ?? []) : [],
+    [poisActive, osmPoisData],
+  );
   const socialAtlasGeoJson = socialAtlasActive ? (socialAtlasData ?? null) : null;
   const populationGeoJson = populationActive ? (populationData ?? null) : null;
 
@@ -247,6 +256,8 @@ export function CityMap() {
   waterLevelItemsRef.current = waterLevelItems;
   const bathingItemsRef = useRef(bathingItems);
   bathingItemsRef.current = bathingItems;
+  const osmPoiItemsRef = useRef(osmPoiItems);
+  osmPoiItemsRef.current = osmPoiItems;
   const socialAtlasGeoJsonRef = useRef(socialAtlasGeoJson);
   socialAtlasGeoJsonRef.current = socialAtlasGeoJson;
   const socialAtlasMetricRef = useRef(socialAtlasMetric);
@@ -326,6 +337,7 @@ export function CityMap() {
         updateNoiseSensorMarkers(map, noiseSensorItemsRef.current, isDarkRef.current);
         updateWaterLevelMarkers(map, waterLevelItemsRef.current, isDarkRef.current);
         updateBathingMarkers(map, bathingItemsRef.current, isDarkRef.current);
+        updateOsmPoiMarkers(map, osmPoiItemsRef.current, isDarkRef.current);
         updateSocialAtlasLayer(map, socialAtlasGeoJsonRef.current, socialAtlasMetricRef.current, isDarkRef.current);
         updatePopulationLayer(map, populationGeoJsonRef.current, populationMetricRef.current, isDarkRef.current);
         setWeatherOverlay(map, weatherActiveRef.current);
@@ -410,6 +422,7 @@ export function CityMap() {
       updateNoiseSensorMarkers(map, noiseSensorItemsRef.current, isDark);
       updateWaterLevelMarkers(map, waterLevelItemsRef.current, isDark);
       updateBathingMarkers(map, bathingItemsRef.current, isDark);
+      updateOsmPoiMarkers(map, osmPoiItemsRef.current, isDark);
       updateSocialAtlasLayer(map, socialAtlasGeoJsonRef.current, socialAtlasMetricRef.current, isDark);
       updatePopulationLayer(map, populationGeoJsonRef.current, populationMetricRef.current, isDark);
       setWeatherOverlay(map, weatherActiveRef.current);
@@ -480,7 +493,7 @@ export function CityMap() {
     if (map.isStyleLoaded()) { apply(); return; }
     map.once('idle', apply);
     return () => { map.off('idle', apply); };
-  }, [transitItems, newsItems, safetyItems, warningItems, pharmacyItems, aedItems, trafficItems, constructionItems, aqGridItems, noiseSensorItems, waterLevelItems, bathingItems]);
+  }, [transitItems, newsItems, safetyItems, warningItems, pharmacyItems, aedItems, trafficItems, constructionItems, aqGridItems, noiseSensorItems, waterLevelItems, bathingItems, osmPoiItems]);
 
   // Update transit markers when alerts or layer toggle changes
   useEffect(() => {
@@ -625,6 +638,16 @@ export function CityMap() {
     map.once('idle', apply);
     return () => { map.off('idle', apply); };
   }, [bathingItems]);
+
+  // Update OSM POI markers (Nagpur)
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const apply = () => updateOsmPoiMarkers(map, osmPoiItems, isDarkRef.current);
+    if (map.isStyleLoaded()) { apply(); return; }
+    map.once('idle', apply);
+    return () => { map.off('idle', apply); };
+  }, [osmPoiItems]);
 
   // Update social atlas choropleth (lazy — geojson only available when layer is toggled on)
   useEffect(() => {

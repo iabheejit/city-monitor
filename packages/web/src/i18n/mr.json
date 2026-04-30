@@ -319,6 +319,53 @@
       "more": "अधिक योजना",
       "empty": "कोणत्याही योजना उपलब्ध नाहीत",
       "source": "MyScheme.gov.in"
+    },
+    "msme": {
+      "title": "MSME उद्योग",
+      "totalRegistered": "नोंदणीकृत उद्योग",
+      "topSectors": "शीर्ष क्षेत्रे",
+      "recentRegistrations": "अलीकडील नोंदणी",
+      "empty": "कोणताही डेटा उपलब्ध नाही",
+      "source": "MSME Udyam / data.gov.in"
+    },
+    "cpcbAqi": {
+      "title": "हवा गुणवत्ता (CPCB)",
+      "avgPm25": "सरासरी PM2.5",
+      "stations": "स्थानके",
+      "moreStations": "अधिक स्थानके",
+      "good": "चांगले",
+      "satisfactory": "समाधानकारक",
+      "moderate": "मध्यम",
+      "poor": "खराब",
+      "veryPoor": "अत्यंत खराब",
+      "na": "उपलब्ध नाही",
+      "empty": "स्थानक डेटा नाही",
+      "source": "CPCB CAAQMS / data.gov.in"
+    },
+    "nagpurTransit": {
+      "title": "वाहतूक व रहदारी",
+      "empty": "कोणतीही वाहतूक बातमी नाही",
+      "source": "नागपूर बातमी फीड"
+    },
+    "nagpurSafety": {
+      "title": "सुरक्षा व गुन्हे",
+      "empty": "कोणतीही सुरक्षा बातमी नाही",
+      "source": "नागपूर बातमी फीड"
+    },
+    "nmcAnnouncements": {
+      "title": "NMC घोषणा",
+      "empty": "कोणतीही घोषणा उपलब्ध नाही",
+      "source": "nagpurcorporation.gov.in"
+    },
+    "nmrclStatus": {
+      "title": "नागपूर मेट्रो",
+      "empty": "कोणतेही मेट्रो अपडेट नाही",
+      "source": "nagpurmetro.com"
+    },
+    "nagpurPolice": {
+      "title": "नागपूर पोलीस",
+      "empty": "कोणतीही प्रेस विज्ञप्ती नाही",
+      "source": "nagpurpolice.gov.in"
     }
   },
   "category": {
@@ -367,7 +414,8 @@
       "water": "पाणी",
       "social": "सामाजिक",
       "population": "लोकसंख्या",
-      "political": "प्रतिनिधित्व"
+      "political": "प्रतिनिधित्व",
+      "pois": "ठिकाणे"
     },
     "news": {
       "news": "बातम्या",

@@ -75,5 +75,15 @@ export const nagpur: CityConfig = {
     msme: {
       districtName: 'NAGPUR',
     },
+    osmPois: {
+      bbox: [78.97, 21.03, 79.21, 21.28] as [number, number, number, number],
+    },
+    nmcAnnouncements: {
+      url: 'https://www.nagpurcorporation.gov.in/rss.aspx',
+    },
+    nmrclStatus: {
+      url: 'https://www.nagpurmetro.com/press-release',
+    },
+    nagpurPolice: true,
   },
 };

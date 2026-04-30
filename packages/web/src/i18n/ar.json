@@ -322,6 +322,53 @@
       "more": "مخططات إضافية",
       "empty": "لا تتوفر مخططات",
       "source": "MyScheme.gov.in"
+    },
+    "msme": {
+      "title": "مشاريع MSME",
+      "totalRegistered": "المشاريع المسجلة",
+      "topSectors": "أبرز القطاعات",
+      "recentRegistrations": "التسجيلات الأخيرة",
+      "empty": "لا تتوفر بيانات",
+      "source": "MSME Udyam / data.gov.in"
+    },
+    "cpcbAqi": {
+      "title": "جودة الهواء (CPCB)",
+      "avgPm25": "متوسط PM2.5",
+      "stations": "محطات",
+      "moreStations": "محطات إضافية",
+      "good": "جيد",
+      "satisfactory": "مقبول",
+      "moderate": "متوسط",
+      "poor": "سيئ",
+      "veryPoor": "سيئ جداً",
+      "na": "غير متاح",
+      "empty": "لا تتوفر بيانات المحطات",
+      "source": "CPCB CAAQMS / data.gov.in"
+    },
+    "nagpurTransit": {
+      "title": "المواصلات والمرور",
+      "empty": "لا تتوفر أخبار المواصلات",
+      "source": "تغذيات أخبار ناغبور"
+    },
+    "nagpurSafety": {
+      "title": "الأمن والجريمة",
+      "empty": "لا تتوفر أخبار أمنية",
+      "source": "تغذيات أخبار ناغبور"
+    },
+    "nmcAnnouncements": {
+      "title": "إعلانات NMC",
+      "empty": "لا تتوفر إعلانات",
+      "source": "nagpurcorporation.gov.in"
+    },
+    "nmrclStatus": {
+      "title": "مترو ناغبور",
+      "empty": "لا تتوفر تحديثات مترو",
+      "source": "nagpurmetro.com"
+    },
+    "nagpurPolice": {
+      "title": "شرطة ناغبور",
+      "empty": "لا تتوفر بيانات صحفية",
+      "source": "nagpurpolice.gov.in"
     }
   },
   "category": {
@@ -374,7 +421,8 @@
       "water": "المياه",
       "social": "اجتماعي",
       "population": "السكان",
-      "political": "تمثيل"
+      "political": "تمثيل",
+      "pois": "أماكن"
     },
     "news": {
       "news": "الأخبار",

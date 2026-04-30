@@ -59,6 +59,11 @@ export const CK = {
   myScheme: (cityId: string) => `${cityId}:myscheme`,
   cpcbAqi: (cityId: string) => `${cityId}:cpcb-aqi`,
   msme: (cityId: string) => `${cityId}:msme`,
+  hmisSubdistrict: (cityId: string) => `${cityId}:hmis-subdistrict`,
+  osmPois: (cityId: string) => `${cityId}:osm-pois`,
+  nmcAnnouncements: (cityId: string) => `${cityId}:nmc-announcements`,
+  nmrclStatus: (cityId: string) => `${cityId}:nmrcl-status`,
+  nagpurPolice: (cityId: string) => `${cityId}:nagpur-police`,
 
   // History
   weatherHistory: (cityId: string, days: number) => `${cityId}:weather:history:${days}d`,
@@ -94,5 +99,9 @@ export const CK = {
     CK.myScheme(cityId),
     CK.cpcbAqi(cityId),
     CK.msme(cityId),
+    CK.hmisSubdistrict(cityId),
+    CK.osmPois(cityId),
+    CK.nmcAnnouncements(cityId),
+    CK.nmrclStatus(cityId),
   ],
 } as const;

@@ -480,3 +480,58 @@ export const MsmeSummarySchema = z.object({
   topSectors: z.array(MsmeSectorCountSchema),
   fetchedAt: z.string(),
 });
+
+// --- HMIS sub-district ---
+
+export const HmisSubdistrictMetricsSchema = z.object({
+  pregnantRegistered: z.number(),
+  firstTrimesterRegistered: z.number(),
+  jsyRegistered: z.number(),
+});
+
+export const HmisSubdistrictRowSchema = z.object({
+  name: z.string(),
+  metrics: HmisSubdistrictMetricsSchema,
+});
+
+export const HmisSubdistrictSummarySchema = z.object({
+  sourceResourceId: z.string(),
+  rows: z.array(HmisSubdistrictRowSchema),
+  fetchedAt: z.string(),
+});
+
+// --- OSM POIs ---
+
+export const OsmPoiSchema = z.object({
+  id: z.number(),
+  type: z.enum(['node', 'way']),
+  lat: z.number(),
+  lon: z.number(),
+  name: z.string(),
+  amenity: z.string(),
+  tags: z.record(z.string(), z.string()),
+});
+
+export const OsmPoiCollectionSchema = z.object({
+  pois: z.array(OsmPoiSchema),
+  fetchedAt: z.string(),
+  areaName: z.string(),
+});
+
+// --- Civic scrapers ---
+
+export const CivicItemSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  description: z.string().optional(),
+  url: z.string(),
+  publishedAt: z.string(),
+  source: z.enum(['nmc', 'nmrcl', 'nagpur-police']),
+  category: z.string().optional(),
+});
+
+export const CivicCollectionSchema = z.object({
+  items: z.array(CivicItemSchema),
+  fetchedAt: z.string(),
+  source: z.enum(['nmc', 'nmrcl', 'nagpur-police']),
+});

@@ -322,6 +322,53 @@
       "more": "daha fazla program",
       "empty": "Program mevcut değil",
       "source": "MyScheme.gov.in"
+    },
+    "msme": {
+      "title": "MSME İşletmeleri",
+      "totalRegistered": "Kayıtlı İşletme",
+      "topSectors": "Öne Çıkan Sektörler",
+      "recentRegistrations": "Son Kayıtlar",
+      "empty": "Veri mevcut değil",
+      "source": "MSME Udyam / data.gov.in"
+    },
+    "cpcbAqi": {
+      "title": "Hava Kalitesi (CPCB)",
+      "avgPm25": "Ort. PM2.5",
+      "stations": "istasyon",
+      "moreStations": "daha fazla istasyon",
+      "good": "İyi",
+      "satisfactory": "Tatmin Edici",
+      "moderate": "Orta",
+      "poor": "Kötü",
+      "veryPoor": "Çok Kötü",
+      "na": "Yok",
+      "empty": "İstasyon verisi yok",
+      "source": "CPCB CAAQMS / data.gov.in"
+    },
+    "nagpurTransit": {
+      "title": "Ulaşım & Trafik",
+      "empty": "Ulaşım haberi yok",
+      "source": "Nagpur haber akışları"
+    },
+    "nagpurSafety": {
+      "title": "Güvenlik & Suç",
+      "empty": "Güvenlik haberi yok",
+      "source": "Nagpur haber akışları"
+    },
+    "nmcAnnouncements": {
+      "title": "NMC Duyuruları",
+      "empty": "Duyuru bulunamadı",
+      "source": "nagpurcorporation.gov.in"
+    },
+    "nmrclStatus": {
+      "title": "Nagpur Metrosu",
+      "empty": "Metro güncellemesi yok",
+      "source": "nagpurmetro.com"
+    },
+    "nagpurPolice": {
+      "title": "Nagpur Polisi",
+      "empty": "Basın açıklaması yok",
+      "source": "nagpurpolice.gov.in"
     }
   },
   "category": {
@@ -374,7 +421,8 @@
       "water": "Su",
       "social": "Sosyal",
       "population": "Nüfus",
-      "political": "Temsil"
+      "political": "Temsil",
+      "pois": "Yerler"
     },
     "news": {
       "news": "Haberler",

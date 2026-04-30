@@ -54,7 +54,9 @@ export const DISTRICT_URLS: Record<string, { url: string; nameField: string }> =
     nameField: 'bezirk_name',
   },
   nagpur: {
-    url: new URL('../../data/districts/nagpur-boundary.geojson', import.meta.url).href,
+    // GADM 4.1 ADM3 sub-district (taluka) boundaries for Nagpur district.
+    // Source: GADM (https://gadm.org), free for non-commercial use.
+    url: new URL('../../data/districts/nagpur-talukas.geojson', import.meta.url).href,
     nameField: 'name',
   },
 };

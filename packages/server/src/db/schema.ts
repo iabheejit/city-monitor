@@ -18,7 +18,8 @@ export const SNAPSHOT_TYPES = [
   'dwd-pollen', 'sc-dnms', 'oparl-meetings',
   'vbb-disruptions', 'aqi-grid', 'bbk-nina',
   'abgwatch-bezirke', 'abgwatch-bundestag', 'abgwatch-state', 'abgwatch-state-bezirke',
-  'agmarknet-mandi', 'data-gov-mgnrega', 'myscheme-schemes', 'cpcb-aqi', 'msme-udyam',
+  'agmarknet-mandi', 'data-gov-mgnrega', 'myscheme-schemes', 'cpcb-aqi', 'msme-udyam', 'hmis-subdistrict',
+  'osm-pois', 'nmc-announcement', 'nmrcl-status', 'nagpur-police',
 ] as const;
 export type SnapshotType = typeof SNAPSHOT_TYPES[number];
 

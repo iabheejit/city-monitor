@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { parseAgmarknetRecords } from '../cron/ingest-mandi.js';
 import { parseMgnregaRecord } from '../cron/ingest-mgnrega.js';
+import { parseHmisRows } from '../cron/ingest-hmis-subdistrict.js';
 
 describe('parseAgmarknetRecords', () => {
   it('returns empty array for empty input', () => {
@@ -170,5 +171,80 @@ describe('parseMgnregaRecord', () => {
     expect(result).not.toBeNull();
     expect(result!.personDaysGenerated).toBe(0);
     expect(result!.amountSpent).toBe(0);
+  });
+});
+
+describe('parseHmisRows', () => {
+  it('extracts TOTAL metrics per subdistrict', () => {
+    const rows = [
+      {
+        indicator: 'Mother and Child Tracking',
+        parameters: 'Total number of pregnant women registered for ANC',
+        type: 'TOTAL',
+        subdistrict_hingna: '100',
+        subdistrict_kamptee: '75',
+      },
+      {
+        indicator: 'Mother and Child Tracking',
+        parameters: 'Out of total pregnant women registered, no. registered within first trimester',
+        type: 'TOTAL',
+        subdistrict_hingna: '80',
+        subdistrict_kamptee: '55',
+      },
+      {
+        indicator: 'Mother and Child Tracking',
+        parameters: 'No. of PW registered under JSY',
+        type: 'TOTAL',
+        subdistrict_hingna: '42',
+        subdistrict_kamptee: '35',
+      },
+      {
+        indicator: 'Mother and Child Tracking',
+        parameters: 'Total number of pregnant women registered for ANC',
+        type: 'RURAL',
+        subdistrict_hingna: '999',
+      },
+    ];
+
+    const parsed = parseHmisRows('resource-123', rows);
+    expect(parsed.sourceResourceId).toBe('resource-123');
+    expect(parsed.rows).toHaveLength(2);
+    expect(parsed.rows[0]).toEqual({
+      name: 'hingna',
+      metrics: {
+        pregnantRegistered: 100,
+        firstTrimesterRegistered: 80,
+        jsyRegistered: 42,
+      },
+    });
+    expect(parsed.rows[1]).toEqual({
+      name: 'kamptee',
+      metrics: {
+        pregnantRegistered: 75,
+        firstTrimesterRegistered: 55,
+        jsyRegistered: 35,
+      },
+    });
+  });
+
+  it('keeps zero values for missing metrics', () => {
+    const parsed = parseHmisRows('resource-xyz', [
+      {
+        parameters: 'No. of PW registered under JSY',
+        type: 'TOTAL',
+        subdistrict_nagpur_urban: '15',
+      },
+    ]);
+
+    expect(parsed.rows).toEqual([
+      {
+        name: 'nagpur urban',
+        metrics: {
+          pregnantRegistered: 0,
+          firstTrimesterRegistered: 0,
+          jsyRegistered: 15,
+        },
+      },
+    ]);
   });
 });

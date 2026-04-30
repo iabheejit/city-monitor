@@ -24,6 +24,10 @@ export type {
   TrafficIncident, EmergencyPharmacy, Representative, PoliticalDistrict,
   TransitAlert, AirQuality, BootstrapData, NewsSummaryData,
   MandiSummary, MandiCommodity, MgnregaSummary, SchemeCatalogue, SchemeEntry,
+  MsmeSummary, MsmeEnterprise, MsmeSectorCount, MsmeActivity,
+  CpcbAqiData, CpcbStation, CpcbPollutants,
+  OsmPoiCollection, OsmPoi,
+  CivicCollection, CivicItem,
 } from '@city-monitor/shared';
 
 // Import types used locally in api object definitions
@@ -36,6 +40,8 @@ import type {
   CouncilMeeting, NinaWarning, TrafficIncident, EmergencyPharmacy,
   PoliticalDistrict, TransitAlert, AirQuality, BootstrapData,
   NewsSummaryData, MandiSummary, MgnregaSummary, SchemeCatalogue,
+  MsmeSummary, CpcbAqiData,
+  OsmPoiCollection, CivicCollection,
 } from '@city-monitor/shared';
 
 export const api = {
@@ -70,6 +76,12 @@ export const api = {
   getMandi: (city: string) => fetchJson<ApiResponse<MandiSummary | null>>(`${BASE}/${city}/mandi`),
   getMgnrega: (city: string) => fetchJson<ApiResponse<MgnregaSummary | null>>(`${BASE}/${city}/mgnrega`),
   getMyScheme: (city: string) => fetchJson<ApiResponse<SchemeCatalogue | null>>(`${BASE}/${city}/myscheme`),
+  getMsme: (city: string) => fetchJson<ApiResponse<MsmeSummary | null>>(`${BASE}/${city}/msme`),
+  getCpcbAqi: (city: string) => fetchJson<ApiResponse<CpcbAqiData | null>>(`${BASE}/${city}/cpcb-aqi`),
+  getOsmPois: (city: string) => fetchJson<ApiResponse<OsmPoiCollection | null>>(`${BASE}/${city}/osm-pois`),
+  getNmcAnnouncements: (city: string) => fetchJson<ApiResponse<CivicCollection | null>>(`${BASE}/${city}/nmc-announcements`),
+  getNmrclStatus: (city: string) => fetchJson<ApiResponse<CivicCollection | null>>(`${BASE}/${city}/nmrcl-status`),
+  getNagpurPolice: (city: string) => fetchJson<ApiResponse<CivicCollection | null>>(`${BASE}/${city}/nagpur-police`),
   // History endpoints — lazy-loaded for expanded tile views
   getWeatherHistory: (city: string, range = '7d') => fetchJson<{ data: HistoryPoint[] }>(`${BASE}/${city}/weather/history?range=${range}`),
   getAqiHistory: (city: string, range = '7d') => fetchJson<{ data: HistoryPoint[] }>(`${BASE}/${city}/air-quality/history?range=${range}`),

@@ -322,6 +322,53 @@
       "more": "weitere Programme",
       "empty": "Keine Programme verfügbar",
       "source": "MyScheme.gov.in"
+    },
+    "msme": {
+      "title": "MSME-Betriebe",
+      "totalRegistered": "Registrierte Betriebe",
+      "topSectors": "Top-Sektoren",
+      "recentRegistrations": "Neuregistrierungen",
+      "empty": "Keine Daten verfügbar",
+      "source": "MSME Udyam / data.gov.in"
+    },
+    "cpcbAqi": {
+      "title": "Luftqualität (CPCB)",
+      "avgPm25": "PM2,5 Ø",
+      "stations": "Stationen",
+      "moreStations": "weitere Stationen",
+      "good": "Gut",
+      "satisfactory": "Befriedigend",
+      "moderate": "Mäßig",
+      "poor": "Schlecht",
+      "veryPoor": "Sehr schlecht",
+      "na": "k.A.",
+      "empty": "Keine Stationsdaten",
+      "source": "CPCB CAAQMS / data.gov.in"
+    },
+    "nagpurTransit": {
+      "title": "Verkehr & Transit",
+      "empty": "Keine Verkehrsmeldungen",
+      "source": "Nagpur-Nachrichtenfeeds"
+    },
+    "nagpurSafety": {
+      "title": "Sicherheit & Kriminalität",
+      "empty": "Keine Sicherheitsmeldungen",
+      "source": "Nagpur-Nachrichtenfeeds"
+    },
+    "nmcAnnouncements": {
+      "title": "NMC-Mitteilungen",
+      "empty": "Keine Mitteilungen verfügbar",
+      "source": "nagpurcorporation.gov.in"
+    },
+    "nmrclStatus": {
+      "title": "Nagpur Metro",
+      "empty": "Keine Metro-Updates verfügbar",
+      "source": "nagpurmetro.com"
+    },
+    "nagpurPolice": {
+      "title": "Nagpur Polizei",
+      "empty": "Keine Pressemitteilungen verfügbar",
+      "source": "nagpurpolice.gov.in"
     }
   },
   "category": {
@@ -374,7 +421,8 @@
       "water": "Wasser",
       "social": "Soziales",
       "population": "Bevölkerung",
-      "political": "Vertretung"
+      "political": "Vertretung",
+      "pois": "Orte"
     },
     "news": {
       "news": "Nachrichten",

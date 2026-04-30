@@ -2,7 +2,7 @@ import { sql } from 'drizzle-orm';
 import type { Db } from './index.js';
 import type { Cache } from '../lib/cache.js';
 import { getActiveCities } from '../config/index.js';
-import { loadWeather, loadTransitAlerts, loadEvents, loadSafetyReports, loadNewsItems, loadSummary, loadNinaWarnings, loadAirQualityGrid, loadPoliticalDistricts, loadAllGeocodeLookups, loadWaterLevels, loadAppointments, loadBudget, loadConstructionSites, loadTrafficIncidents, loadPharmacies, loadAeds, loadSocialAtlas, loadWastewater, loadBathingSpots, loadLaborMarket, loadPopulationGeojson, loadPopulationSummary, loadFeuerwehr, loadPollen, loadNoiseSensors, loadCouncilMeetings, loadMandi, loadMgnrega, loadMyScheme } from './reads.js';
+import { loadWeather, loadTransitAlerts, loadEvents, loadSafetyReports, loadNewsItems, loadSummary, loadNinaWarnings, loadAirQualityGrid, loadPoliticalDistricts, loadAllGeocodeLookups, loadWaterLevels, loadAppointments, loadBudget, loadConstructionSites, loadTrafficIncidents, loadPharmacies, loadAeds, loadSocialAtlas, loadWastewater, loadBathingSpots, loadLaborMarket, loadPopulationGeojson, loadPopulationSummary, loadFeuerwehr, loadPollen, loadNoiseSensors, loadCouncilMeetings, loadMandi, loadMgnrega, loadMyScheme, loadCpcbAqi, loadMsme, loadHmisSubdistrict } from './reads.js';
 import { setGeocodeCacheEntry } from '../lib/geocode.js';
 import { applyDropLogic, type NewsDigest, type NewsItem } from '../cron/ingest-feeds.js';
 import { createLogger } from '../lib/logger.js';
@@ -189,6 +189,21 @@ async function warmCity(db: Db, cache: Cache, cityId: string): Promise<void> {
         const r = await loadMyScheme(db, 'nagpur');
         if (r) cache.set(CK.myScheme('nagpur'), r.data, 86400, r.fetchedAt);
       })().catch((err) => log.error('nagpur myscheme failed', err)),
+
+      (async () => {
+        const r = await loadCpcbAqi(db, 'nagpur');
+        if (r) cache.set(CK.cpcbAqi('nagpur'), r.data, 1800, r.fetchedAt);
+      })().catch((err) => log.error('nagpur cpcb-aqi failed', err)),
+
+      (async () => {
+        const r = await loadMsme(db, 'nagpur');
+        if (r) cache.set(CK.msme('nagpur'), r.data, 86400, r.fetchedAt);
+      })().catch((err) => log.error('nagpur msme failed', err)),
+
+      (async () => {
+        const r = await loadHmisSubdistrict(db, 'nagpur');
+        if (r) cache.set(CK.hmisSubdistrict('nagpur'), r.data, 86400, r.fetchedAt);
+      })().catch((err) => log.error('nagpur hmis-subdistrict failed', err)),
     ] : []),
   ];
 

@@ -79,7 +79,7 @@ Nagpur is the second (winter) capital of Maharashtra, India (~2.7 M population).
 - **NINA/DWD:** Already gated on `city.country === 'DE'`; auto-skipped.
 - **Pollen:** DWD data is Germany-only; `pollen` omitted from config.
 - **PEGELONLINE water levels:** Germany-only gauge network; `waterLevels` omitted.
-- **Map district GeoJSON:** NMC ward boundaries not yet bundled. `DISTRICT_URLS['nagpur']` not registered — political/choropleth layer is unavailable.
+- **Map district GeoJSON:** GADM 4.1 ADM3 taluka boundaries vendored at `packages/web/src/data/districts/nagpur-talukas.geojson` (13 talukas, ~24 KB). Registered in `DISTRICT_URLS['nagpur']` with `nameField: 'name'`. Enables district hover, border layer, and choropleth. NMC ward/zone boundaries are not mapped in OSM and were not available at time of writing; talukas are the finest granularity available from a reliable open source. GADM is non-commercial-only — replace with OGD/NMC data if commercially deployed.
 
 ## Frontend Components
 

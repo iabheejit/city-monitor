@@ -131,6 +131,26 @@ export interface CityDataSources {
     /** District name in uppercase as used in the dataset, e.g. "NAGPUR" */
     districtName: string;
   };
+  /** HMIS sub-district indicator matrix via data.gov.in */
+  hmisSubdistrict?: {
+    /** data.gov.in resource UUID for the district/taluka HMIS extract */
+    resourceId: string;
+  };
+  /** OSM Overpass POI snapshot (hospitals, schools, fire stations, parks) */
+  osmPois?: {
+    /** Bounding box [west, south, east, north] for Overpass query */
+    bbox: [number, number, number, number];
+  };
+  /** NMC civic announcements scraper */
+  nmcAnnouncements?: {
+    url: string;
+  };
+  /** NMRCL metro status scraper */
+  nmrclStatus?: {
+    url: string;
+  };
+  /** Nagpur Police safety news */
+  nagpurPolice?: boolean;
 }
 
 // Weather data types (shared between server ingestion and web UI)
@@ -588,6 +608,10 @@ export interface BootstrapData {
   myScheme: ApiResponse<SchemeCatalogue | null> | null;
   cpcbAqi: ApiResponse<CpcbAqiData | null> | null;
   msme: ApiResponse<MsmeSummary | null> | null;
+  hmisSubdistrict?: ApiResponse<HmisSubdistrictSummary | null> | null;
+  osmPois?: ApiResponse<OsmPoisData | null> | null;
+  nmcAnnouncements?: ApiResponse<CivicCollection | null> | null;
+  nmrclStatus?: ApiResponse<CivicCollection | null> | null;
 }
 
 // News AI summary
@@ -695,5 +719,94 @@ export interface MsmeSummary {
   totalRegistered: number;
   recentRegistrations: MsmeEnterprise[]; // last 10 by registration date
   topSectors: MsmeSectorCount[];         // top 10 NIC sectors by count
+  fetchedAt: string;
+}
+
+// HMIS monthly taluka-level indicators (data.gov.in district extract)
+export interface HmisSubdistrictMetrics {
+  pregnantRegistered: number;
+  firstTrimesterRegistered: number;
+  jsyRegistered: number;
+}
+
+export interface HmisSubdistrictRow {
+  name: string;
+  metrics: HmisSubdistrictMetrics;
+}
+
+export interface HmisSubdistrictSummary {
+  sourceResourceId: string;
+  rows: HmisSubdistrictRow[];
+  fetchedAt: string;
+}
+
+// OSM Overpass POIs
+export interface OsmPoi {
+  id: number;
+  type: 'node' | 'way';
+  lat: number;
+  lon: number;
+  name: string;
+  amenity: string;
+  tags: Record<string, string>;
+}
+
+export interface OsmPoiCollection {
+  pois: OsmPoi[];
+  fetchedAt: string;
+  areaName: string;
+}
+
+// Civic scraper items (NMC, NMRCL, Nagpur Police)
+export interface CivicItem {
+  id: string;
+  title: string;
+  description?: string;
+  url: string;
+  publishedAt: string;
+  source: 'nmc' | 'nmrcl' | 'nagpur-police';
+  category?: string;
+}
+
+export interface CivicCollection {
+  items: CivicItem[];
+  fetchedAt: string;
+  source: 'nmc' | 'nmrcl' | 'nagpur-police';
+}
+
+export type OsmPoiType = 'hospital' | 'school' | 'fire_station' | 'police' | 'park';
+
+export interface OsmPoiV2 {
+  id: number;
+  poiType: OsmPoiType;
+  name: string;
+  lat: number;
+  lon: number;
+  tags: Record<string, string>;
+}
+
+export interface OsmPoisData {
+  features: OsmPoiV2[];
+  fetchedAt: string;
+}
+
+export interface NmcAnnouncement {
+  id: string;
+  title: string;
+  url: string;
+  publishedAt: string;
+  category: 'tender' | 'notice' | 'news' | 'recruitment' | 'other';
+}
+
+export interface NmrclStatus {
+  operational: boolean;
+  lines: Array<{ name: string; status: string; detail?: string }>;
+  fetchedAt: string;
+}
+
+export interface NewsSignals {
+  transit: NewsItem[];
+  safety: NewsItem[];
+  civic: NewsItem[];
   fetchedAt: string;
 }

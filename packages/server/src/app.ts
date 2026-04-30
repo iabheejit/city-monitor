@@ -71,11 +71,20 @@ import { createMgnregaIngestion } from './cron/ingest-mgnrega.js';
 import { createMySchemeIngestion } from './cron/ingest-myscheme.js';
 import { createCpcbAqiIngestion } from './cron/ingest-cpcb-aqi.js';
 import { createMsmeIngestion } from './cron/ingest-msme.js';
+import { createHmisSubdistrictIngestion } from './cron/ingest-hmis-subdistrict.js';
+import { createOsmPoisIngestion } from './cron/ingest-osm-pois.js';
+import { createCivicIngestion } from './cron/ingest-civic.js';
 import { createMandiRouter } from './routes/mandi.js';
 import { createMgnregaRouter } from './routes/mgnrega.js';
 import { createMySchemeRouter } from './routes/myscheme.js';
 import { createCpcbAqiRouter } from './routes/cpcb-aqi.js';
 import { createMsmeRouter } from './routes/msme.js';
+import { createHmisSubdistrictRouter } from './routes/hmis-subdistrict.js';
+import { createOsmPoisRouter } from './routes/osm-pois.js';
+import { createCivicRouter } from './routes/civic.js';
+import { createNmcAnnouncementsRouter } from './routes/nmc-announcements.js';
+import { createNmrclRouter } from './routes/nmrcl.js';
+import { createNewsSignalsRouter } from './routes/news-signals.js';
 import { initGeocodeDb } from './lib/geocode.js';
 import { validateCity } from './lib/validate-city.js';
 
@@ -158,6 +167,9 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
     { jobName: 'ingest-myscheme',         tableName: 'snapshots', maxAgeSeconds: 86400,  filter: { column: 'type', value: 'myscheme-schemes' } },
     { jobName: 'ingest-cpcb-aqi',         tableName: 'snapshots', maxAgeSeconds: 1800,   filter: { column: 'type', value: 'cpcb-aqi' } },
     { jobName: 'ingest-msme',             tableName: 'snapshots', maxAgeSeconds: 86400,  filter: { column: 'type', value: 'msme-udyam' } },
+    { jobName: 'ingest-hmis-subdistrict', tableName: 'snapshots', maxAgeSeconds: 86400,  filter: { column: 'type', value: 'hmis-subdistrict' } },
+    { jobName: 'ingest-osm-pois',         tableName: 'snapshots', maxAgeSeconds: 604800, filter: { column: 'type', value: 'osm-pois' } },
+    { jobName: 'ingest-civic',            tableName: 'snapshots', maxAgeSeconds: 86400,  filter: { column: 'type', value: 'nmc-announcement' } },
   ];
 
   const stale = db
@@ -194,6 +206,9 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
   const ingestMyScheme = createMySchemeIngestion(cache, db);
   const ingestCpcbAqi = createCpcbAqiIngestion(cache, db);
   const ingestMsme = createMsmeIngestion(cache, db);
+  const ingestHmisSubdistrict = createHmisSubdistrictIngestion(cache, db);
+  const ingestOsmPois = createOsmPoisIngestion(cache, db);
+  const ingestCivic = createCivicIngestion(cache, db);
 
   const retainData = db ? createDataRetention(db) : async () => {};
 
@@ -230,6 +245,9 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
     { name: 'ingest-myscheme', schedule: '0 5 * * *', handler: ingestMyScheme, runOnStart: s('ingest-myscheme') },
     { name: 'ingest-cpcb-aqi', schedule: '*/30 * * * *', handler: ingestCpcbAqi, runOnStart: s('ingest-cpcb-aqi') },
     { name: 'ingest-msme',     schedule: '0 2 * * *',    handler: ingestMsme,    runOnStart: s('ingest-msme') },
+    { name: 'ingest-hmis-subdistrict', schedule: '0 3 * * *', handler: ingestHmisSubdistrict, runOnStart: s('ingest-hmis-subdistrict') },
+    { name: 'ingest-osm-pois', schedule: '0 2 * * 1', handler: ingestOsmPois, runOnStart: s('ingest-osm-pois') },
+    { name: 'ingest-civic', schedule: '0 */2 * * *', handler: ingestCivic, runOnStart: s('ingest-civic') },
     { name: 'data-retention', schedule: '0 3 * * *', handler: retainData },
   ];
 
@@ -291,6 +309,12 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
   app.use('/api', cacheFor(43200), createMySchemeRouter(cache, db));
   app.use('/api', cacheFor(1800), createCpcbAqiRouter(cache, db));
   app.use('/api', cacheFor(43200), createMsmeRouter(cache, db));
+  app.use('/api', cacheFor(43200), createHmisSubdistrictRouter(cache, db));
+  app.use('/api', cacheFor(604800), createOsmPoisRouter(cache, db));
+  app.use('/api', cacheFor(3600), createCivicRouter(cache, db));
+  app.use('/api', cacheFor(21600), createNmcAnnouncementsRouter(cache, db));
+  app.use('/api', cacheFor(3600), createNmrclRouter(cache, db));
+  app.use('/api', cacheFor(900), createNewsSignalsRouter(cache));
 
   return { app, cache, db, scheduler };
 }

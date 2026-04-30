@@ -5,7 +5,7 @@ import { useCommandCenter, type DataLayer } from './useCommandCenter.js';
 /** Ordered list of data layers for number-key shortcuts (1-9). */
 const LAYER_ORDER: DataLayer[] = [
   'warnings', 'news', 'traffic', 'weather', 'air-quality',
-  'noise', 'water', 'emergencies', 'social',
+  'noise', 'water', 'emergencies', 'social', 'pois',
 ];
 
 function isInputFocused(): boolean {

@@ -31,6 +31,13 @@ import { PopulationStrip } from '../strips/PopulationStrip.js';
 import { MandiStrip } from '../strips/MandiStrip.js';
 import { MgnregaStrip } from '../strips/MgnregaStrip.js';
 import { SchemesStrip } from '../strips/SchemesStrip.js';
+import { MsmeStrip } from '../strips/MsmeStrip.js';
+import { CpcbAqiStrip } from '../strips/CpcbAqiStrip.js';
+import { NagpurTransitStrip } from '../strips/NagpurTransitStrip.js';
+import { NagpurSafetyStrip } from '../strips/NagpurSafetyStrip.js';
+import { NmcAnnouncementsStrip } from '../strips/NmcAnnouncementsStrip.js';
+import { NmrclStatusStrip } from '../strips/NmrclStatusStrip.js';
+import { NagpurPoliceStrip } from '../strips/NagpurPoliceStrip.js';
 import { Skeleton } from './Skeleton.js';
 import { ScrollIndicator } from './ScrollIndicator.js';
 import { SkylineSeparator } from './SkylineSeparator.js';
@@ -222,6 +229,41 @@ export function CommandLayout() {
           {dataSources.myScheme && (
             <Tile title={t('panel.schemes.title')} span={1} expandable defaultExpanded={false}>
               {(expanded, setExpanded) => <SchemesStrip expanded={expanded} onExpand={() => setExpanded(true)} />}
+            </Tile>
+          )}
+          {dataSources.msme && (
+            <Tile title={t('panel.msme.title')} span={1} expandable defaultExpanded={false}>
+              <MsmeStrip />
+            </Tile>
+          )}
+          {dataSources.cpcbAqi && (
+            <Tile title={t('panel.cpcbAqi.title')} span={1} expandable defaultExpanded={false}>
+              <CpcbAqiStrip />
+            </Tile>
+          )}
+          {cityId === 'nagpur' && (
+            <Tile title={t('panel.nagpurTransit.title')} span={1} expandable defaultExpanded={false}>
+              <NagpurTransitStrip />
+            </Tile>
+          )}
+          {cityId === 'nagpur' && (
+            <Tile title={t('panel.nagpurSafety.title')} span={1} expandable defaultExpanded={false}>
+              <NagpurSafetyStrip />
+            </Tile>
+          )}
+          {cityId === 'nagpur' && dataSources.nmcAnnouncements && (
+            <Tile title={t('panel.nmcAnnouncements.title')} span={1} expandable defaultExpanded={false}>
+              <NmcAnnouncementsStrip />
+            </Tile>
+          )}
+          {cityId === 'nagpur' && dataSources.nmrclStatus && (
+            <Tile title={t('panel.nmrclStatus.title')} span={1} expandable defaultExpanded={false}>
+              <NmrclStatusStrip />
+            </Tile>
+          )}
+          {cityId === 'nagpur' && dataSources.nagpurPolice && (
+            <Tile title={t('panel.nagpurPolice.title')} span={1} expandable defaultExpanded={false}>
+              <NagpurPoliceStrip />
             </Tile>
           )}
 

@@ -1,6 +1,6 @@
 import { createElement, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { TrainFront, Wind, Newspaper, TriangleAlert, HeartPulse, Pill, Car, Construction, Landmark, Building2, Building, CloudRain, Droplets, Waves, Home, BarChart3, Siren, Users, UserRound, Globe, Briefcase, Baby, HandCoins, Heart, Volume2, TrainTrack, Plane, Activity } from 'lucide';
+import { TrainFront, Wind, Newspaper, TriangleAlert, HeartPulse, Pill, Car, Construction, Landmark, Building2, Building, CloudRain, Droplets, Waves, Home, BarChart3, Siren, Users, UserRound, Globe, Briefcase, Baby, HandCoins, Heart, Volume2, TrainTrack, Plane, Activity, MapPin } from 'lucide';
 import { useCommandCenter, type DataLayer, type PoliticalLayer, type SocialLayer, type PopulationLayer, type NoiseLayer, type NoiseWmsLayer, type NewsSubLayer, type EmergencySubLayer, type WaterSubLayer, type TrafficSubLayer } from '../../hooks/useCommandCenter.js';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import type { IconNode } from '../../lib/map-icons.js';
@@ -17,6 +17,7 @@ const LAYER_META: { layer: DataLayer; icon: IconNode; color: string; cities?: st
   { layer: 'social', icon: BarChart3 as IconNode, color: '#8b5cf6', cities: ['berlin'] },
   { layer: 'population', icon: Users as IconNode, color: '#3b82f6', cities: ['berlin'] },
   { layer: 'political', icon: Landmark as IconNode, color: '#64748b' },
+  { layer: 'pois', icon: MapPin as IconNode, color: '#10b981', cities: ['nagpur'] },
 ];
 
 const INACTIVE_COLOR = '#9ca3af';
