@@ -81,7 +81,10 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
   app.use(compression());
   app.use(helmet());
 
-  const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'https://citymonitor.app')
+  const allowedOrigins = (
+    process.env.ALLOWED_ORIGINS ||
+    'https://citymonitor.app,https://city-monitor-web-cb4b.onrender.com'
+  )
     .split(',')
     .map((s) => s.trim())
     .filter(Boolean);
