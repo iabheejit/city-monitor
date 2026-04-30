@@ -1,4 +1,6 @@
-const BASE = '/api';
+import { API_BASE } from './api-base.js';
+
+const BASE = API_BASE;
 
 async function fetchJson<T>(url: string): Promise<T> {
   const response = await fetch(url, { cache: 'no-store' });
