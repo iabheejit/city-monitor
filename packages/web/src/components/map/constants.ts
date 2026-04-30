@@ -53,6 +53,10 @@ export const DISTRICT_URLS: Record<string, { url: string; nameField: string }> =
     url: new URL('../../data/districts/hamburg-bezirke.geojson', import.meta.url).href,
     nameField: 'bezirk_name',
   },
+  nagpur: {
+    url: new URL('../../data/districts/nagpur-boundary.geojson', import.meta.url).href,
+    nameField: 'name',
+  },
 };
 
 export const WEATHER_SOURCE = 'weather-precip';

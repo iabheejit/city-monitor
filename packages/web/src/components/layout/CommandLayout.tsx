@@ -226,9 +226,11 @@ export function CommandLayout() {
           )}
 
           {/* Row 7: Safety & Infrastructure */}
-          <Tile title={t('sidebar.layers.political')} expandable>
-            {(expanded, setExpanded) => <PoliticalStrip expanded={expanded} onExpand={() => setExpanded(true)} />}
-          </Tile>
+          {isDE && (
+            <Tile title={t('sidebar.layers.political')} expandable>
+              {(expanded, setExpanded) => <PoliticalStrip expanded={expanded} onExpand={() => setExpanded(true)} />}
+            </Tile>
+          )}
           {isDE && (
             <Tile title={t('panel.waterLevels.title')} span={1}>
               <WaterLevelStrip />

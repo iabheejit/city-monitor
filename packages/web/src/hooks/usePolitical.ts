@@ -1,10 +1,15 @@
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { api, type PoliticalDistrict, type ApiResponse } from '../lib/api.js';
 
-export function usePolitical(cityId: string, level: 'bundestag' | 'state' | 'bezirke' | 'state-bezirke') {
+export function usePolitical(
+  cityId: string,
+  level: 'bundestag' | 'state' | 'bezirke' | 'state-bezirke',
+  enabled: boolean = true,
+) {
   const query = useQuery<ApiResponse<PoliticalDistrict[]>>({
     queryKey: ['political', cityId, level],
     queryFn: () => api.getPolitical(cityId, level),
+    enabled,
     staleTime: 24 * 60 * 60 * 1000,
     gcTime: 7 * 24 * 60 * 60 * 1000,
     retry: 2,

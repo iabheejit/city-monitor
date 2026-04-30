@@ -153,9 +153,12 @@ export function CityMap() {
   const waterSubLayers = useCommandCenter((s) => s.waterSubLayers);
   const { data: socialAtlasData } = useSocialAtlas(city.id, socialAtlasActive);
   const { data: populationData } = usePopulation(city.id, populationActive);
-  const { data: bezirkeData } = usePolitical(city.id, 'bezirke');
-  const { data: bundestagData } = usePolitical(city.id, 'bundestag');
-  const { data: stateBezirkeData } = usePolitical(city.id, 'state-bezirke');
+  const supportsPoliticalShapes = Boolean(DISTRICT_URLS[city.id]);
+  const shouldFetchPolitical = supportsPoliticalShapes && politicalActive && city.country === 'DE';
+
+  const { data: bezirkeData } = usePolitical(city.id, 'bezirke', shouldFetchPolitical);
+  const { data: bundestagData } = usePolitical(city.id, 'bundestag', shouldFetchPolitical);
+  const { data: stateBezirkeData } = usePolitical(city.id, 'state-bezirke', shouldFetchPolitical);
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const isDark = theme === 'dark';

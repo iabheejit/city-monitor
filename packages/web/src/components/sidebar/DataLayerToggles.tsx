@@ -112,6 +112,7 @@ function SubLayerItem({ icon, color, active, label, onClick, parentColor }: { ic
 export function DataLayerToggles() {
   const { t } = useTranslation();
   const city = useCityConfig();
+  const allowPolitical = city.country === 'DE';
   const singleView = useCommandCenter((s) => s.singleView);
   const toggleSingleView = useCommandCenter((s) => s.toggleSingleView);
   const activeLayers = useCommandCenter((s) => s.activeLayers);
@@ -156,7 +157,9 @@ export function DataLayerToggles() {
         </button>
       </div>
       <div className="space-y-0.5">
-        {LAYER_META.filter(({ cities }) => !cities || cities.includes(city.id)).map(({ layer, icon, color }) => {
+        {LAYER_META
+          .filter(({ layer, cities }) => (!cities || cities.includes(city.id)) && (allowPolitical || layer !== 'political'))
+          .map(({ layer, icon, color }) => {
           const active = activeLayers.has(layer);
 
           let subItems: ReactNode = null;
@@ -300,7 +303,7 @@ export function DataLayerToggles() {
               {subItems}
             </div>
           );
-        })}
+          })}
       </div>
     </div>
   );
