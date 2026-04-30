@@ -46,11 +46,11 @@ describe('Weather Tiles API — no radar path', () => {
     cleanup();
   });
 
-  it('returns 503 when radar path is not available', async () => {
+  it('returns fallback PNG when radar path is not available', async () => {
     const res = await httpGet(`${baseUrl}/api/weather-tiles/3/4/4.png`);
-    expect(res.status).toBe(503);
-    const body = JSON.parse(res.body);
-    expect(body.error).toMatch(/not available/i);
+    expect(res.status).toBe(200);
+    expect(res.headers['content-type']).toMatch(/image\/png/);
+    expect(res.headers['x-weather-tile-fallback']).toBe('true');
   });
 });
 
@@ -125,12 +125,14 @@ describe('Weather Tiles API — with radar path', () => {
     expect(res.headers['cache-control']).toMatch(/max-age=300/);
   });
 
-  it('returns 502 when upstream tile fetch fails', async () => {
+  it('returns fallback PNG when upstream tile fetch fails', async () => {
     mockFetch.mockResolvedValueOnce(
       new Response('Not Found', { status: 404 }),
     );
 
     const res = await httpGet(`${baseUrl}/api/weather-tiles/3/4/4.png`);
-    expect(res.status).toBe(502);
+    expect(res.status).toBe(200);
+    expect(res.headers['content-type']).toMatch(/image\/png/);
+    expect(res.headers['x-weather-tile-fallback']).toBe('true');
   });
 });

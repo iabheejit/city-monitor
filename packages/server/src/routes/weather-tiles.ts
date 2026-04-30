@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, type Response } from 'express';
 import { createLogger } from '../lib/logger.js';
 
 const log = createLogger('route:weather-tiles');
@@ -6,6 +6,10 @@ const log = createLogger('route:weather-tiles');
 const RAINVIEWER_API = 'https://api.rainviewer.com/public/weather-maps.json';
 const TILE_HOST = 'https://tilecache.rainviewer.com';
 const REFRESH_MS = 5 * 60 * 1000; // 5 minutes
+const TRANSPARENT_PNG_1X1 = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO1oJ4sAAAAASUVORK5CYII=',
+  'base64',
+);
 
 let radarPath: string | null = null;
 let refreshTimer: ReturnType<typeof setInterval> | null = null;
@@ -28,6 +32,13 @@ async function refreshRadarPath() {
   }
 }
 
+function sendFallbackTile(res: Response) {
+  res.set('Content-Type', 'image/png');
+  res.set('Cache-Control', 'public, max-age=60');
+  res.set('X-Weather-Tile-Fallback', 'true');
+  res.status(200).send(TRANSPARENT_PNG_1X1);
+}
+
 export function createWeatherTilesRouter() {
   const router = Router();
 
@@ -39,7 +50,7 @@ export function createWeatherTilesRouter() {
 
   router.get('/weather-tiles/:z/:x/:y.png', async (req, res) => {
     if (!radarPath) {
-      res.status(503).json({ error: 'Radar data not available yet' });
+      sendFallbackTile(res);
       return;
     }
 
@@ -63,7 +74,7 @@ export function createWeatherTilesRouter() {
       const upstream = await fetch(url);
       if (!upstream.ok) {
         log.error(`RainViewer tile ${z}/${x}/${y} returned ${upstream.status}`);
-        res.status(502).json({ error: 'Upstream tile fetch failed' });
+        sendFallbackTile(res);
         return;
       }
 
@@ -73,7 +84,7 @@ export function createWeatherTilesRouter() {
       res.send(buffer);
     } catch (err) {
       log.error(`RainViewer tile ${z}/${x}/${y} fetch error`, err);
-      res.status(502).json({ error: 'Upstream tile fetch failed' });
+      sendFallbackTile(res);
     }
   });
 
