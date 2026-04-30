@@ -65,6 +65,7 @@ export function AppointmentsStrip({ expanded = false, onExpand }: { expanded?: b
   const { data, fetchedAt, isLoading, isError, refetch } = useAppointments(cityId);
   const { t } = useTranslation();
   const { isStale, agoText } = useFreshness(fetchedAt, FRESH_MAX_AGE);
+  const fallbackBookingUrl = cityId === 'berlin' ? 'https://service.berlin.de/terminvereinbarung/' : null;
 
   if (isLoading) {
     return <Skeleton lines={4} />;
@@ -75,14 +76,16 @@ export function AppointmentsStrip({ expanded = false, onExpand }: { expanded?: b
     return (
       <div className="text-center py-2">
         <p className="text-sm text-gray-400">{t('panel.appointments.empty')}</p>
-        <a
-          href="https://service.berlin.de/terminvereinbarung/"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-xs text-blue-500 hover:underline mt-1 inline-block"
-        >
-          {t('panel.appointments.bookAppointment')} →
-        </a>
+        {fallbackBookingUrl && (
+          <a
+            href={fallbackBookingUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-blue-500 hover:underline mt-1 inline-block"
+          >
+            {t('panel.appointments.bookAppointment')} →
+          </a>
+        )}
       </div>
     );
   }

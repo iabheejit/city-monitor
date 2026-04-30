@@ -291,7 +291,8 @@ export function applyDropLogic(items: PersistedNewsItem[]): NewsItem[] {
   return items
     .filter((item) => {
       const a = item.assessment;
-      if (!a) return false;
+      // If assessment is unavailable (e.g. AI filter disabled), keep the item.
+      if (!a) return true;
       if (a.relevant_to_city !== true) return false;
       return true;
     })

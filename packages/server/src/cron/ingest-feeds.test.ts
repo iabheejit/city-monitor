@@ -53,7 +53,7 @@ describe('ingest-feeds', () => {
     vi.clearAllMocks();
   });
 
-  it('fetches feeds and writes NewsDigest to cache (unassessed items dropped)', async () => {
+  it('fetches feeds and writes NewsDigest to cache (keeps unassessed items)', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response(mockFeedXml, { status: 200 }),
     );
@@ -64,8 +64,8 @@ describe('ingest-feeds', () => {
 
     const digest = cache.get<NewsDigest>('berlin:news:digest');
     expect(digest).toBeTruthy();
-    // LLM returns null → no assessment → all items dropped
-    expect(digest!.items.length).toBe(0);
+    // LLM returns null -> keep items without assessment as fallback.
+    expect(digest!.items.length).toBeGreaterThan(0);
     expect(digest!.updatedAt).toBeTruthy();
   });
 
@@ -301,8 +301,8 @@ describe('ingest-feeds — DB assessment reuse', () => {
 
     const digest = cache.get<NewsDigest>('berlin:news:digest');
     expect(digest).toBeTruthy();
-    // No DB, LLM returns null → no assessment → all items dropped
-    expect(digest!.items.length).toBe(0);
+    // No DB, LLM returns null -> keep items without assessment as fallback.
+    expect(digest!.items.length).toBeGreaterThan(0);
   });
 });
 
@@ -333,9 +333,11 @@ describe('applyDropLogic', () => {
     };
   }
 
-  it('drops items with no assessment', () => {
+  it('keeps items with no assessment', () => {
     const items = [makeItem({ assessment: undefined })];
-    expect(applyDropLogic(items)).toHaveLength(0);
+    const result = applyDropLogic(items);
+    expect(result).toHaveLength(1);
+    expect(result[0].importance).toBe(0.5);
   });
 
   it('drops items with relevant_to_city: false', () => {
@@ -365,10 +367,12 @@ describe('applyDropLogic', () => {
       makeItem({ title: 'Relevant default', assessment: { relevant_to_city: true } }),
     ];
     const result = applyDropLogic(items);
-    expect(result).toHaveLength(2);
-    expect(result[0].title).toBe('Relevant high');
-    expect(result[0].importance).toBe(0.9);
-    expect(result[1].title).toBe('Relevant default');
-    expect(result[1].importance).toBe(0.5);
+    expect(result).toHaveLength(3);
+    expect(result[0].title).toBe('No assessment');
+    expect(result[0].importance).toBe(0.5);
+    expect(result[1].title).toBe('Relevant high');
+    expect(result[1].importance).toBe(0.9);
+    expect(result[2].title).toBe('Relevant default');
+    expect(result[2].importance).toBe(0.5);
   });
 });
