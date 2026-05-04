@@ -21,17 +21,18 @@ interface MgnregaRecord {
   Total_Households_Worked?: string;
   Total_No_of_Active_Workers?: string;
   Total_No_of_JobCards_issued?: string;
-  Total_Exp?: string; // crores
-  Wages?: string; // crores
+  Persondays_of_Central_Liability_so_far?: string;
+  Total_Exp?: string; // lakhs
+  Wages?: string; // lakhs (wage component only)
   Women_Persondays?: string;
   SC_persondays?: string;
   ST_persondays?: string;
 }
 
-function parseCroresToRupees(raw: string | undefined): number {
+function parseLakhsToRupees(raw: string | undefined): number {
   if (!raw) return 0;
   const n = parseFloat(raw.replace(/,/g, ''));
-  return isNaN(n) ? 0 : Math.round(n * 10_000_000); // convert crores to rupees
+  return isNaN(n) ? 0 : Math.round(n * 100_000); // convert lakhs to rupees
 }
 
 function parseLong(raw: string | undefined): number {
@@ -59,10 +60,10 @@ export function parseMgnregaRecord(record: MgnregaRecord): MgnregaSummary | null
 
   return {
     financialYear: fy,
-    personDaysGenerated: parseLong(record.Women_Persondays) + parseLong(record.SC_persondays) + parseLong(record.ST_persondays),
+    personDaysGenerated: parseLong(record.Persondays_of_Central_Liability_so_far),
     jobCardsIssued: parseLong(record.Total_No_of_JobCards_issued),
     activeWorkers: parseLong(record.Total_No_of_Active_Workers),
-    amountSpent: parseCroresToRupees(record.Wages ?? record.Total_Exp),
+    amountSpent: parseLakhsToRupees(record.Wages ?? record.Total_Exp),
     totalSanctioned: parseLong(record.Approved_Labour_Budget),
     reportMonth,
     fetchedAt: new Date().toISOString(),

@@ -143,12 +143,10 @@ describe('parseMgnregaRecord', () => {
     const record = {
       fin_year: '2024-2025',
       month: 'April',
-      Women_Persondays: '500000',
-      SC_persondays: '400000',
-      ST_persondays: '334567',
+      Persondays_of_Central_Liability_so_far: '1234567',
       Total_No_of_JobCards_issued: '45678',
       Total_No_of_Active_Workers: '23456',
-      Wages: '8.90123',
+      Wages: '8901.23',
       Approved_Labour_Budget: '10000',
     };
     const result = parseMgnregaRecord(record);
@@ -157,7 +155,7 @@ describe('parseMgnregaRecord', () => {
     expect(result!.personDaysGenerated).toBe(1234567);
     expect(result!.jobCardsIssued).toBe(45678);
     expect(result!.activeWorkers).toBe(23456);
-    expect(result!.amountSpent).toBe(89012300); // 8.90123 crores * 10M
+    expect(result!.amountSpent).toBe(890123000); // 8901.23 lakhs * 100000
     expect(result!.reportMonth).toBe('2024-04');
   });
 
