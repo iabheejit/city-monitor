@@ -141,12 +141,15 @@ describe('parseMgnregaRecord', () => {
 
   it('parses a valid MGNREGA record', () => {
     const record = {
-      Financial_Year: '2024-2025',
-      Total_Person_Days_Generated: '1,234,567',
-      Total_Households_Registered: '45,678',
-      Active_Workers: '23,456',
-      Total_Exp_Rs_In_Lakhs: '8,901.23',
-      Centre_Released_Fund_In_Lakhs: '10,000.00',
+      fin_year: '2024-2025',
+      month: 'April',
+      Women_Persondays: '500000',
+      SC_persondays: '400000',
+      ST_persondays: '334567',
+      Total_No_of_JobCards_issued: '45678',
+      Total_No_of_Active_Workers: '23456',
+      Wages: '8.90123',
+      Approved_Labour_Budget: '10000',
     };
     const result = parseMgnregaRecord(record);
     expect(result).not.toBeNull();
@@ -154,19 +157,18 @@ describe('parseMgnregaRecord', () => {
     expect(result!.personDaysGenerated).toBe(1234567);
     expect(result!.jobCardsIssued).toBe(45678);
     expect(result!.activeWorkers).toBe(23456);
-    expect(result!.amountSpent).toBe(890123000); // 8901.23 lakhs * 100000
-    expect(result!.totalSanctioned).toBe(1000000000); // 10000 lakhs * 100000
+    expect(result!.amountSpent).toBe(89012300); // 8.90123 crores * 10M
     expect(result!.reportMonth).toBe('2024-04');
   });
 
   it('extracts the correct report month from financial year', () => {
-    const record = { Financial_Year: '2023-2024' };
+    const record = { fin_year: '2023-2024', month: 'April' };
     const result = parseMgnregaRecord(record);
     expect(result!.reportMonth).toBe('2023-04');
   });
 
   it('handles missing optional fields gracefully', () => {
-    const record = { Financial_Year: '2024-2025' };
+    const record = { fin_year: '2024-2025' };
     const result = parseMgnregaRecord(record);
     expect(result).not.toBeNull();
     expect(result!.personDaysGenerated).toBe(0);

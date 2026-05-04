@@ -8,26 +8,30 @@ import { CK } from '../lib/cache-keys.js';
 
 const log = createLogger('ingest-mgnrega');
 
-const DATA_GOV_IN_BASE = 'https://api.data.gov.in/resource/9802de1b-1be5-4c1c-b247-aba9ee9b25d9';
+const DATA_GOV_IN_BASE = 'https://api.data.gov.in/resource/ee03643a-ee4c-48c2-ac30-9f2ff26ab722';
 const FETCH_TIMEOUT_MS = 20_000;
 const TTL_SECONDS = 86400; // 1 day
 
 interface MgnregaRecord {
-  State_name?: string;
-  District_Name?: string;
-  Financial_Year?: string;
+  state_name?: string;
+  district_name?: string;
+  fin_year?: string;
+  month?: string;
   Approved_Labour_Budget?: string;
-  Total_Person_Days_Generated?: string;
-  Total_Households_Registered?: string;
-  Active_Workers?: string;
-  Total_Exp_Rs_In_Lakhs?: string;
-  Centre_Released_Fund_In_Lakhs?: string;
+  Total_Households_Worked?: string;
+  Total_No_of_Active_Workers?: string;
+  Total_No_of_JobCards_issued?: string;
+  Total_Exp?: string; // crores
+  Wages?: string; // crores
+  Women_Persondays?: string;
+  SC_persondays?: string;
+  ST_persondays?: string;
 }
 
-function parseLakhsToRupees(raw: string | undefined): number {
+function parseCroresToRupees(raw: string | undefined): number {
   if (!raw) return 0;
   const n = parseFloat(raw.replace(/,/g, ''));
-  return isNaN(n) ? 0 : Math.round(n * 100_000); // convert lakhs to rupees
+  return isNaN(n) ? 0 : Math.round(n * 10_000_000); // convert crores to rupees
 }
 
 function parseLong(raw: string | undefined): number {
@@ -36,24 +40,31 @@ function parseLong(raw: string | undefined): number {
   return isNaN(n) ? 0 : Math.round(n);
 }
 
-function derivedReportMonth(financialYear: string): string {
-  // MGNREGA uses fiscal year format like "2024-2025"; report as Apr of start year
-  const match = financialYear.match(/^(\d{4})/);
-  return match ? `${match[1]}-04` : financialYear;
-}
 
 export function parseMgnregaRecord(record: MgnregaRecord): MgnregaSummary | null {
-  const fy = (record.Financial_Year ?? '').trim();
+  const fy = (record.fin_year ?? '').trim();
   if (!fy) return null;
+
+  const month = (record.month ?? '').trim();
+  // Build reportMonth as YYYY-MM from fin_year + month name
+  const monthMap: Record<string, string> = {
+    April:'04',May:'05',June:'06',July:'07',August:'08',September:'09',
+    October:'10',November:'11',December:'12',January:'01',February:'02',March:'03',
+  };
+  const fyYear = fy.match(/^(\d{4})/)?.[1] ?? fy.slice(0, 4);
+  const monthNum = monthMap[month];
+  const reportMonth = monthNum
+    ? `${parseInt(monthNum) >= 4 ? fyYear : String(parseInt(fyYear) + 1)}-${monthNum}`
+    : `${fyYear}-04`;
 
   return {
     financialYear: fy,
-    personDaysGenerated: parseLong(record.Total_Person_Days_Generated),
-    jobCardsIssued: parseLong(record.Total_Households_Registered),
-    activeWorkers: parseLong(record.Active_Workers),
-    amountSpent: parseLakhsToRupees(record.Total_Exp_Rs_In_Lakhs),
-    totalSanctioned: parseLakhsToRupees(record.Centre_Released_Fund_In_Lakhs),
-    reportMonth: derivedReportMonth(fy),
+    personDaysGenerated: parseLong(record.Women_Persondays) + parseLong(record.SC_persondays) + parseLong(record.ST_persondays),
+    jobCardsIssued: parseLong(record.Total_No_of_JobCards_issued),
+    activeWorkers: parseLong(record.Total_No_of_Active_Workers),
+    amountSpent: parseCroresToRupees(record.Wages ?? record.Total_Exp),
+    totalSanctioned: parseLong(record.Approved_Labour_Budget),
+    reportMonth,
     fetchedAt: new Date().toISOString(),
   };
 }
@@ -94,10 +105,10 @@ async function ingestCityMgnrega(
   const params = new URLSearchParams({
     'api-key': apiKey,
     format: 'json',
-    'filters[State_name]': stateName,
-    'filters[District_Name]': districtName,
+    'filters[state_name]': stateName,
+    'filters[district_name]': districtName,
     limit: '5',
-    'sort[Financial_Year]': 'desc',
+    'sort[fin_year]': 'desc',
   });
 
   const url = `${DATA_GOV_IN_BASE}?${params}`;

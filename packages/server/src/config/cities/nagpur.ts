@@ -63,8 +63,8 @@ export const nagpur: CityConfig = {
       districtName: 'Nagpur',
     },
     mgnrega: {
-      stateName: 'Maharashtra',
-      districtName: 'Nagpur',
+      stateName: 'MAHARASHTRA',
+      districtName: 'NAGPUR',
     },
     myScheme: {
       stateName: 'Maharashtra',

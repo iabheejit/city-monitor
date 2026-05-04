@@ -27,10 +27,11 @@ Nagpur is the second (winter) capital of Maharashtra, India (~2.7 M population).
 - **Cache key:** `CK.mandi(cityId)`
 
 ### MGNREGA Employment
-- **Endpoint:** `https://api.data.gov.in/resource/9802de1b-1be5-4c1c-b247-aba9ee9b25d9`
+- **Endpoint:** `https://api.data.gov.in/resource/ee03643a-ee4c-48c2-ac30-9f2ff26ab722`
 - **Auth:** `DATA_GOV_IN_API_KEY` env var
-- **Filters:** `State_code=27` (Maharashtra), `District_code=529` (Nagpur)
-- **Data:** financial year, person-days generated, job cards issued, active workers, amount spent (lakhs), sanctioned amount (lakhs)
+- **Filters:** `state_name=MAHARASHTRA`, `district_name=NAGPUR`
+- **Data:** fin_year, month, job cards issued (316k+), active workers (209k+), households worked, wages (crores), Women/SC/ST person-days
+- **Confirmed live:** 602 records for Nagpur (monthly, from FY 2022-23 onward)
 - **Frequency:** monthly NIC updates; ingested at 07:00 UTC (`0 7 * * *`)
 - **Cache TTL:** 86400s (24 h)
 - **Snapshot type:** `data-gov-mgnrega`
@@ -62,6 +63,19 @@ Nagpur is the second (winter) capital of Maharashtra, India (~2.7 M population).
   - Nagpur Today: `https://www.nagpurtoday.in/feed`
   - Lokmat Nagpur: `https://www.lokmat.com/nagpur/feed/`
   - Maharashtra Times: `https://maharashtratimes.com/rss/nagpur.cms`
+
+## Confirmed-Live data.gov.in APIs (Nagpur, probed May 2026)
+
+| Source | UUID | Filter | Nagpur Records | Key Fields |
+|--------|------|--------|---------------|------------|
+| AGMARKNET Mandi | `9ef84268-d588-465a-a308-a864a43d0070` | `State=Maharashtra,District=Nagpur` | ~55 | commodity, modal_price, market |
+| CPCB AQI realtime | `3b01bcb8-...` (via WAQI) | bounding box | ~28 | station, pollutant_id, avg_value |
+| MSME Udyam register | `8b68ae56-...` | `District=NAGPUR` | 272,963 | EnterpriseName, District, Pincode |
+| MGNREGA monthly | `ee03643a-ee4c-48c2-ac30-9f2ff26ab722` | `state_name=MAHARASHTRA,district_name=NAGPUR` | 602 | fin_year, month, job cards, active workers, wages |
+| JJM village PWS | `0e89eba1-bbc2-4c85-bdad-32b8071e0b60` | `state_name=Maharashtra,district_name=Nagpur` | 3,201 | village, habitation, block, panchayat |
+| NFHS-5 district | `cf80173e-fece-439d-a0b1-6e9cb510593d` | `District_Names=Nagpur` | 1 | 109 health indicators (vaccination, nutrition, anaemia, BP, diabetes...) |
+
+Note: All other data.gov.in UUIDs tried during the May 2026 audit returned empty responses (stale/fabricated IDs).
 
 ## Env Vars Required
 
