@@ -151,6 +151,17 @@ export interface CityDataSources {
   };
   /** Nagpur Police safety news */
   nagpurPolice?: boolean;
+  /** NFHS-5 district health indicators (data.gov.in, static 2019-21 survey) */
+  nfhs5?: {
+    resourceId: string;
+    districtFilter: string;
+  };
+  /** Jal Jeevan Mission village coverage (data.gov.in) */
+  jjm?: {
+    resourceId: string;
+    stateName: string;
+    districtName: string;
+  };
 }
 
 // Weather data types (shared between server ingestion and web UI)
@@ -612,6 +623,8 @@ export interface BootstrapData {
   osmPois?: ApiResponse<OsmPoisData | null> | null;
   nmcAnnouncements?: ApiResponse<CivicCollection | null> | null;
   nmrclStatus?: ApiResponse<CivicCollection | null> | null;
+  nfhs5?: ApiResponse<Nfhs5Summary | null> | null;
+  jjm?: ApiResponse<JjmSummary | null> | null;
 }
 
 // News AI summary
@@ -808,5 +821,61 @@ export interface NewsSignals {
   transit: NewsItem[];
   safety: NewsItem[];
   civic: NewsItem[];
+  fetchedAt: string;
+}
+
+// ---------------------------------------------------------------------------
+// NFHS-5 & JJM (new)
+// ---------------------------------------------------------------------------
+
+/** Key health indicators from NFHS-5 (National Family Health Survey, 2019-21). */
+export interface Nfhs5Summary {
+  /** % institutional births */
+  institutionalBirths: number;
+  /** % children fully vaccinated (card or recall) */
+  childFullyVaccinated: number;
+  /** % children under 5 who are stunted */
+  stuntedUnderFive: number;
+  /** % children under 5 who are wasted */
+  wastedUnderFive: number;
+  /** % children under 5 who are underweight */
+  underweightUnderFive: number;
+  /** % non-pregnant women (15-49) who are anaemic */
+  anaemicWomen: number;
+  /** % children 6-59 months who are anaemic */
+  anaemicChildren: number;
+  /** % households with improved drinking water */
+  improvedDrinkingWater: number;
+  /** % households with improved sanitation */
+  improvedSanitation: number;
+  /** % households using clean cooking fuel */
+  cleanFuel: number;
+  /** % men who use tobacco */
+  tobaccoMen: number;
+  /** % women who use tobacco */
+  tobaccoWomen: number;
+  /** % women with elevated blood sugar */
+  highBloodSugarWomen: number;
+  /** % men with elevated blood sugar */
+  highBloodSugarMen: number;
+  /** Sex ratio (females per 1000 males) */
+  sexRatio: number;
+  /** Source year */
+  surveyRound: string;
+  fetchedAt: string;
+}
+
+/** Jal Jeevan Mission — village/habitation-level tap water coverage for a district. */
+export interface JjmSummary {
+  /** Total habitations enumerated under JJM scheme */
+  totalHabitations: number;
+  /** Distinct blocks in the district */
+  totalBlocks: number;
+  /** Distinct panchayats */
+  totalPanchayats: number;
+  /** Distinct villages */
+  totalVillages: number;
+  /** Block names (for display) */
+  blocks: string[];
   fetchedAt: string;
 }

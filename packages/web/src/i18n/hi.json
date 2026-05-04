@@ -366,6 +366,35 @@
       "title": "नागपुर पुलिस",
       "empty": "कोई प्रेस विज्ञप्ति उपलब्ध नहीं",
       "source": "nagpurpolice.gov.in"
+    },
+    "nfhs5": {
+      "title": "स्वास्थ्य संकेतक (NFHS-5)",
+      "empty": "स्वास्थ्य डेटा उपलब्ध नहीं",
+      "survey": "सर्वेक्षण",
+      "childHealth": "बाल स्वास्थ्य",
+      "institutionalBirths": "संस्थागत प्रसव",
+      "childVaccinated": "पूर्ण टीकाकरण",
+      "stunted": "अवरुद्ध विकास (< 5 वर्ष)",
+      "wasted": "कुपोषण (< 5 वर्ष)",
+      "nutrition": "पोषण",
+      "anaemicWomen": "एनीमिक महिलाएं",
+      "anaemicChildren": "एनीमिक बच्चे",
+      "household": "घरेलू",
+      "drinkingWater": "बेहतर पेयजल",
+      "sanitation": "बेहतर स्वच्छता",
+      "cleanFuel": "स्वच्छ ईंधन",
+      "sexRatio": "लिंगानुपात (प्रति 1000)",
+      "source": "NFHS-5 · data.gov.in"
+    },
+    "jjm": {
+      "title": "जल जीवन मिशन",
+      "empty": "जल कवरेज डेटा उपलब्ध नहीं",
+      "habitations": "आच्छादित बस्तियां",
+      "blocks": "ब्लॉक",
+      "panchayats": "पंचायत",
+      "villages": "गांव",
+      "blockList": "जिले के ब्लॉक",
+      "source": "JJM · data.gov.in"
     }
   },
   "category": {

@@ -46,6 +46,8 @@ export function createBootstrapRouter(cache: Cache) {
       cpcbAqi: data[CK.cpcbAqi(city.id)] ?? null,
       msme: data[CK.msme(city.id)] ?? null,
       hmisSubdistrict: data[CK.hmisSubdistrict(city.id)] ?? null,
+      nfhs5: data[CK.nfhs5(city.id)] ?? null,
+      jjm: data[CK.jjm(city.id)] ?? null,
     });
   });
 

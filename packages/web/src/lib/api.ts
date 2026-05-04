@@ -28,6 +28,7 @@ export type {
   CpcbAqiData, CpcbStation, CpcbPollutants,
   OsmPoiCollection, OsmPoi,
   CivicCollection, CivicItem,
+  Nfhs5Summary, JjmSummary,
 } from '@city-monitor/shared';
 
 // Import types used locally in api object definitions
@@ -42,6 +43,7 @@ import type {
   NewsSummaryData, MandiSummary, MgnregaSummary, SchemeCatalogue,
   MsmeSummary, CpcbAqiData,
   OsmPoiCollection, CivicCollection,
+  Nfhs5Summary, JjmSummary,
 } from '@city-monitor/shared';
 
 export const api = {
@@ -82,6 +84,8 @@ export const api = {
   getNmcAnnouncements: (city: string) => fetchJson<ApiResponse<CivicCollection | null>>(`${BASE}/${city}/nmc-announcements`),
   getNmrclStatus: (city: string) => fetchJson<ApiResponse<CivicCollection | null>>(`${BASE}/${city}/nmrcl-status`),
   getNagpurPolice: (city: string) => fetchJson<ApiResponse<CivicCollection | null>>(`${BASE}/${city}/nagpur-police`),
+  getNfhs5: (city: string) => fetchJson<ApiResponse<Nfhs5Summary | null>>(`${BASE}/${city}/nfhs5`),
+  getJjm: (city: string) => fetchJson<ApiResponse<JjmSummary | null>>(`${BASE}/${city}/jjm`),
   // History endpoints — lazy-loaded for expanded tile views
   getWeatherHistory: (city: string, range = '7d') => fetchJson<{ data: HistoryPoint[] }>(`${BASE}/${city}/weather/history?range=${range}`),
   getAqiHistory: (city: string, range = '7d') => fetchJson<{ data: HistoryPoint[] }>(`${BASE}/${city}/air-quality/history?range=${range}`),

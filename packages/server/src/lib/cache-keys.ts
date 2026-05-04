@@ -64,6 +64,8 @@ export const CK = {
   nmcAnnouncements: (cityId: string) => `${cityId}:nmc-announcements`,
   nmrclStatus: (cityId: string) => `${cityId}:nmrcl-status`,
   nagpurPolice: (cityId: string) => `${cityId}:nagpur-police`,
+  nfhs5: (cityId: string) => `${cityId}:nfhs5`,
+  jjm: (cityId: string) => `${cityId}:jjm`,
 
   // History
   weatherHistory: (cityId: string, days: number) => `${cityId}:weather:history:${days}d`,
@@ -103,5 +105,7 @@ export const CK = {
     CK.osmPois(cityId),
     CK.nmcAnnouncements(cityId),
     CK.nmrclStatus(cityId),
+    CK.nfhs5(cityId),
+    CK.jjm(cityId),
   ],
 } as const;

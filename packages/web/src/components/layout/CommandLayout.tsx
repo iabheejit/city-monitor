@@ -38,6 +38,8 @@ import { NagpurSafetyStrip } from '../strips/NagpurSafetyStrip.js';
 import { NmcAnnouncementsStrip } from '../strips/NmcAnnouncementsStrip.js';
 import { NmrclStatusStrip } from '../strips/NmrclStatusStrip.js';
 import { NagpurPoliceStrip } from '../strips/NagpurPoliceStrip.js';
+import { Nfhs5Strip } from '../strips/Nfhs5Strip.js';
+import { JjmStrip } from '../strips/JjmStrip.js';
 import { Skeleton } from './Skeleton.js';
 import { ScrollIndicator } from './ScrollIndicator.js';
 import { SkylineSeparator } from './SkylineSeparator.js';
@@ -264,6 +266,16 @@ export function CommandLayout() {
           {cityId === 'nagpur' && dataSources.nagpurPolice && (
             <Tile title={t('panel.nagpurPolice.title')} span={1} expandable defaultExpanded={false}>
               <NagpurPoliceStrip />
+            </Tile>
+          )}
+          {dataSources.nfhs5 && (
+            <Tile title={t('panel.nfhs5.title')} span={2} expandable defaultExpanded={false}>
+              <Nfhs5Strip />
+            </Tile>
+          )}
+          {dataSources.jjm && (
+            <Tile title={t('panel.jjm.title')} span={1} expandable defaultExpanded={false}>
+              <JjmStrip />
             </Tile>
           )}
 

@@ -535,3 +535,36 @@ export const CivicCollectionSchema = z.object({
   fetchedAt: z.string(),
   source: z.enum(['nmc', 'nmrcl', 'nagpur-police']),
 });
+
+// --- NFHS-5 ---
+
+export const Nfhs5SummarySchema = z.object({
+  institutionalBirths: z.number(),
+  childFullyVaccinated: z.number(),
+  stuntedUnderFive: z.number(),
+  wastedUnderFive: z.number(),
+  underweightUnderFive: z.number(),
+  anaemicWomen: z.number(),
+  anaemicChildren: z.number(),
+  improvedDrinkingWater: z.number(),
+  improvedSanitation: z.number(),
+  cleanFuel: z.number(),
+  tobaccoMen: z.number(),
+  tobaccoWomen: z.number(),
+  highBloodSugarWomen: z.number(),
+  highBloodSugarMen: z.number(),
+  sexRatio: z.number(),
+  surveyRound: z.string(),
+  fetchedAt: z.string(),
+});
+
+// --- JJM (Jal Jeevan Mission) ---
+
+export const JjmSummarySchema = z.object({
+  totalHabitations: z.number(),
+  totalBlocks: z.number(),
+  totalPanchayats: z.number(),
+  totalVillages: z.number(),
+  blocks: z.array(z.string()),
+  fetchedAt: z.string(),
+});

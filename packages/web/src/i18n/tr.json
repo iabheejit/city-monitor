@@ -84,13 +84,13 @@
     },
     "airQuality": {
       "title": "Hava Kalitesi",
-      "trend": "24s e\u011filim",
+      "trend": "24s eğilim",
       "level": {
-        "good": "\u0130yi",
+        "good": "İyi",
         "fair": "Orta",
         "moderate": "Vasat",
-        "poor": "K\u00f6t\u00fc",
-        "veryPoor": "\u00c7ok K\u00f6t\u00fc",
+        "poor": "Kötü",
+        "veryPoor": "Çok Kötü",
         "extremelyPoor": "Tehlikeli"
       }
     },
@@ -369,6 +369,35 @@
       "title": "Nagpur Polisi",
       "empty": "Basın açıklaması yok",
       "source": "nagpurpolice.gov.in"
+    },
+    "nfhs5": {
+      "title": "Sağlık Göstergeleri (NFHS-5)",
+      "empty": "Sağlık verileri mevcut değil",
+      "survey": "Anket",
+      "childHealth": "Çocuk Sağlığı",
+      "institutionalBirths": "Kurumsal Doğumlar",
+      "childVaccinated": "Tam Aşılanmış",
+      "stunted": "Büyüme Geriliği (< 5 yaş)",
+      "wasted": "Yetersiz Beslenme (< 5 yaş)",
+      "nutrition": "Beslenme",
+      "anaemicWomen": "Anemik Kadınlar",
+      "anaemicChildren": "Anemik Çocuklar",
+      "household": "Hane",
+      "drinkingWater": "İyileştirilmiş Su",
+      "sanitation": "İyileştirilmiş Sanitasyon",
+      "cleanFuel": "Temiz Yakıt",
+      "sexRatio": "Cinsiyet Oranı (1000 başına)",
+      "source": "NFHS-5 · data.gov.in"
+    },
+    "jjm": {
+      "title": "Jal Jeevan Misyonu",
+      "empty": "Su kapsama verisi mevcut değil",
+      "habitations": "Kapsanan Yerleşimler",
+      "blocks": "Bloklar",
+      "panchayats": "Panchayatlar",
+      "villages": "Köyler",
+      "blockList": "İlçedeki Bloklar",
+      "source": "JJM · data.gov.in"
     }
   },
   "category": {
@@ -415,7 +444,7 @@
       "news": "Haberler",
       "warnings": "Uyarı Bildirimleri",
       "air-quality": "Hava Kalitesi",
-      "noise": "G\u00fcr\u00fclt\u00fc",
+      "noise": "Gürültü",
       "emergencies": "Acil Durum",
       "traffic": "Trafik",
       "water": "Su",
@@ -487,7 +516,7 @@
     "sourceCode": "Kaynak Kodu",
     "inspiredBy": "World Monitor'den ilham alınmıştır",
     "license": "AGPL-3.0",
-    "weatherTiles": "Ya\u011f\u0131\u015f radar\u0131 \u00a9 RainViewer",
+    "weatherTiles": "Yağış radarı © RainViewer",
     "imprint": "Yasal Bildirim / Impressum",
     "privacy": "Gizlilik",
     "noTracking": "Takip Yok",

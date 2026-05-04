@@ -39,5 +39,14 @@ export const nagpur: CityConfig = {
     msme: {
       districtName: 'NAGPUR',
     },
+    nfhs5: {
+      resourceId: 'cf80173e-fece-439d-a0b1-6e9cb510593d',
+      districtFilter: 'Nagpur',
+    },
+    jjm: {
+      resourceId: '0e89eba1-bbc2-4c85-bdad-32b8071e0b60',
+      stateName: 'Maharashtra',
+      districtName: 'Nagpur',
+    },
   },
 };

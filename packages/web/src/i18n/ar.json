@@ -369,6 +369,35 @@
       "title": "شرطة ناغبور",
       "empty": "لا تتوفر بيانات صحفية",
       "source": "nagpurpolice.gov.in"
+    },
+    "nfhs5": {
+      "title": "مؤشرات الصحة (NFHS-5)",
+      "empty": "بيانات الصحة غير متوفرة",
+      "survey": "مسح",
+      "childHealth": "صحة الطفل",
+      "institutionalBirths": "الولادات المؤسسية",
+      "childVaccinated": "مطعم بالكامل",
+      "stunted": "تأخر النمو (< 5 سنوات)",
+      "wasted": "سوء التغذية (< 5 سنوات)",
+      "nutrition": "التغذية",
+      "anaemicWomen": "النساء المصابات بفقر الدم",
+      "anaemicChildren": "الأطفال المصابون بفقر الدم",
+      "household": "المنزل",
+      "drinkingWater": "مياه شرب محسّنة",
+      "sanitation": "صرف صحي محسّن",
+      "cleanFuel": "وقود نظيف",
+      "sexRatio": "نسبة الجنس (لكل 1000)",
+      "source": "NFHS-5 · data.gov.in"
+    },
+    "jjm": {
+      "title": "مهمة جال جيفان",
+      "empty": "بيانات تغطية المياه غير متوفرة",
+      "habitations": "المستوطنات المغطاة",
+      "blocks": "الكتل",
+      "panchayats": "البنشايات",
+      "villages": "القرى",
+      "blockList": "كتل الحي",
+      "source": "JJM · data.gov.in"
     }
   },
   "category": {
@@ -487,7 +516,7 @@
     "sourceCode": "الكود المصدري",
     "inspiredBy": "مستوحى من World Monitor",
     "license": "AGPL-3.0",
-    "weatherTiles": "\u0631\u0627\u062f\u0627\u0631 \u0627\u0644\u0623\u0645\u0637\u0627\u0631 \u00a9 RainViewer",
+    "weatherTiles": "رادار الأمطار © RainViewer",
     "imprint": "إشعار قانوني / Impressum",
     "privacy": "الخصوصية",
     "noTracking": "بدون تتبع",

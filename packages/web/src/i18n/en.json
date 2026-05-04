@@ -369,6 +369,35 @@
       "title": "Nagpur Police",
       "empty": "No press releases available",
       "source": "nagpurpolice.gov.in"
+    },
+    "nfhs5": {
+      "title": "Health Indicators (NFHS-5)",
+      "empty": "Health data not available",
+      "survey": "Survey",
+      "childHealth": "Child Health",
+      "institutionalBirths": "Institutional Births",
+      "childVaccinated": "Fully Vaccinated",
+      "stunted": "Stunted (< 5 yrs)",
+      "wasted": "Wasted (< 5 yrs)",
+      "nutrition": "Nutrition",
+      "anaemicWomen": "Anaemic Women",
+      "anaemicChildren": "Anaemic Children",
+      "household": "Household",
+      "drinkingWater": "Improved Water",
+      "sanitation": "Improved Sanitation",
+      "cleanFuel": "Clean Fuel",
+      "sexRatio": "Sex Ratio (per 1000)",
+      "source": "NFHS-5 · data.gov.in"
+    },
+    "jjm": {
+      "title": "Jal Jeevan Mission",
+      "empty": "Water coverage data not available",
+      "habitations": "Habitations Covered",
+      "blocks": "Blocks",
+      "panchayats": "Panchayats",
+      "villages": "Villages",
+      "blockList": "Blocks in District",
+      "source": "JJM · data.gov.in"
     }
   },
   "category": {

@@ -74,6 +74,8 @@ import { createMsmeIngestion } from './cron/ingest-msme.js';
 import { createHmisSubdistrictIngestion } from './cron/ingest-hmis-subdistrict.js';
 import { createOsmPoisIngestion } from './cron/ingest-osm-pois.js';
 import { createCivicIngestion } from './cron/ingest-civic.js';
+import { createNfhs5Ingestion } from './cron/ingest-nfhs5.js';
+import { createJjmIngestion } from './cron/ingest-jjm.js';
 import { createMandiRouter } from './routes/mandi.js';
 import { createMgnregaRouter } from './routes/mgnrega.js';
 import { createMySchemeRouter } from './routes/myscheme.js';
@@ -85,6 +87,8 @@ import { createCivicRouter } from './routes/civic.js';
 import { createNmcAnnouncementsRouter } from './routes/nmc-announcements.js';
 import { createNmrclRouter } from './routes/nmrcl.js';
 import { createNewsSignalsRouter } from './routes/news-signals.js';
+import { createNfhs5Router } from './routes/nfhs5.js';
+import { createJjmRouter } from './routes/jjm.js';
 import { initGeocodeDb } from './lib/geocode.js';
 import { validateCity } from './lib/validate-city.js';
 
@@ -209,6 +213,8 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
   const ingestHmisSubdistrict = createHmisSubdistrictIngestion(cache, db);
   const ingestOsmPois = createOsmPoisIngestion(cache, db);
   const ingestCivic = createCivicIngestion(cache, db);
+  const ingestNfhs5 = createNfhs5Ingestion(cache, db);
+  const ingestJjm = createJjmIngestion(cache, db);
 
   const retainData = db ? createDataRetention(db) : async () => {};
 
@@ -248,6 +254,8 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
     { name: 'ingest-hmis-subdistrict', schedule: '0 3 * * *', handler: ingestHmisSubdistrict, runOnStart: s('ingest-hmis-subdistrict') },
     { name: 'ingest-osm-pois', schedule: '0 2 * * 1', handler: ingestOsmPois, runOnStart: s('ingest-osm-pois') },
     { name: 'ingest-civic', schedule: '0 */2 * * *', handler: ingestCivic, runOnStart: s('ingest-civic') },
+    { name: 'ingest-nfhs5', schedule: '0 6 1 * *', handler: ingestNfhs5, runOnStart: s('ingest-nfhs5') },
+    { name: 'ingest-jjm',   schedule: '0 3 * * 1', handler: ingestJjm,   runOnStart: s('ingest-jjm') },
     { name: 'data-retention', schedule: '0 3 * * *', handler: retainData },
   ];
 
@@ -315,6 +323,8 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
   app.use('/api', cacheFor(21600), createNmcAnnouncementsRouter(cache, db));
   app.use('/api', cacheFor(3600), createNmrclRouter(cache, db));
   app.use('/api', cacheFor(900), createNewsSignalsRouter(cache));
+  app.use('/api', cacheFor(2592000), createNfhs5Router(cache, db));  // 30-day cache
+  app.use('/api', cacheFor(604800), createJjmRouter(cache, db));     // 7-day cache
 
   return { app, cache, db, scheduler };
 }

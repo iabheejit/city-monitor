@@ -9,7 +9,7 @@ import {
   geocodeLookups,
 } from './schema.js';
 import type { SnapshotType } from './schema.js';
-import type { NinaWarning, PoliticalDistrict, WaterLevelData, BuergeramtData, BudgetSummary, ConstructionSite, TrafficIncident, EmergencyPharmacy, AedLocation, WastewaterSummary, BathingSpot, LaborMarketSummary, PopulationSummary, FeuerwehrSummary, PollenForecast, NoiseSensor, CouncilMeeting, HistoryPoint, AirQualityGridPoint, TransitAlert, MandiSummary, MgnregaSummary, SchemeCatalogue, CpcbAqiData, MsmeSummary, HmisSubdistrictSummary, OsmPoiCollection, CivicCollection } from '@city-monitor/shared';
+import type { NinaWarning, PoliticalDistrict, WaterLevelData, BuergeramtData, BudgetSummary, ConstructionSite, TrafficIncident, EmergencyPharmacy, AedLocation, WastewaterSummary, BathingSpot, LaborMarketSummary, PopulationSummary, FeuerwehrSummary, PollenForecast, NoiseSensor, CouncilMeeting, HistoryPoint, AirQualityGridPoint, TransitAlert, MandiSummary, MgnregaSummary, SchemeCatalogue, CpcbAqiData, MsmeSummary, HmisSubdistrictSummary, OsmPoiCollection, CivicCollection, Nfhs5Summary, JjmSummary } from '@city-monitor/shared';
 import {
   WeatherDataSchema, WaterLevelDataSchema, BuergeramtDataSchema, BudgetSummarySchema,
   PoliticalDistrictSchema, WastewaterSummarySchema, LaborMarketSummarySchema,
@@ -22,7 +22,7 @@ import {
   MsmeSummarySchema,
   HmisSubdistrictSummarySchema,
 } from '@city-monitor/shared/schemas.js';
-import { OsmPoiCollectionSchema, CivicCollectionSchema } from '@city-monitor/shared/schemas.js';
+import { OsmPoiCollectionSchema, CivicCollectionSchema, Nfhs5SummarySchema, JjmSummarySchema } from '@city-monitor/shared/schemas.js';
 import type { GeocodeResult } from '../lib/geocode.js';
 import type { WeatherData } from '../cron/ingest-weather.js';
 import type { CityEvent } from '../cron/ingest-events.js';
@@ -608,6 +608,14 @@ export async function loadNmrclStatus(db: Db, cityId: string): Promise<DbResult<
 
 export async function loadNagpurPolice(db: Db, cityId: string): Promise<DbResult<CivicCollection>> {
   return loadSnapshot(db, cityId, 'nagpur-police', { schema: CivicCollectionSchema, maxAgeMs: 24 * 3_600_000 });
+}
+
+export async function loadNfhs5(db: Db, cityId: string): Promise<DbResult<Nfhs5Summary>> {
+  return loadSnapshot(db, cityId, 'nfhs5-summary', { schema: Nfhs5SummarySchema, maxAgeMs: 90 * 86_400_000 });
+}
+
+export async function loadJjm(db: Db, cityId: string): Promise<DbResult<JjmSummary>> {
+  return loadSnapshot(db, cityId, 'jjm-summary', { schema: JjmSummarySchema, maxAgeMs: 7 * 86_400_000 });
 }
 
 export type { GeocodeResult };

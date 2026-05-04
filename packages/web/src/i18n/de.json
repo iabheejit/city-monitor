@@ -83,15 +83,15 @@
       "empty": "Keine aktuellen Meldungen"
     },
     "airQuality": {
-      "title": "Luftqualit\u00e4t",
+      "title": "Luftqualität",
       "trend": "24h Verlauf",
       "level": {
         "good": "Gut",
-        "fair": "M\u00e4\u00dfig",
+        "fair": "Mäßig",
         "moderate": "Mittel",
         "poor": "Schlecht",
         "veryPoor": "Sehr schlecht",
-        "extremelyPoor": "Gef\u00e4hrlich"
+        "extremelyPoor": "Gefährlich"
       }
     },
     "map": {
@@ -369,6 +369,35 @@
       "title": "Nagpur Polizei",
       "empty": "Keine Pressemitteilungen verfügbar",
       "source": "nagpurpolice.gov.in"
+    },
+    "nfhs5": {
+      "title": "Gesundheitsindikatoren (NFHS-5)",
+      "empty": "Gesundheitsdaten nicht verfügbar",
+      "survey": "Umfrage",
+      "childHealth": "Kindergesundheit",
+      "institutionalBirths": "Institutionelle Geburten",
+      "childVaccinated": "Vollständig geimpft",
+      "stunted": "Wachstumsverzögerung (< 5 J.)",
+      "wasted": "Auszehrung (< 5 J.)",
+      "nutrition": "Ernährung",
+      "anaemicWomen": "Anämische Frauen",
+      "anaemicChildren": "Anämische Kinder",
+      "household": "Haushalt",
+      "drinkingWater": "Verbessertes Wasser",
+      "sanitation": "Verbesserte Sanitäranlage",
+      "cleanFuel": "Sauberer Brennstoff",
+      "sexRatio": "Geschlechterverhältnis (je 1000)",
+      "source": "NFHS-5 · data.gov.in"
+    },
+    "jjm": {
+      "title": "Jal Jeevan Mission",
+      "empty": "Wasserversorgungsdaten nicht verfügbar",
+      "habitations": "Abgedeckte Siedlungen",
+      "blocks": "Blöcke",
+      "panchayats": "Panchayats",
+      "villages": "Dörfer",
+      "blockList": "Blöcke im Bezirk",
+      "source": "JJM · data.gov.in"
     }
   },
   "category": {
@@ -414,8 +443,8 @@
       "weather": "Regenradar",
       "news": "Nachrichten",
       "warnings": "Warnmeldungen",
-      "air-quality": "Luftqualit\u00e4t",
-      "noise": "L\u00e4rm",
+      "air-quality": "Luftqualität",
+      "noise": "Lärm",
       "emergencies": "Notfall",
       "traffic": "Verkehr",
       "water": "Wasser",
@@ -487,7 +516,7 @@
     "sourceCode": "Quellcode",
     "inspiredBy": "Inspiriert von World Monitor",
     "license": "AGPL-3.0",
-    "weatherTiles": "Regenradar \u00a9 RainViewer",
+    "weatherTiles": "Regenradar © RainViewer",
     "imprint": "Impressum",
     "privacy": "Datenschutz",
     "noTracking": "Kein Tracking",
