@@ -22,7 +22,7 @@ services:
       - key: PORT
         value: "3001"
       - key: ACTIVE_CITIES
-        value: berlin,hamburg,nagpur
+        value: berlin,hamburg,nagpur,san-francisco
       - key: DATA_GOV_IN_API_KEY
         sync: false
       - key: DATABASE_URL
@@ -38,7 +38,7 @@ services:
   - type: web
     name: city-monitor-web
     runtime: static
-    buildCommand: npm ci && npm run build --workspace=packages/web
+    buildCommand: npm ci && npm run build --workspace=shared && npm run build --workspace=packages/web
     staticPublishPath: packages/web/dist
     headers:
       - path: /assets/*
