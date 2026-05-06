@@ -29,6 +29,10 @@ export type {
   OsmPoiCollection, OsmPoi,
   CivicCollection, CivicItem,
   Nfhs5Summary, JjmSummary,
+  SfSafetyData, SfDispatchCall, SfFireEmsCall,
+  Sf311Data, Sf311Request,
+  SfStreetClosuresData, SfStreetClosure,
+  SfTransitAlertsData, SfTransitAlert,
 } from '@city-monitor/shared';
 
 // Import types used locally in api object definitions
@@ -44,6 +48,7 @@ import type {
   MsmeSummary, CpcbAqiData,
   OsmPoiCollection, CivicCollection,
   Nfhs5Summary, JjmSummary,
+  SfSafetyData, Sf311Data, SfStreetClosuresData, SfTransitAlertsData,
 } from '@city-monitor/shared';
 
 export const api = {
@@ -86,6 +91,10 @@ export const api = {
   getNagpurPolice: (city: string) => fetchJson<ApiResponse<CivicCollection | null>>(`${BASE}/${city}/nagpur-police`),
   getNfhs5: (city: string) => fetchJson<ApiResponse<Nfhs5Summary | null>>(`${BASE}/${city}/nfhs5`),
   getJjm: (city: string) => fetchJson<ApiResponse<JjmSummary | null>>(`${BASE}/${city}/jjm`),
+  getSfSafety: (city: string) => fetchJson<ApiResponse<SfSafetyData | null>>(`${BASE}/${city}/sf-safety`),
+  getSf311: (city: string) => fetchJson<ApiResponse<Sf311Data | null>>(`${BASE}/${city}/sf-311`),
+  getSfStreetClosures: (city: string) => fetchJson<ApiResponse<SfStreetClosuresData | null>>(`${BASE}/${city}/sf-street-closures`),
+  getSfTransitAlerts: (city: string) => fetchJson<ApiResponse<SfTransitAlertsData | null>>(`${BASE}/${city}/sf-transit-alerts`),
   // History endpoints — lazy-loaded for expanded tile views
   getWeatherHistory: (city: string, range = '7d') => fetchJson<{ data: HistoryPoint[] }>(`${BASE}/${city}/weather/history?range=${range}`),
   getAqiHistory: (city: string, range = '7d') => fetchJson<{ data: HistoryPoint[] }>(`${BASE}/${city}/air-quality/history?range=${range}`),

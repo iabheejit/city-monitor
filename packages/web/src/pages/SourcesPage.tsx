@@ -261,6 +261,39 @@ const CITY_SOURCES: Record<string, SourceGroup[]> = {
   berlin: BERLIN_SOURCES,
   hamburg: HAMBURG_SOURCES,
   nagpur: NAGPUR_SOURCES,
+  'san-francisco': [
+    {
+      category: 'News',
+      sources: [
+        { name: 'SF Standard', url: 'https://sfstandard.com/', description: 'Independent San Francisco newsroom covering local politics and city life.' },
+        { name: 'Mission Local', url: 'https://missionlocal.org/', description: 'Community journalism covering the Mission District and San Francisco.' },
+        { name: 'ABC7 News', url: 'https://abc7news.com/', description: 'Bay Area local TV news — breaking news and weather.' },
+        { name: 'SFist', url: 'https://sfist.com/', description: 'San Francisco local news blog covering city life and politics.' },
+        { name: 'KQED', url: 'https://www.kqed.org/', description: 'Bay Area public media — news, arts, and culture.' },
+      ],
+    },
+    {
+      category: 'Safety & Emergencies',
+      sources: [
+        { name: 'SF Open Data — Police (SFPD)', url: 'https://data.sfgov.org/Public-Safety/Police-Department-Incident-Reports-2018-to-Present/wg3w-h783', description: 'SFPD dispatch calls (DataSF Socrata API, dataset gnap-fj3t).' },
+        { name: 'SF Open Data — Fire & EMS (SFFD)', url: 'https://data.sfgov.org/Public-Safety/Fire-Department-Calls-for-Service/nuek-vuh3', description: 'SF Fire Department calls for service (DataSF Socrata API, dataset nuek-vuh3).' },
+      ],
+    },
+    {
+      category: 'Transport & Infrastructure',
+      sources: [
+        { name: '511 SF Bay (Muni)', url: 'https://511.org/', description: 'SFMTA Muni real-time service alerts via 511 SF Bay API.' },
+        { name: '511 SF Bay (BART)', url: 'https://511.org/', description: 'BART real-time service alerts via 511 SF Bay API.' },
+        { name: 'SF Open Data — Street Closures', url: 'https://data.sfgov.org/City-Infrastructure/Street-Closures/98cv-qtqk', description: 'Active street closure permits (DataSF Socrata API, dataset 98cv-qtqk).' },
+      ],
+    },
+    {
+      category: 'City Services',
+      sources: [
+        { name: 'SF Open Data — 311 Cases', url: 'https://data.sfgov.org/City-Infrastructure/311-Cases/vw6y-z8j6', description: 'SF 311 service requests for street cleaning, graffiti, and other city issues (DataSF Socrata API, dataset vw6y-z8j6).' },
+      ],
+    },
+  ],
 };
 
 function mergeGroups(shared: SourceGroup[], city: SourceGroup[]): SourceGroup[] {

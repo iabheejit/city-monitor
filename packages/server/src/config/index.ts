@@ -2,16 +2,18 @@ import type { CityConfig } from '@city-monitor/shared';
 import { berlin } from './cities/berlin.js';
 import { hamburg } from './cities/hamburg.js';
 import { nagpur } from './cities/nagpur.js';
+import { sanFrancisco } from './cities/san-francisco.js';
 
 const ALL_CITIES: Record<string, CityConfig> = {
   berlin,
   hamburg,
   nagpur,
+  'san-francisco': sanFrancisco,
 };
 
 function activeIds(): Set<string> {
   return new Set(
-    (process.env.ACTIVE_CITIES || 'berlin,hamburg,nagpur')
+    (process.env.ACTIVE_CITIES || 'berlin,hamburg,nagpur,san-francisco')
       .split(',')
       .map((s) => s.trim())
       .filter(Boolean),

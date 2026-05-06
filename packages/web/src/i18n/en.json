@@ -398,6 +398,35 @@
       "villages": "Villages",
       "blockList": "Blocks in District",
       "source": "JJM · data.gov.in"
+    },
+    "sfSafety": {
+      "title": "Public Safety",
+      "lawCalls": "Law Calls (24h)",
+      "fireCalls": "Fire & EMS (24h)",
+      "law": "Law Enforcement",
+      "fire": "Fire & EMS",
+      "more": "more",
+      "empty": "No safety data available",
+      "source": "SF Open Data"
+    },
+    "sfTransit": {
+      "title": "Transit Alerts",
+      "noAlerts": "No active alerts — service running normally",
+      "more": "more alerts",
+      "source": "511 SF Bay"
+    },
+    "sf311": {
+      "title": "311 Requests",
+      "more": "more",
+      "empty": "No 311 data available",
+      "source": "SF Open Data · 311"
+    },
+    "sfStreetClosures": {
+      "title": "Street Closures",
+      "total": "{{count}} active closure(s)",
+      "more": "more",
+      "empty": "No active street closures",
+      "source": "SF Open Data · Street Closures"
     }
   },
   "category": {

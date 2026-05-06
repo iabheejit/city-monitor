@@ -162,6 +162,85 @@ export interface CityDataSources {
     stateName: string;
     districtName: string;
   };
+  /** SFGOV Socrata open data — optional app token raises rate limits */
+  sfSocrata?: {
+    appToken?: string;
+  };
+  /** 511 SF Bay transit API key */
+  sf511?: {
+    apiKey?: string;
+  };
+}
+
+// ---------------------------------------------------------------------------
+// San Francisco data types
+// ---------------------------------------------------------------------------
+
+export interface SfDispatchCall {
+  callType: string;
+  priority: string;
+  disposition: string;
+  address: string;
+  district: string;
+  createdAt: string;
+}
+
+export interface SfFireEmsCall {
+  callType: string;
+  callNumber: string;
+  address: string;
+  neighborhood: string;
+  receivedDtTm: string;
+}
+
+export interface SfSafetyData {
+  lawEnforcement: SfDispatchCall[];
+  fireEms: SfFireEmsCall[];
+  fetchedAt: string;
+}
+
+export interface Sf311Request {
+  category: string;
+  status: string;
+  address: string;
+  neighborhood: string;
+  opened: string;
+}
+
+export interface Sf311Data {
+  requests: Sf311Request[];
+  totalCount: number;
+  fetchedAt: string;
+}
+
+export interface SfStreetClosure {
+  reason: string;
+  streetName: string;
+  fromStreet: string;
+  toStreet: string;
+  startDate: string;
+  endDate: string;
+}
+
+export interface SfStreetClosuresData {
+  closures: SfStreetClosure[];
+  fetchedAt: string;
+}
+
+export interface SfTransitAlert {
+  id: string;
+  agency: string;
+  routeIds: string[];
+  headerText: string;
+  descriptionText: string;
+  effect: string;
+  start: string | null;
+  end: string | null;
+}
+
+export interface SfTransitAlertsData {
+  alerts: SfTransitAlert[];
+  fetchedAt: string;
 }
 
 // Weather data types (shared between server ingestion and web UI)
@@ -625,6 +704,10 @@ export interface BootstrapData {
   nmrclStatus?: ApiResponse<CivicCollection | null> | null;
   nfhs5?: ApiResponse<Nfhs5Summary | null> | null;
   jjm?: ApiResponse<JjmSummary | null> | null;
+  sfSafety?: ApiResponse<SfSafetyData | null> | null;
+  sf311?: ApiResponse<Sf311Data | null> | null;
+  sfStreetClosures?: ApiResponse<SfStreetClosuresData | null> | null;
+  sfTransitAlerts?: ApiResponse<SfTransitAlertsData | null> | null;
 }
 
 // News AI summary

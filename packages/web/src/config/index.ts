@@ -2,16 +2,18 @@ import type { CityConfig } from '@city-monitor/shared';
 import { berlin } from './cities/berlin.js';
 import { hamburg } from './cities/hamburg.js';
 import { nagpur } from './cities/nagpur.js';
+import { sanFrancisco } from './cities/san-francisco.js';
 
 const ALL_CITIES: Record<string, CityConfig> = {
   berlin,
   hamburg,
   nagpur,
+  'san-francisco': sanFrancisco,
 };
 
 /** Cities that are ready for users. Hamburg is kept in ALL_CITIES
  *  but excluded from active set until its data sources are complete. */
-const ACTIVE_CITY_IDS = new Set(['berlin', 'nagpur']);
+const ACTIVE_CITY_IDS = new Set(['berlin', 'nagpur', 'san-francisco']);
 
 export function getCityConfig(cityId: string): CityConfig | undefined {
   const config = ALL_CITIES[cityId];

@@ -16,7 +16,7 @@ import {
   geocodeLookups,
 } from './schema.js';
 import type { SnapshotType } from './schema.js';
-import type { NinaWarning, PoliticalDistrict, WaterLevelData, BuergeramtData, BudgetSummary, ConstructionSite, TrafficIncident, EmergencyPharmacy, AedLocation, WastewaterSummary, BathingSpot, LaborMarketSummary, PopulationSummary, FeuerwehrSummary, PollenForecast, NoiseSensor, CouncilMeeting, TransitAlert, MandiSummary, MgnregaSummary, SchemeCatalogue, CpcbAqiData, MsmeSummary, HmisSubdistrictSummary, OsmPoiCollection, CivicCollection, Nfhs5Summary, JjmSummary } from '@city-monitor/shared';
+import type { NinaWarning, PoliticalDistrict, WaterLevelData, BuergeramtData, BudgetSummary, ConstructionSite, TrafficIncident, EmergencyPharmacy, AedLocation, WastewaterSummary, BathingSpot, LaborMarketSummary, PopulationSummary, FeuerwehrSummary, PollenForecast, NoiseSensor, CouncilMeeting, TransitAlert, MandiSummary, MgnregaSummary, SchemeCatalogue, CpcbAqiData, MsmeSummary, HmisSubdistrictSummary, OsmPoiCollection, CivicCollection, Nfhs5Summary, JjmSummary, SfSafetyData, Sf311Data, SfStreetClosuresData, SfTransitAlertsData } from '@city-monitor/shared';
 import type { GeocodeResult } from '../lib/geocode.js';
 import type { WeatherData } from '../cron/ingest-weather.js';
 import type { CityEvent } from '../cron/ingest-events.js';
@@ -168,6 +168,26 @@ export async function saveNfhs5(db: Db, cityId: string, data: Nfhs5Summary): Pro
 
 export async function saveJjm(db: Db, cityId: string, data: JjmSummary): Promise<void> {
   await saveSnapshot(db, cityId, 'jjm-summary', data);
+}
+
+// ---------------------------------------------------------------------------
+// San Francisco
+// ---------------------------------------------------------------------------
+
+export async function saveSfSafety(db: Db, cityId: string, data: SfSafetyData): Promise<void> {
+  await saveSnapshot(db, cityId, 'sf-safety', data);
+}
+
+export async function saveSf311(db: Db, cityId: string, data: Sf311Data): Promise<void> {
+  await saveSnapshot(db, cityId, 'sf-311', data);
+}
+
+export async function saveSfStreetClosures(db: Db, cityId: string, data: SfStreetClosuresData): Promise<void> {
+  await saveSnapshot(db, cityId, 'sf-street-closures', data);
+}
+
+export async function saveSfTransitAlerts(db: Db, cityId: string, data: SfTransitAlertsData): Promise<void> {
+  await saveSnapshot(db, cityId, 'sf-transit-alerts', data);
 }
 
 // ---------------------------------------------------------------------------

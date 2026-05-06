@@ -48,6 +48,10 @@ export function createBootstrapRouter(cache: Cache) {
       hmisSubdistrict: data[CK.hmisSubdistrict(city.id)] ?? null,
       nfhs5: data[CK.nfhs5(city.id)] ?? null,
       jjm: data[CK.jjm(city.id)] ?? null,
+      sfSafety: data[CK.sfSafety(city.id)] ?? null,
+      sf311: data[CK.sf311(city.id)] ?? null,
+      sfStreetClosures: data[CK.sfStreetClosures(city.id)] ?? null,
+      sfTransitAlerts: data[CK.sfTransitAlerts(city.id)] ?? null,
     });
   });
 

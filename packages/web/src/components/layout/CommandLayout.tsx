@@ -40,6 +40,10 @@ import { NmrclStatusStrip } from '../strips/NmrclStatusStrip.js';
 import { NagpurPoliceStrip } from '../strips/NagpurPoliceStrip.js';
 import { Nfhs5Strip } from '../strips/Nfhs5Strip.js';
 import { JjmStrip } from '../strips/JjmStrip.js';
+import { SfSafetyStrip } from '../strips/SfSafetyStrip.js';
+import { Sf311Strip } from '../strips/Sf311Strip.js';
+import { SfStreetClosuresStrip } from '../strips/SfStreetClosuresStrip.js';
+import { SfTransitStrip } from '../strips/SfTransitStrip.js';
 import { Skeleton } from './Skeleton.js';
 import { ScrollIndicator } from './ScrollIndicator.js';
 import { SkylineSeparator } from './SkylineSeparator.js';
@@ -276,6 +280,28 @@ export function CommandLayout() {
           {dataSources.jjm && (
             <Tile title={t('panel.jjm.title')} span={1} expandable defaultExpanded={false}>
               <JjmStrip />
+            </Tile>
+          )}
+
+          {/* SF-specific tiles */}
+          {cityId === 'san-francisco' && (
+            <Tile title={t('panel.sfSafety.title')} span={2} expandable defaultExpanded={isDesktop}>
+              {(expanded) => <SfSafetyStrip expanded={expanded} />}
+            </Tile>
+          )}
+          {cityId === 'san-francisco' && (
+            <Tile title={t('panel.sfTransit.title')} span={2} expandable defaultExpanded={isDesktop}>
+              {(expanded) => <SfTransitStrip expanded={expanded} />}
+            </Tile>
+          )}
+          {cityId === 'san-francisco' && (
+            <Tile title={t('panel.sf311.title')} span={1} expandable defaultExpanded={false}>
+              {(expanded) => <Sf311Strip expanded={expanded} />}
+            </Tile>
+          )}
+          {cityId === 'san-francisco' && (
+            <Tile title={t('panel.sfStreetClosures.title')} span={1} expandable defaultExpanded={false}>
+              {(expanded) => <SfStreetClosuresStrip expanded={expanded} />}
             </Tile>
           )}
 

@@ -67,6 +67,12 @@ export const CK = {
   nfhs5: (cityId: string) => `${cityId}:nfhs5`,
   jjm: (cityId: string) => `${cityId}:jjm`,
 
+  // San Francisco-specific
+  sfSafety: (cityId: string) => `${cityId}:sf-safety`,
+  sf311: (cityId: string) => `${cityId}:sf-311`,
+  sfStreetClosures: (cityId: string) => `${cityId}:sf-street-closures`,
+  sfTransitAlerts: (cityId: string) => `${cityId}:sf-transit-alerts`,
+
   // History
   weatherHistory: (cityId: string, days: number) => `${cityId}:weather:history:${days}d`,
   aqiHistory: (cityId: string, days: number) => `${cityId}:aqi:history:${days}d`,
@@ -107,5 +113,9 @@ export const CK = {
     CK.nmrclStatus(cityId),
     CK.nfhs5(cityId),
     CK.jjm(cityId),
+    CK.sfSafety(cityId),
+    CK.sf311(cityId),
+    CK.sfStreetClosures(cityId),
+    CK.sfTransitAlerts(cityId),
   ],
 } as const;

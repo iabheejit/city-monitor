@@ -398,6 +398,35 @@
       "villages": "Dörfer",
       "blockList": "Blöcke im Bezirk",
       "source": "JJM · data.gov.in"
+    },
+    "sfSafety": {
+      "title": "Öffentliche Sicherheit",
+      "lawCalls": "Polizeieinsätze (24h)",
+      "fireCalls": "Feuerwehr & Rettung (24h)",
+      "law": "Polizei",
+      "fire": "Feuerwehr & Rettung",
+      "more": "weitere",
+      "empty": "Keine Sicherheitsdaten verfügbar",
+      "source": "SF Open Data"
+    },
+    "sfTransit": {
+      "title": "Transit-Meldungen",
+      "noAlerts": "Keine aktiven Meldungen – normaler Betrieb",
+      "more": "weitere Meldungen",
+      "source": "511 SF Bay"
+    },
+    "sf311": {
+      "title": "311-Anfragen",
+      "more": "weitere",
+      "empty": "Keine 311-Daten verfügbar",
+      "source": "SF Open Data · 311"
+    },
+    "sfStreetClosures": {
+      "title": "Straßensperrungen",
+      "total": "{{count}} aktive Sperrung(en)",
+      "more": "weitere",
+      "empty": "Keine aktiven Straßensperrungen",
+      "source": "SF Open Data · Straßensperrungen"
     }
   },
   "category": {

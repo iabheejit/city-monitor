@@ -395,6 +395,35 @@
       "villages": "गावे",
       "blockList": "जिल्ह्यातील ब्लॉक",
       "source": "JJM · data.gov.in"
+    },
+    "sfSafety": {
+      "title": "सार्वजनिक सुरक्षा",
+      "lawCalls": "पोलीस कॉल (24तास)",
+      "fireCalls": "अग्निशमन व रुग्णवाहिका (24तास)",
+      "law": "पोलीस",
+      "fire": "अग्निशमन व रुग्णवाहिका",
+      "more": "आणखी",
+      "empty": "सुरक्षा डेटा उपलब्ध नाही",
+      "source": "SF Open Data"
+    },
+    "sfTransit": {
+      "title": "वाहतूक सूचना",
+      "noAlerts": "कोणत्याही सक्रिय सूचना नाहीत",
+      "more": "आणखी सूचना",
+      "source": "511 SF Bay"
+    },
+    "sf311": {
+      "title": "311 विनंत्या",
+      "more": "आणखी",
+      "empty": "311 डेटा उपलब्ध नाही",
+      "source": "SF Open Data · 311"
+    },
+    "sfStreetClosures": {
+      "title": "रस्ता बंदी",
+      "total": "{{count}} सक्रिय बंदी",
+      "more": "आणखी",
+      "empty": "कोणतीही सक्रिय रस्ता बंदी नाही",
+      "source": "SF Open Data · रस्ता बंदी"
     }
   },
   "category": {

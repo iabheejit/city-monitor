@@ -398,6 +398,35 @@
       "villages": "القرى",
       "blockList": "كتل الحي",
       "source": "JJM · data.gov.in"
+    },
+    "sfSafety": {
+      "title": "الأمن العام",
+      "lawCalls": "مكالمات الشرطة (24س)",
+      "fireCalls": "الإطفاء والإسعاف (24س)",
+      "law": "الشرطة",
+      "fire": "الإطفاء والإسعاف",
+      "more": "المزيد",
+      "empty": "لا تتوفر بيانات أمنية",
+      "source": "SF Open Data"
+    },
+    "sfTransit": {
+      "title": "تنبيهات المواصلات",
+      "noAlerts": "لا تنبيهات نشطة — الخدمة تعمل بشكل طبيعي",
+      "more": "تنبيهات أخرى",
+      "source": "511 SF Bay"
+    },
+    "sf311": {
+      "title": "طلبات 311",
+      "more": "المزيد",
+      "empty": "لا تتوفر بيانات 311",
+      "source": "SF Open Data · 311"
+    },
+    "sfStreetClosures": {
+      "title": "إغلاق الطرق",
+      "total": "{{count}} إغلاق نشط",
+      "more": "المزيد",
+      "empty": "لا يوجد إغلاق نشط للطرق",
+      "source": "SF Open Data · إغلاق الطرق"
     }
   },
   "category": {

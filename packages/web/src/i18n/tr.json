@@ -398,6 +398,35 @@
       "villages": "Köyler",
       "blockList": "İlçedeki Bloklar",
       "source": "JJM · data.gov.in"
+    },
+    "sfSafety": {
+      "title": "Kamu Güvenliği",
+      "lawCalls": "Polis Çağrıları (24s)",
+      "fireCalls": "İtfaiye & Acil (24s)",
+      "law": "Polis",
+      "fire": "İtfaiye & Acil",
+      "more": "daha fazla",
+      "empty": "Güvenlik verisi mevcut değil",
+      "source": "SF Open Data"
+    },
+    "sfTransit": {
+      "title": "Toplu Taşıma Uyarıları",
+      "noAlerts": "Aktif uyarı yok – normal hizmet",
+      "more": "daha fazla uyarı",
+      "source": "511 SF Bay"
+    },
+    "sf311": {
+      "title": "311 Talepleri",
+      "more": "daha fazla",
+      "empty": "311 verisi mevcut değil",
+      "source": "SF Open Data · 311"
+    },
+    "sfStreetClosures": {
+      "title": "Yol Kapanışları",
+      "total": "{{count}} aktif kapanış",
+      "more": "daha fazla",
+      "empty": "Aktif yol kapanışı yok",
+      "source": "SF Open Data · Yol Kapanışları"
     }
   },
   "category": {

@@ -9,7 +9,7 @@ import {
   geocodeLookups,
 } from './schema.js';
 import type { SnapshotType } from './schema.js';
-import type { NinaWarning, PoliticalDistrict, WaterLevelData, BuergeramtData, BudgetSummary, ConstructionSite, TrafficIncident, EmergencyPharmacy, AedLocation, WastewaterSummary, BathingSpot, LaborMarketSummary, PopulationSummary, FeuerwehrSummary, PollenForecast, NoiseSensor, CouncilMeeting, HistoryPoint, AirQualityGridPoint, TransitAlert, MandiSummary, MgnregaSummary, SchemeCatalogue, CpcbAqiData, MsmeSummary, HmisSubdistrictSummary, OsmPoiCollection, CivicCollection, Nfhs5Summary, JjmSummary } from '@city-monitor/shared';
+import type { NinaWarning, PoliticalDistrict, WaterLevelData, BuergeramtData, BudgetSummary, ConstructionSite, TrafficIncident, EmergencyPharmacy, AedLocation, WastewaterSummary, BathingSpot, LaborMarketSummary, PopulationSummary, FeuerwehrSummary, PollenForecast, NoiseSensor, CouncilMeeting, HistoryPoint, AirQualityGridPoint, TransitAlert, MandiSummary, MgnregaSummary, SchemeCatalogue, CpcbAqiData, MsmeSummary, HmisSubdistrictSummary, OsmPoiCollection, CivicCollection, Nfhs5Summary, JjmSummary, SfSafetyData, Sf311Data, SfStreetClosuresData, SfTransitAlertsData } from '@city-monitor/shared';
 import {
   WeatherDataSchema, WaterLevelDataSchema, BuergeramtDataSchema, BudgetSummarySchema,
   PoliticalDistrictSchema, WastewaterSummarySchema, LaborMarketSummarySchema,
@@ -22,7 +22,7 @@ import {
   MsmeSummarySchema,
   HmisSubdistrictSummarySchema,
 } from '@city-monitor/shared/schemas.js';
-import { OsmPoiCollectionSchema, CivicCollectionSchema, Nfhs5SummarySchema, JjmSummarySchema } from '@city-monitor/shared/schemas.js';
+import { OsmPoiCollectionSchema, CivicCollectionSchema, Nfhs5SummarySchema, JjmSummarySchema, SfSafetyDataSchema, Sf311DataSchema, SfStreetClosuresDataSchema, SfTransitAlertsDataSchema } from '@city-monitor/shared/schemas.js';
 import type { GeocodeResult } from '../lib/geocode.js';
 import type { WeatherData } from '../cron/ingest-weather.js';
 import type { CityEvent } from '../cron/ingest-events.js';
@@ -616,6 +616,26 @@ export async function loadNfhs5(db: Db, cityId: string): Promise<DbResult<Nfhs5S
 
 export async function loadJjm(db: Db, cityId: string): Promise<DbResult<JjmSummary>> {
   return loadSnapshot(db, cityId, 'jjm-summary', { schema: JjmSummarySchema, maxAgeMs: 7 * 86_400_000 });
+}
+
+// ---------------------------------------------------------------------------
+// San Francisco reads
+// ---------------------------------------------------------------------------
+
+export async function loadSfSafety(db: Db, cityId: string): Promise<DbResult<SfSafetyData>> {
+  return loadSnapshot(db, cityId, 'sf-safety', { schema: SfSafetyDataSchema, maxAgeMs: 1800_000 });
+}
+
+export async function loadSf311(db: Db, cityId: string): Promise<DbResult<Sf311Data>> {
+  return loadSnapshot(db, cityId, 'sf-311', { schema: Sf311DataSchema, maxAgeMs: 86_400_000 });
+}
+
+export async function loadSfStreetClosures(db: Db, cityId: string): Promise<DbResult<SfStreetClosuresData>> {
+  return loadSnapshot(db, cityId, 'sf-street-closures', { schema: SfStreetClosuresDataSchema, maxAgeMs: 86_400_000 });
+}
+
+export async function loadSfTransitAlerts(db: Db, cityId: string): Promise<DbResult<SfTransitAlertsData>> {
+  return loadSnapshot(db, cityId, 'sf-transit-alerts', { schema: SfTransitAlertsDataSchema, maxAgeMs: 1800_000 });
 }
 
 export type { GeocodeResult };

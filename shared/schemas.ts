@@ -568,3 +568,72 @@ export const JjmSummarySchema = z.object({
   blocks: z.array(z.string()),
   fetchedAt: z.string(),
 });
+
+// --- San Francisco ---
+
+export const SfDispatchCallSchema = z.object({
+  callType: z.string(),
+  priority: z.string(),
+  disposition: z.string(),
+  address: z.string(),
+  district: z.string(),
+  createdAt: z.string(),
+});
+
+export const SfFireEmsCallSchema = z.object({
+  callType: z.string(),
+  callNumber: z.string(),
+  address: z.string(),
+  neighborhood: z.string(),
+  receivedDtTm: z.string(),
+});
+
+export const SfSafetyDataSchema = z.object({
+  lawEnforcement: z.array(SfDispatchCallSchema),
+  fireEms: z.array(SfFireEmsCallSchema),
+  fetchedAt: z.string(),
+});
+
+export const Sf311RequestSchema = z.object({
+  category: z.string(),
+  status: z.string(),
+  address: z.string(),
+  neighborhood: z.string(),
+  opened: z.string(),
+});
+
+export const Sf311DataSchema = z.object({
+  requests: z.array(Sf311RequestSchema),
+  totalCount: z.number(),
+  fetchedAt: z.string(),
+});
+
+export const SfStreetClosureSchema = z.object({
+  reason: z.string(),
+  streetName: z.string(),
+  fromStreet: z.string(),
+  toStreet: z.string(),
+  startDate: z.string(),
+  endDate: z.string(),
+});
+
+export const SfStreetClosuresDataSchema = z.object({
+  closures: z.array(SfStreetClosureSchema),
+  fetchedAt: z.string(),
+});
+
+export const SfTransitAlertSchema = z.object({
+  id: z.string(),
+  agency: z.string(),
+  routeIds: z.array(z.string()),
+  headerText: z.string(),
+  descriptionText: z.string(),
+  effect: z.string(),
+  start: z.string().nullable(),
+  end: z.string().nullable(),
+});
+
+export const SfTransitAlertsDataSchema = z.object({
+  alerts: z.array(SfTransitAlertSchema),
+  fetchedAt: z.string(),
+});

@@ -69,6 +69,7 @@ Adding a city = adding a config file (server + web) + registering in `ALL_CITIES
 - [`.context/deploy-on-render.md`](.context/deploy-on-render.md) — Step-by-step Render.com deployment guide: Blueprint (automated) and manual setup for PostgreSQL, API web service, and static frontend. Covers env vars, rewrites, headers, custom domains, multi-city, troubleshooting, and costs.
 - [`.context/testing.md`](.context/testing.md) — Vitest setup for both packages, how to run tests (turbo vs direct), web jsdom environment, co-located test file conventions.
 - [`.context/nagpur.md`](.context/nagpur.md) — Nagpur (Maharashtra, India) city config: AGMARKNET mandi prices, MGNREGA employment, MyScheme civic schemes — API endpoints, resource IDs, env vars, data shapes, freshness, deferred features.
+- [`.context/san-francisco.md`](.context/san-francisco.md) — San Francisco city config: SFPD/SFFD safety data, 311 requests, street closures, Muni/BART transit alerts — Socrata API endpoints, 511 SF Bay API, env vars, data shapes, component map.
 
 ## Key Conventions
 

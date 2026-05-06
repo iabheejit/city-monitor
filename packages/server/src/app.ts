@@ -76,6 +76,10 @@ import { createOsmPoisIngestion } from './cron/ingest-osm-pois.js';
 import { createCivicIngestion } from './cron/ingest-civic.js';
 import { createNfhs5Ingestion } from './cron/ingest-nfhs5.js';
 import { createJjmIngestion } from './cron/ingest-jjm.js';
+import { createSfSafetyIngestion } from './cron/ingest-sf-safety.js';
+import { createSf311Ingestion } from './cron/ingest-sf311.js';
+import { createSfStreetClosuresIngestion } from './cron/ingest-sf-street-closures.js';
+import { createSfTransitIngestion } from './cron/ingest-sf-transit.js';
 import { createMandiRouter } from './routes/mandi.js';
 import { createMgnregaRouter } from './routes/mgnrega.js';
 import { createMySchemeRouter } from './routes/myscheme.js';
@@ -89,6 +93,10 @@ import { createNmrclRouter } from './routes/nmrcl.js';
 import { createNewsSignalsRouter } from './routes/news-signals.js';
 import { createNfhs5Router } from './routes/nfhs5.js';
 import { createJjmRouter } from './routes/jjm.js';
+import { createSfSafetyRouter } from './routes/sf-safety.js';
+import { createSf311Router } from './routes/sf311.js';
+import { createSfStreetClosuresRouter } from './routes/sf-street-closures.js';
+import { createSfTransitAlertsRouter } from './routes/sf-transit-alerts.js';
 import { initGeocodeDb } from './lib/geocode.js';
 import { validateCity } from './lib/validate-city.js';
 
@@ -174,6 +182,10 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
     { jobName: 'ingest-hmis-subdistrict', tableName: 'snapshots', maxAgeSeconds: 86400,  filter: { column: 'type', value: 'hmis-subdistrict' } },
     { jobName: 'ingest-osm-pois',         tableName: 'snapshots', maxAgeSeconds: 604800, filter: { column: 'type', value: 'osm-pois' } },
     { jobName: 'ingest-civic',            tableName: 'snapshots', maxAgeSeconds: 86400,  filter: { column: 'type', value: 'nmc-announcement' } },
+    { jobName: 'ingest-sf-safety',        tableName: 'snapshots', maxAgeSeconds: 600,    filter: { column: 'type', value: 'sf-safety' } },
+    { jobName: 'ingest-sf311',            tableName: 'snapshots', maxAgeSeconds: 86400,  filter: { column: 'type', value: 'sf-311' } },
+    { jobName: 'ingest-sf-street-closures', tableName: 'snapshots', maxAgeSeconds: 86400, filter: { column: 'type', value: 'sf-street-closures' } },
+    { jobName: 'ingest-sf-transit',       tableName: 'snapshots', maxAgeSeconds: 900,    filter: { column: 'type', value: 'sf-transit-alerts' } },
   ];
 
   const stale = db
@@ -215,6 +227,10 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
   const ingestCivic = createCivicIngestion(cache, db);
   const ingestNfhs5 = createNfhs5Ingestion(cache, db);
   const ingestJjm = createJjmIngestion(cache, db);
+  const ingestSfSafety = createSfSafetyIngestion(cache, db);
+  const ingestSf311 = createSf311Ingestion(cache, db);
+  const ingestSfStreetClosures = createSfStreetClosuresIngestion(cache, db);
+  const ingestSfTransit = createSfTransitIngestion(cache, db);
 
   const retainData = db ? createDataRetention(db) : async () => {};
 
@@ -256,6 +272,10 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
     { name: 'ingest-civic', schedule: '0 */2 * * *', handler: ingestCivic, runOnStart: s('ingest-civic') },
     { name: 'ingest-nfhs5', schedule: '0 6 1 * *', handler: ingestNfhs5, runOnStart: s('ingest-nfhs5') },
     { name: 'ingest-jjm',   schedule: '0 3 * * 1', handler: ingestJjm,   runOnStart: s('ingest-jjm') },
+    { name: 'ingest-sf-safety',          schedule: '*/10 * * * *', handler: ingestSfSafety,         runOnStart: s('ingest-sf-safety') },
+    { name: 'ingest-sf311',              schedule: '0 7 * * *',    handler: ingestSf311,             runOnStart: s('ingest-sf311') },
+    { name: 'ingest-sf-street-closures', schedule: '0 6 * * *',    handler: ingestSfStreetClosures, runOnStart: s('ingest-sf-street-closures') },
+    { name: 'ingest-sf-transit',         schedule: '*/15 * * * *', handler: ingestSfTransit,         runOnStart: s('ingest-sf-transit') },
     { name: 'data-retention', schedule: '0 3 * * *', handler: retainData },
   ];
 
@@ -325,6 +345,10 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
   app.use('/api', cacheFor(900), createNewsSignalsRouter(cache));
   app.use('/api', cacheFor(2592000), createNfhs5Router(cache, db));  // 30-day cache
   app.use('/api', cacheFor(604800), createJjmRouter(cache, db));     // 7-day cache
+  app.use('/api', cacheFor(600), createSfSafetyRouter(cache, db));
+  app.use('/api', cacheFor(86400), createSf311Router(cache, db));
+  app.use('/api', cacheFor(86400), createSfStreetClosuresRouter(cache, db));
+  app.use('/api', cacheFor(900), createSfTransitAlertsRouter(cache, db));
 
   return { app, cache, db, scheduler };
 }
