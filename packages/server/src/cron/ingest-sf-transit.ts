@@ -24,14 +24,28 @@ interface Gtfs511Response {
     Id?: string;
     IsDeleted?: boolean;
     Alert?: {
-      HeaderText?: { Translation?: Array<{ Text?: string; Language?: string }> };
-      DescriptionText?: { Translation?: Array<{ Text?: string; Language?: string }> };
+      HeaderText?: {
+        Translation?: Array<{ Text?: string; Language?: string }>;
+        Translations?: Array<{ Text?: string; Language?: string }>;
+      };
+      DescriptionText?: {
+        Translation?: Array<{ Text?: string; Language?: string }>;
+        Translations?: Array<{ Text?: string; Language?: string }>;
+      };
       Effect?: string;
       InformedEntity?: Array<{
         AgencyId?: string;
         RouteId?: string;
       }>;
+      InformedEntities?: Array<{
+        AgencyId?: string;
+        RouteId?: string;
+      }>;
       ActivePeriod?: Array<{
+        Start?: number;
+        End?: number;
+      }>;
+      ActivePeriods?: Array<{
         Start?: number;
         End?: number;
       }>;
@@ -45,6 +59,13 @@ function extractText(
   if (!translations || translations.length === 0) return '';
   const en = translations.find((t) => t.Language === 'en') ?? translations[0];
   return en.Text ?? '';
+}
+
+function translationsOf(text:
+  | { Translation?: Array<{ Text?: string; Language?: string }>; Translations?: Array<{ Text?: string; Language?: string }> }
+  | undefined,
+): Array<{ Text?: string; Language?: string }> {
+  return text?.Translations ?? text?.Translation ?? [];
 }
 
 async function fetch511Alerts(
@@ -83,19 +104,19 @@ function parseAlerts(data: Gtfs511Response, agencyLabel: string): SfTransitAlert
     const alert = entity.Alert;
     if (!alert) continue;
 
-    const routeIds = (alert.InformedEntity ?? [])
+    const routeIds = (alert.InformedEntities ?? alert.InformedEntity ?? [])
       .map((e) => e.RouteId)
       .filter((id): id is string => Boolean(id));
 
-    const activePeriods = alert.ActivePeriod ?? [];
+    const activePeriods = alert.ActivePeriods ?? alert.ActivePeriod ?? [];
     const first = activePeriods[0];
 
     alerts.push({
       id: entity.Id ?? String(Math.random()),
       agency: agencyLabel,
       routeIds,
-      headerText: extractText(alert.HeaderText?.Translation),
-      descriptionText: extractText(alert.DescriptionText?.Translation),
+      headerText: extractText(translationsOf(alert.HeaderText)),
+      descriptionText: extractText(translationsOf(alert.DescriptionText)),
       effect: alert.Effect ?? 'UNKNOWN_EFFECT',
       start: first?.Start ? new Date(first.Start * 1000).toISOString() : null,
       end: first?.End ? new Date(first.End * 1000).toISOString() : null,
