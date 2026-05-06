@@ -33,6 +33,7 @@ export type {
   Sf311Data, Sf311Request,
   SfStreetClosuresData, SfStreetClosure,
   SfTransitAlertsData, SfTransitAlert,
+  SfTrafficEventsData, SfTrafficEvent,
 } from '@city-monitor/shared';
 
 // Import types used locally in api object definitions
@@ -48,7 +49,7 @@ import type {
   MsmeSummary, CpcbAqiData,
   OsmPoiCollection, CivicCollection,
   Nfhs5Summary, JjmSummary,
-  SfSafetyData, Sf311Data, SfStreetClosuresData, SfTransitAlertsData,
+  SfSafetyData, Sf311Data, SfStreetClosuresData, SfTransitAlertsData, SfTrafficEventsData,
 } from '@city-monitor/shared';
 
 export const api = {
@@ -95,6 +96,7 @@ export const api = {
   getSf311: (city: string) => fetchJson<ApiResponse<Sf311Data | null>>(`${BASE}/${city}/sf-311`),
   getSfStreetClosures: (city: string) => fetchJson<ApiResponse<SfStreetClosuresData | null>>(`${BASE}/${city}/sf-street-closures`),
   getSfTransitAlerts: (city: string) => fetchJson<ApiResponse<SfTransitAlertsData | null>>(`${BASE}/${city}/sf-transit-alerts`),
+  getSfTrafficEvents: (city: string) => fetchJson<ApiResponse<SfTrafficEventsData | null>>(`${BASE}/${city}/sf-traffic-events`),
   // History endpoints — lazy-loaded for expanded tile views
   getWeatherHistory: (city: string, range = '7d') => fetchJson<{ data: HistoryPoint[] }>(`${BASE}/${city}/weather/history?range=${range}`),
   getAqiHistory: (city: string, range = '7d') => fetchJson<{ data: HistoryPoint[] }>(`${BASE}/${city}/air-quality/history?range=${range}`),

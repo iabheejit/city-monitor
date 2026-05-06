@@ -80,6 +80,7 @@ import { createSfSafetyIngestion } from './cron/ingest-sf-safety.js';
 import { createSf311Ingestion } from './cron/ingest-sf311.js';
 import { createSfStreetClosuresIngestion } from './cron/ingest-sf-street-closures.js';
 import { createSfTransitIngestion } from './cron/ingest-sf-transit.js';
+import { createSfTrafficEventsIngestion } from './cron/ingest-sf-traffic-events.js';
 import { createMandiRouter } from './routes/mandi.js';
 import { createMgnregaRouter } from './routes/mgnrega.js';
 import { createMySchemeRouter } from './routes/myscheme.js';
@@ -97,6 +98,7 @@ import { createSfSafetyRouter } from './routes/sf-safety.js';
 import { createSf311Router } from './routes/sf311.js';
 import { createSfStreetClosuresRouter } from './routes/sf-street-closures.js';
 import { createSfTransitAlertsRouter } from './routes/sf-transit-alerts.js';
+import { createSfTrafficEventsRouter } from './routes/sf-traffic-events.js';
 import { initGeocodeDb } from './lib/geocode.js';
 import { validateCity } from './lib/validate-city.js';
 
@@ -186,6 +188,7 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
     { jobName: 'ingest-sf311',            tableName: 'snapshots', maxAgeSeconds: 86400,  filter: { column: 'type', value: 'sf-311' } },
     { jobName: 'ingest-sf-street-closures', tableName: 'snapshots', maxAgeSeconds: 86400, filter: { column: 'type', value: 'sf-street-closures' } },
     { jobName: 'ingest-sf-transit',       tableName: 'snapshots', maxAgeSeconds: 900,    filter: { column: 'type', value: 'sf-transit-alerts' } },
+    { jobName: 'ingest-sf-traffic-events', tableName: 'snapshots', maxAgeSeconds: 900,   filter: { column: 'type', value: 'sf-traffic-events' } },
   ];
 
   const stale = db
@@ -231,6 +234,7 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
   const ingestSf311 = createSf311Ingestion(cache, db);
   const ingestSfStreetClosures = createSfStreetClosuresIngestion(cache, db);
   const ingestSfTransit = createSfTransitIngestion(cache, db);
+  const ingestSfTrafficEvents = createSfTrafficEventsIngestion(cache, db);
 
   const retainData = db ? createDataRetention(db) : async () => {};
 
@@ -276,6 +280,7 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
     { name: 'ingest-sf311',              schedule: '0 7 * * *',    handler: ingestSf311,             runOnStart: s('ingest-sf311') },
     { name: 'ingest-sf-street-closures', schedule: '0 6 * * *',    handler: ingestSfStreetClosures, runOnStart: s('ingest-sf-street-closures') },
     { name: 'ingest-sf-transit',         schedule: '*/15 * * * *', handler: ingestSfTransit,         runOnStart: s('ingest-sf-transit') },
+    { name: 'ingest-sf-traffic-events',  schedule: '*/15 * * * *', handler: ingestSfTrafficEvents,   runOnStart: s('ingest-sf-traffic-events') },
     { name: 'data-retention', schedule: '0 3 * * *', handler: retainData },
   ];
 
@@ -349,6 +354,7 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
   app.use('/api', cacheFor(86400), createSf311Router(cache, db));
   app.use('/api', cacheFor(86400), createSfStreetClosuresRouter(cache, db));
   app.use('/api', cacheFor(900), createSfTransitAlertsRouter(cache, db));
+  app.use('/api', cacheFor(900), createSfTrafficEventsRouter(cache, db));
 
   return { app, cache, db, scheduler };
 }

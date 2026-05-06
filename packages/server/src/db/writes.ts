@@ -16,7 +16,7 @@ import {
   geocodeLookups,
 } from './schema.js';
 import type { SnapshotType } from './schema.js';
-import type { NinaWarning, PoliticalDistrict, WaterLevelData, BuergeramtData, BudgetSummary, ConstructionSite, TrafficIncident, EmergencyPharmacy, AedLocation, WastewaterSummary, BathingSpot, LaborMarketSummary, PopulationSummary, FeuerwehrSummary, PollenForecast, NoiseSensor, CouncilMeeting, TransitAlert, MandiSummary, MgnregaSummary, SchemeCatalogue, CpcbAqiData, MsmeSummary, HmisSubdistrictSummary, OsmPoiCollection, CivicCollection, Nfhs5Summary, JjmSummary, SfSafetyData, Sf311Data, SfStreetClosuresData, SfTransitAlertsData } from '@city-monitor/shared';
+import type { NinaWarning, PoliticalDistrict, WaterLevelData, BuergeramtData, BudgetSummary, ConstructionSite, TrafficIncident, EmergencyPharmacy, AedLocation, WastewaterSummary, BathingSpot, LaborMarketSummary, PopulationSummary, FeuerwehrSummary, PollenForecast, NoiseSensor, CouncilMeeting, TransitAlert, MandiSummary, MgnregaSummary, SchemeCatalogue, CpcbAqiData, MsmeSummary, HmisSubdistrictSummary, OsmPoiCollection, CivicCollection, Nfhs5Summary, JjmSummary, SfSafetyData, Sf311Data, SfStreetClosuresData, SfTransitAlertsData, SfTrafficEventsData } from '@city-monitor/shared';
 import type { GeocodeResult } from '../lib/geocode.js';
 import type { WeatherData } from '../cron/ingest-weather.js';
 import type { CityEvent } from '../cron/ingest-events.js';
@@ -188,6 +188,10 @@ export async function saveSfStreetClosures(db: Db, cityId: string, data: SfStree
 
 export async function saveSfTransitAlerts(db: Db, cityId: string, data: SfTransitAlertsData): Promise<void> {
   await saveSnapshot(db, cityId, 'sf-transit-alerts', data);
+}
+
+export async function saveSfTrafficEvents(db: Db, cityId: string, data: SfTrafficEventsData): Promise<void> {
+  await saveSnapshot(db, cityId, 'sf-traffic-events', data);
 }
 
 // ---------------------------------------------------------------------------

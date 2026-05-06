@@ -415,6 +415,12 @@
       "more": "daha fazla uyarı",
       "source": "511 SF Bay"
     },
+    "sfTraffic": {
+      "title": "Trafik Olayları",
+      "empty": "Aktif trafik olayı yok",
+      "more": "daha fazla olay",
+      "source": "511 SF Bay · Trafik"
+    },
     "sf311": {
       "title": "311 Talepleri",
       "more": "daha fazla",

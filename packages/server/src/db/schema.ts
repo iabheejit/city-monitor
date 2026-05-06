@@ -21,7 +21,7 @@ export const SNAPSHOT_TYPES = [
   'agmarknet-mandi', 'data-gov-mgnrega', 'myscheme-schemes', 'cpcb-aqi', 'msme-udyam', 'hmis-subdistrict',
   'osm-pois', 'nmc-announcement', 'nmrcl-status', 'nagpur-police',
   'nfhs5-summary', 'jjm-summary',
-  'sf-safety', 'sf-311', 'sf-street-closures', 'sf-transit-alerts',
+  'sf-safety', 'sf-311', 'sf-street-closures', 'sf-transit-alerts', 'sf-traffic-events',
 ] as const;
 export type SnapshotType = typeof SNAPSHOT_TYPES[number];
 

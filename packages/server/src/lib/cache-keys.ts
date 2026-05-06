@@ -72,6 +72,7 @@ export const CK = {
   sf311: (cityId: string) => `${cityId}:sf-311`,
   sfStreetClosures: (cityId: string) => `${cityId}:sf-street-closures`,
   sfTransitAlerts: (cityId: string) => `${cityId}:sf-transit-alerts`,
+  sfTrafficEvents: (cityId: string) => `${cityId}:sf-traffic-events`,
 
   // History
   weatherHistory: (cityId: string, days: number) => `${cityId}:weather:history:${days}d`,
@@ -117,5 +118,6 @@ export const CK = {
     CK.sf311(cityId),
     CK.sfStreetClosures(cityId),
     CK.sfTransitAlerts(cityId),
+    CK.sfTrafficEvents(cityId),
   ],
 } as const;

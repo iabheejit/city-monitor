@@ -243,6 +243,25 @@ export interface SfTransitAlertsData {
   fetchedAt: string;
 }
 
+export interface SfTrafficEvent {
+  id: string;
+  status: string;
+  headline: string;
+  eventType: string;
+  severity: string;
+  updatedAt: string;
+  startsAt: string | null;
+  endsAt: string | null;
+  areas: string[];
+  roads: string[];
+  location: { lat: number; lon: number } | null;
+}
+
+export interface SfTrafficEventsData {
+  events: SfTrafficEvent[];
+  fetchedAt: string;
+}
+
 // Weather data types (shared between server ingestion and web UI)
 
 export interface CurrentWeather {
@@ -708,6 +727,7 @@ export interface BootstrapData {
   sf311?: ApiResponse<Sf311Data | null> | null;
   sfStreetClosures?: ApiResponse<SfStreetClosuresData | null> | null;
   sfTransitAlerts?: ApiResponse<SfTransitAlertsData | null> | null;
+  sfTrafficEvents?: ApiResponse<SfTrafficEventsData | null> | null;
 }
 
 // News AI summary

@@ -44,6 +44,7 @@ import { SfSafetyStrip } from '../strips/SfSafetyStrip.js';
 import { Sf311Strip } from '../strips/Sf311Strip.js';
 import { SfStreetClosuresStrip } from '../strips/SfStreetClosuresStrip.js';
 import { SfTransitStrip } from '../strips/SfTransitStrip.js';
+import { SfTrafficEventsStrip } from '../strips/SfTrafficEventsStrip.js';
 import { Skeleton } from './Skeleton.js';
 import { ScrollIndicator } from './ScrollIndicator.js';
 import { SkylineSeparator } from './SkylineSeparator.js';
@@ -292,6 +293,11 @@ export function CommandLayout() {
           {cityId === 'san-francisco' && (
             <Tile title={t('panel.sfTransit.title')} span={2} expandable defaultExpanded={isDesktop}>
               {(expanded) => <SfTransitStrip expanded={expanded} />}
+            </Tile>
+          )}
+          {cityId === 'san-francisco' && (
+            <Tile title={t('panel.sfTraffic.title')} span={2} expandable defaultExpanded={false}>
+              {(expanded) => <SfTrafficEventsStrip expanded={expanded} />}
             </Tile>
           )}
           {cityId === 'san-francisco' && (

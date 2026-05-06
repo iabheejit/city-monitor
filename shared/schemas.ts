@@ -637,3 +637,22 @@ export const SfTransitAlertsDataSchema = z.object({
   alerts: z.array(SfTransitAlertSchema),
   fetchedAt: z.string(),
 });
+
+export const SfTrafficEventSchema = z.object({
+  id: z.string(),
+  status: z.string(),
+  headline: z.string(),
+  eventType: z.string(),
+  severity: z.string(),
+  updatedAt: z.string(),
+  startsAt: z.string().nullable(),
+  endsAt: z.string().nullable(),
+  areas: z.array(z.string()),
+  roads: z.array(z.string()),
+  location: z.object({ lat: z.number(), lon: z.number() }).nullable(),
+});
+
+export const SfTrafficEventsDataSchema = z.object({
+  events: z.array(SfTrafficEventSchema),
+  fetchedAt: z.string(),
+});

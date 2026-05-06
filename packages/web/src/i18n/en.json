@@ -415,6 +415,12 @@
       "more": "more alerts",
       "source": "511 SF Bay"
     },
+    "sfTraffic": {
+      "title": "Traffic Events",
+      "empty": "No active traffic events",
+      "more": "more events",
+      "source": "511 SF Bay · Traffic"
+    },
     "sf311": {
       "title": "311 Requests",
       "more": "more",

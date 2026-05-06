@@ -52,6 +52,7 @@ export function createBootstrapRouter(cache: Cache) {
       sf311: data[CK.sf311(city.id)] ?? null,
       sfStreetClosures: data[CK.sfStreetClosures(city.id)] ?? null,
       sfTransitAlerts: data[CK.sfTransitAlerts(city.id)] ?? null,
+      sfTrafficEvents: data[CK.sfTrafficEvents(city.id)] ?? null,
     });
   });
 

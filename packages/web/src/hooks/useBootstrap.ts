@@ -44,6 +44,7 @@ export function useBootstrap(cityId: string) {
     if (data.sf311) queryClient.setQueryData(['sf-311', cityId], data.sf311);
     if (data.sfStreetClosures) queryClient.setQueryData(['sf-street-closures', cityId], data.sfStreetClosures);
     if (data.sfTransitAlerts) queryClient.setQueryData(['sf-transit-alerts', cityId], data.sfTransitAlerts);
+    if (data.sfTrafficEvents) queryClient.setQueryData(['sf-traffic-events', cityId], data.sfTrafficEvents);
   }, [query.data, cityId, queryClient]);
 
   // Note: bootstrap fields are already in { data, fetchedAt } format matching

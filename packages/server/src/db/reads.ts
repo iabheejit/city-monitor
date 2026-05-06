@@ -9,7 +9,7 @@ import {
   geocodeLookups,
 } from './schema.js';
 import type { SnapshotType } from './schema.js';
-import type { NinaWarning, PoliticalDistrict, WaterLevelData, BuergeramtData, BudgetSummary, ConstructionSite, TrafficIncident, EmergencyPharmacy, AedLocation, WastewaterSummary, BathingSpot, LaborMarketSummary, PopulationSummary, FeuerwehrSummary, PollenForecast, NoiseSensor, CouncilMeeting, HistoryPoint, AirQualityGridPoint, TransitAlert, MandiSummary, MgnregaSummary, SchemeCatalogue, CpcbAqiData, MsmeSummary, HmisSubdistrictSummary, OsmPoiCollection, CivicCollection, Nfhs5Summary, JjmSummary, SfSafetyData, Sf311Data, SfStreetClosuresData, SfTransitAlertsData } from '@city-monitor/shared';
+import type { NinaWarning, PoliticalDistrict, WaterLevelData, BuergeramtData, BudgetSummary, ConstructionSite, TrafficIncident, EmergencyPharmacy, AedLocation, WastewaterSummary, BathingSpot, LaborMarketSummary, PopulationSummary, FeuerwehrSummary, PollenForecast, NoiseSensor, CouncilMeeting, HistoryPoint, AirQualityGridPoint, TransitAlert, MandiSummary, MgnregaSummary, SchemeCatalogue, CpcbAqiData, MsmeSummary, HmisSubdistrictSummary, OsmPoiCollection, CivicCollection, Nfhs5Summary, JjmSummary, SfSafetyData, Sf311Data, SfStreetClosuresData, SfTransitAlertsData, SfTrafficEventsData } from '@city-monitor/shared';
 import {
   WeatherDataSchema, WaterLevelDataSchema, BuergeramtDataSchema, BudgetSummarySchema,
   PoliticalDistrictSchema, WastewaterSummarySchema, LaborMarketSummarySchema,
@@ -22,7 +22,7 @@ import {
   MsmeSummarySchema,
   HmisSubdistrictSummarySchema,
 } from '@city-monitor/shared/schemas.js';
-import { OsmPoiCollectionSchema, CivicCollectionSchema, Nfhs5SummarySchema, JjmSummarySchema, SfSafetyDataSchema, Sf311DataSchema, SfStreetClosuresDataSchema, SfTransitAlertsDataSchema } from '@city-monitor/shared/schemas.js';
+import { OsmPoiCollectionSchema, CivicCollectionSchema, Nfhs5SummarySchema, JjmSummarySchema, SfSafetyDataSchema, Sf311DataSchema, SfStreetClosuresDataSchema, SfTransitAlertsDataSchema, SfTrafficEventsDataSchema } from '@city-monitor/shared/schemas.js';
 import type { GeocodeResult } from '../lib/geocode.js';
 import type { WeatherData } from '../cron/ingest-weather.js';
 import type { CityEvent } from '../cron/ingest-events.js';
@@ -636,6 +636,10 @@ export async function loadSfStreetClosures(db: Db, cityId: string): Promise<DbRe
 
 export async function loadSfTransitAlerts(db: Db, cityId: string): Promise<DbResult<SfTransitAlertsData>> {
   return loadSnapshot(db, cityId, 'sf-transit-alerts', { schema: SfTransitAlertsDataSchema, maxAgeMs: 1800_000 });
+}
+
+export async function loadSfTrafficEvents(db: Db, cityId: string): Promise<DbResult<SfTrafficEventsData>> {
+  return loadSnapshot(db, cityId, 'sf-traffic-events', { schema: SfTrafficEventsDataSchema, maxAgeMs: 1800_000 });
 }
 
 export type { GeocodeResult };
